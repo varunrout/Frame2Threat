@@ -5,7 +5,7 @@ line_break:
   open_play_only: true
 
 dangerous_progression:
-  k: 5
+  k: 5  # number of subsequent events to scan for a high-value zone entry
 
 final_third_entry:
   k: 5

@@ -1,5 +1,5 @@
 """
-src.visualization – Pitch and model-explanation visualisation utilities.
+src.visualization – Pitch and model-explanation visualization utilities.
 
 Utilities:
 - pitch_plots  : pass maps, threat heat-maps, and freeze-frame overlays using mplsoccer.
