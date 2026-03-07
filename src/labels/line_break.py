@@ -90,11 +90,18 @@ def compute_line_break_labels(
         Dictionary corresponding to the ``line_break`` section of
         ``configs/labels.yaml``.  Recognised keys:
 
-        * ``min_forward_gain_m`` (float, default 5.0) – minimum x-gain.
+        * ``min_forward_gain_m`` (float, default 5.0) – minimum x-gain in
+          metres; passes shorter than this in the forward direction are
+          unconditionally labelled False.
+        * ``min_y_advance_frac`` (float, default 0.08) – **reserved for
+          future use**.  Intended as a minimum fraction of pitch width
+          (y-axis, 0–80 m) that the ball must advance laterally before the
+          pass qualifies as a line-break candidate.  Not yet enforced in the
+          current implementation; documenting here so downstream callers can
+          read the config value without surprises.
         * ``defensive_layer_gap_m`` (float, default 3.0) – x-band width for
-          clustering; currently used for documentation purposes only; the
-          label logic counts any opponent strictly between passer and
-          receiver.
+          defensive-layer clustering used by :func:`_detect_defensive_layer`;
+          not used in the main labelling path.
         * ``open_play_only`` (bool, default True) – exclude set pieces.
 
     Returns
