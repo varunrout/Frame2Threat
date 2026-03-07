@@ -1,0 +1,19 @@
+statsbomb:
+  competitions:
+    - competition_id: 43   # FIFA World Cup
+    - competition_id: 2    # Premier League
+    - competition_id: 11   # La Liga
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+
+pass_instances:
+  require_360: true
+  min_visible_players: 2
+
+splits:
+  train_frac: 0.70
+  val_frac: 0.15
+  test_frac: 0.15
+  random_seed: 42
+  strategy: match_level

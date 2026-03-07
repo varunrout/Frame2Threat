@@ -1,0 +1,16 @@
+gnn:
+  hidden_dim: 64
+  num_layers: 3
+  dropout: 0.3
+  conv_type: SAGEConv
+  pooling: mean
+  lr: 0.001
+  epochs: 100
+  batch_size: 64
+  random_seed: 42
+
+hybrid:
+  seq_hidden: 32
+  seq_len: 5
+  seq_type: gru
+  fusion: concat

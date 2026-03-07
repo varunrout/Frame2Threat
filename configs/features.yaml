@@ -1,0 +1,41 @@
+event_features:
+  - start_x
+  - start_y
+  - end_x
+  - end_y
+  - pass_length
+  - pass_angle_rad
+  - under_pressure
+  - minute
+  - body_part
+  - pass_height
+  - play_pattern
+  - possession_length
+
+geometry_features:
+  - n_defenders_in_corridor
+  - n_defenders_goal_side
+  - nearest_defender_dist_passer
+  - nearest_defender_dist_receiver
+  - team_width
+  - team_depth
+  - opp_width
+  - opp_depth
+  - overload_target_zone
+  - receiver_between_lines
+
+graph:
+  node_features:
+    - x
+    - y
+    - teammate
+    - is_keeper
+    - is_actor
+    - is_receiver
+    - dist_to_goal
+    - dist_to_passer
+  edge_types:
+    - knn_k: 5
+    - same_team
+    - opponent_pair
+  knn_k: 5

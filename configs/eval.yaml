@@ -1,0 +1,21 @@
+metrics:
+  - roc_auc
+  - pr_auc
+  - brier_score
+  - log_loss
+  - ece
+
+ranking:
+  - ndcg_at_5
+  - mrr
+  - top1_hit
+
+calibration:
+  n_bins: 10
+
+ablations:
+  - event_only
+  - event_plus_360
+  - graph_only
+  - hybrid
+  - multitask_vs_singletask
