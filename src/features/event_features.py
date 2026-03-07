@@ -100,7 +100,7 @@ def build_event_features(pass_instances_df: pd.DataFrame) -> pd.DataFrame:
     # 5. Under pressure
     # ------------------------------------------------------------------
     under_pressure = df.get("under_pressure", pd.Series(False, index=df.index))
-    out["under_pressure"] = under_pressure.fillna(False).astype(float)
+    out["under_pressure"] = under_pressure.fillna(0).astype(float)
 
     # ------------------------------------------------------------------
     # 6. Temporal

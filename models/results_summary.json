@@ -1,0 +1,14 @@
+{
+  "task": "dangerous_progression_k",
+  "test_roc_auc_event_only": 0.8807371955766317,
+  "test_pr_auc_event_only": 0.891055597503142,
+  "test_brier_event_only": 0.12986693190439824,
+  "test_roc_auc_event_360": 0.8821740742504158,
+  "test_pr_auc_event_360": 0.8924656850583974,
+  "test_brier_event_360": 0.12879055135796047,
+  "n_train": 36037,
+  "n_val": 7307,
+  "n_test": 7344,
+  "event_features": 27,
+  "event_360_features": 41
+}

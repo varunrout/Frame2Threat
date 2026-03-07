@@ -149,8 +149,13 @@ class TabularClassifier:
                 fit_kwargs["eval_set"] = [(X_val, y_val)]
                 fit_kwargs["callbacks"] = _lgbm_early_stop_callback(50)
 
-        X_arr = X_train.values if isinstance(X_train, pd.DataFrame) else X_train
-        self._model.fit(X_arr, y_arr, **fit_kwargs)
+        # Keep DataFrame for XGBoost/LightGBM (preserves feature names);
+        # convert to numpy only for logistic regression.
+        if self.model_type == "logistic":
+            X_fit = X_train.values if isinstance(X_train, pd.DataFrame) else X_train
+        else:
+            X_fit = X_train
+        self._model.fit(X_fit, y_arr, **fit_kwargs)
         return self
 
     # ------------------------------------------------------------------

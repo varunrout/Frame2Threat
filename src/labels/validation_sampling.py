@@ -190,7 +190,7 @@ def label_prevalence_table(
         n_total = len(series)
         n_nan = int(series.isna().sum())
         n_known = n_total - n_nan
-        n_positive = int(series.fillna(False).astype(bool).sum())
+        n_positive = int(series.fillna(0).astype(bool).sum())
         n_negative = n_known - n_positive
         prevalence = n_positive / n_known if n_known > 0 else np.nan
         rows.append(

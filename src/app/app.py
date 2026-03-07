@@ -87,19 +87,22 @@ def _load_frames() -> pd.DataFrame | None:
 
 @st.cache_resource(show_spinner="Loading model…")  # type: ignore[misc]
 def _load_model() -> Any | None:
-    """Attempt to load a saved model artifact from models/."""
-    try:
-        import joblib
+    """Load the saved TabularClassifier from models/.
 
+    Prefers ``xgboost_dp_event_only.joblib`` (27 engineered event features)
+    to avoid the 41-feature shape mismatch caused by the event+360 model
+    when geometry features have not been pre-computed for the selected data.
+    """
+    try:
+        from src.models.tabular import TabularClassifier
+
+        preferred = _MODELS_DIR / "xgboost_dp_event_only.joblib"
+        if preferred.exists():
+            return TabularClassifier.load(preferred)
         candidates = sorted(_MODELS_DIR.glob("**/*.joblib"))
         if not candidates:
             return None
-        path = candidates[0]
-        payload = joblib.load(path)
-        # TabularClassifier wraps the actual sklearn model
-        if isinstance(payload, dict) and "model" in payload:
-            return payload["model"]
-        return payload
+        return TabularClassifier.load(candidates[0])
     except Exception as exc:
         logger.warning("Model loading failed: %s", exc)
         return None
@@ -294,24 +297,22 @@ def main() -> None:
         frames_df = frames_df_real
 
     # Compute or simulate scores
+    _prediction_error: str | None = None   # carries any scoring error to the UI
+
     if model is not None and not demo_mode:
-        feature_cols = [
-            c for c in pass_df.columns
-            if c not in {
-                "event_uuid", "id", "match_id", "player_id", "player_name",
-                "team_id", "team_name", "match_name",
-                "line_break", "strict_line_break", "loose_line_break",
-                "dangerous_progression_k", "final_third_entry_k", "box_entry_k",
-                "shot_within_k", "threat_gain",
-            }
-            and pd.api.types.is_numeric_dtype(pass_df[c])
-        ]
         try:
-            X_all = pass_df[feature_cols].fillna(0.0)
-            scores = model.predict_proba(X_all.values)[:, 1]
-            st.sidebar.success("✅ Model loaded and predictions computed")
+            from src.features.event_features import build_event_features
+
+            X_all = build_event_features(pass_df)
+            feature_cols = list(X_all.columns)
+            scores = model.predict_proba(X_all)[:, 1]
+            st.sidebar.success(
+                f"✅ Model loaded — {len(feature_cols)} features, "
+                f"{len(pass_df):,} passes scored"
+            )
         except Exception as exc:
-            st.sidebar.warning(f"Model prediction failed: {exc}. Using demo scores.")
+            _prediction_error = str(exc)
+            st.sidebar.warning(f"⚠️ Prediction failed — using demo scores. See details below.")
             scores = _make_demo_scores(len(pass_df))
             feature_cols = []
     else:
@@ -321,6 +322,33 @@ def main() -> None:
             st.sidebar.info(
                 "ℹ️ No model artifacts found in `models/`. "
                 "Run the training pipeline or upload a model."
+            )
+
+    # ── Show feature-mismatch explanation if scoring failed ─────────
+    if _prediction_error:
+        with st.expander("⚠️ Why did model prediction fail?", expanded=True):
+            st.error(f"**Error:** {_prediction_error}")
+            st.markdown(
+                """
+**Root cause — Feature shape mismatch**
+
+The model was trained on **engineered features** produced by
+`build_event_features()` (27 columns such as `goal_dist_gain`,
+`x_gain`, `pass_angle_sin`, one-hot body-part flags, etc.).
+
+The raw `pass_instances.parquet` file only contains **base columns**
+from the StatsBomb event log (e.g. `start_x`, `pass_length`, `minute`)
+— roughly 19 numeric columns.
+
+When the app tried to score passes using those 19 raw columns, the
+model rejected them because it expected 27 (event-only) or 41
+(event + 360 geometry) engineered features.
+
+**How it is now fixed:**  
+The app calls `build_event_features(pass_df)` before scoring, which
+reproduces exactly the 27-column feature matrix the model was trained
+on. The predictions you see now use those correct features.
+                """
             )
 
     # ----------------------------------------------------------------
@@ -333,13 +361,30 @@ def main() -> None:
         index=0,
     )
 
-    # Match selector
-    match_col = "match_name" if "match_name" in pass_df.columns else "match_id"
-    available_matches = sorted(pass_df[match_col].dropna().unique())
-    selected_match = st.sidebar.selectbox("Select Match", available_matches, index=0)
-
-    match_df = pass_df[pass_df[match_col] == selected_match].reset_index(drop=True)
-    match_scores = scores[pass_df[match_col] == selected_match]
+    # Match selector – build human-readable "Team A vs Team B (ID)" labels
+    if "match_id" in pass_df.columns and "team_name" in pass_df.columns:
+        _match_label_map: dict = {}
+        for _mid, _grp in pass_df.groupby("match_id"):
+            _teams = sorted(_grp["team_name"].dropna().unique())
+            _label = " vs ".join(str(t) for t in _teams[:2]) if _teams else f"Match {_mid}"
+            _match_label_map[_mid] = _label
+        _label_to_mid = {v: k for k, v in _match_label_map.items()}
+        _available_match_labels = sorted(_match_label_map.values())
+        selected_match_label = st.sidebar.selectbox("Select Match", _available_match_labels, index=0)
+        _selected_mid = _label_to_mid[selected_match_label]
+        match_mask = pass_df["match_id"] == _selected_mid
+        match_df = pass_df[match_mask].reset_index(drop=True)
+        match_scores = scores[match_mask]
+    elif "match_name" in pass_df.columns:
+        available_matches = sorted(pass_df["match_name"].dropna().unique())
+        selected_match_label = st.sidebar.selectbox("Select Match", available_matches, index=0)
+        match_mask = pass_df["match_name"] == selected_match_label
+        match_df = pass_df[match_mask].reset_index(drop=True)
+        match_scores = scores[match_mask]
+    else:
+        selected_match_label = "All Passes"
+        match_df = pass_df.reset_index(drop=True)
+        match_scores = scores
 
     st.sidebar.markdown(f"**{len(match_df)} passes** in selected match")
     st.sidebar.markdown(
@@ -361,15 +406,19 @@ def main() -> None:
         match_df_sorted = match_df_sorted.sort_values("_score", ascending=False)
 
         event_options = match_df_sorted[uuid_col].tolist()
-        event_labels = [
-            f"{uid[:8]}… | score={sc:.3f}"
-            for uid, sc in zip(
-                match_df_sorted[uuid_col], match_df_sorted["_score"]
+        event_labels = []
+        for _, _erow in match_df_sorted.iterrows():
+            _pname = str(_erow.get("player_name", "Unknown"))[:22]
+            _min = int(_erow["minute"]) if pd.notna(_erow.get("minute")) else "?"
+            _sx = _erow.get("start_x", 0) or 0
+            _ex = _erow.get("end_x", 0) or 0
+            _sc = float(_erow["_score"])
+            event_labels.append(
+                f"{_pname} | min {_min} | {_sx:.0f}→{_ex:.0f} m | ⚡ {_sc:.3f}"
             )
-        ]
         label_to_uuid = dict(zip(event_labels, event_options))
 
-        selected_label = st.selectbox("Select Pass Event (sorted by score)", event_labels)
+        selected_label = st.selectbox("Select Pass Event (sorted by danger score)", event_labels)
         selected_uuid = label_to_uuid[selected_label]
 
         event_row = match_df[match_df[uuid_col] == selected_uuid].iloc[0]
@@ -432,11 +481,20 @@ def main() -> None:
         with st.expander("Show detailed explanation", expanded=True):
             if model is not None and feature_cols:
                 try:
+                    from src.features.event_features import build_event_features
                     from src.visualization.explanations import explain_single_event
+
+                    # Build the engineered feature matrix for this single event
+                    # so explain_single_event finds all 27 feature columns, not
+                    # just the ~8 raw parquet columns that share names with them.
+                    _single_raw = match_df[match_df[uuid_col] == selected_uuid].copy()
+                    _X_single = build_event_features(_single_raw)
+                    # Attach event_uuid so explain_single_event can look it up
+                    _X_single[uuid_col] = _single_raw[uuid_col].values
 
                     explanation = explain_single_event(
                         event_uuid=selected_uuid,
-                        pass_instances_df=match_df,
+                        pass_instances_df=_X_single,
                         frames_df=frames_df,
                         model=model,
                         feature_names=feature_cols,
@@ -480,7 +538,7 @@ def main() -> None:
             fig_map = _render_pass_map(
                 match_df,
                 match_scores,
-                title=f"Pass Map – {selected_match}",
+                title=f"Pass Map – {selected_match_label}",
             )
             st.pyplot(fig_map, use_container_width=True)
             plt.close(fig_map)
@@ -502,8 +560,9 @@ def main() -> None:
 
         top_passes = get_top_scoring_passes(match_df, match_scores, n=20)
         display_cols = [
-            c for c in [uuid_col, "player_name", "start_x", "start_y", "end_x", "end_y",
-                        "minute", "pass_length", "predicted_score"]
+            c for c in ["player_name", "pass_recipient_name", "team_name",
+                        "minute", "start_x", "start_y", "end_x", "end_y",
+                        "pass_length", "predicted_score"]
             if c in top_passes.columns
         ]
         st.dataframe(top_passes[display_cols].round(3), use_container_width=True)
