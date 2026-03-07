@@ -55,8 +55,11 @@ def build_event_features(pass_instances_df: pd.DataFrame) -> pd.DataFrame:
     df = pass_instances_df.copy()
     logger.info("Building event features for %d passes", len(df))
 
+    # Use event_uuid as index so both df and out share the same index label,
+    # preventing NaN from index-mismatch on column assignments.
+    if "event_uuid" in df.columns:
+        df = df.set_index("event_uuid")
     out = pd.DataFrame(index=df.index)
-    out.index = df["event_uuid"] if "event_uuid" in df.columns else df.index
 
     # ------------------------------------------------------------------
     # 1. Raw spatial
