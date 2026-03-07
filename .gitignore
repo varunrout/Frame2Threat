@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Data directories (never commit raw or processed data)
+data/raw/
+data/interim/
+data/processed/
+
+# Serialised model artefacts
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.onnx
+
+# Parquet files (except fixtures used in tests)
+*.parquet
+!tests/**/*.parquet
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# ML experiment tracking
+mlruns/
+mlartifacts/
+wandb/
+.neptune/
+
+# Type checking & linting caches
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# Distribution / packaging
+*.spec
+RECORD
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+.env.*
+secrets.yaml

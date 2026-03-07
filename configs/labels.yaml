@@ -1,0 +1,25 @@
+line_break:
+  min_forward_gain_m: 5.0
+  min_y_advance_frac: 0.08
+  defensive_layer_gap_m: 3.0
+  open_play_only: true
+
+dangerous_progression:
+  k: 5  # number of subsequent events to scan for a high-value zone entry
+
+final_third_entry:
+  k: 5
+  final_third_x: 80.0
+
+box_entry:
+  k: 5
+  box_x: 102.0
+  box_y_min: 18.0
+  box_y_max: 62.0
+
+shot_within:
+  k: 5
+
+threat_gain:
+  zone_grid_x: 12
+  zone_grid_y: 8
