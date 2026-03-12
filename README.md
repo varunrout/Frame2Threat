@@ -2,7 +2,7 @@
 
 **Breaking the Block: Predicting and Explaining Dangerous Progression from StatsBomb Event Data and 360 Freeze Frames**
 
-A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots — using StatsBomb Open Data event attributes combined with 360 freeze-frame spatial context.
+A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots — using StatsBomb Open Data event attributes combined with 360 freeze-frame spatial context.  Extended with possession-level sequential modelling and player-level attribution.
 
 ---
 
@@ -13,7 +13,7 @@ git clone https://github.com/varunrout/Frame2Threat.git
 cd Frame2Threat
 pip install -e ".[dev]"
 streamlit run src/app/app.py   # demo app (works without data via demo mode)
-pytest tests/ -q               # run all tests
+pytest tests/ -q               # run all tests (69 passing)
 ```
 
 ---
@@ -22,7 +22,11 @@ pytest tests/ -q               # run all tests
 
 StatsBomb's 360 data provides a spatial snapshot of all visible players at the moment of each event.  Frame2Threat treats this as *event-conditioned positional intelligence*: for each open-play pass, it combines the event attributes (length, angle, body part, pressure, etc.) with the geometric structure of the visible defensive block to predict downstream attacking danger.
 
-### What the system predicts
+The system operates at **two complementary granularities**:
+
+### v1 — Pass-level prediction
+
+For each individual open-play pass, predict whether it leads to dangerous outcomes.
 
 | Label | Definition |
 |-------|-----------|
@@ -33,6 +37,43 @@ StatsBomb's 360 data provides a spatial snapshot of all visible players at the m
 | `box_entry_k` | Ball enters penalty box within k events |
 | `shot_within_k` | Shot occurs within k events |
 | `threat_gain` | Zone-value delta (xT proxy, range ≈ [−1, 1]) |
+
+### v2 — Possession-level prediction
+
+For each full possession sequence, predict danger and attribute it to individual events and players.
+
+| Label | Definition |
+|-------|-----------|
+| `poss_dangerous` | Shot or penalty-box entry during the possession (**primary target**) |
+| `poss_has_shot` / `poss_entered_box` / `poss_entered_final_third` | Core outcome labels |
+| `poss_tempo` / `poss_verticality` / `poss_phase` | Structural characterisation |
+| `poss_broke_pressure` / `poss_bypassed_lines` | Defensive disruption labels |
+
+### v3 — Early danger forecasting
+
+Can we predict danger *before* the possession ends?  v3 evaluates forward-looking models under strict early-information constraints.
+
+| Observation window | Model | Test ROC AUC |
+|--------------------|-------|--------------|
+| 0% (start context only) | XGBoost start-only | 0.624 |
+| 50% of events observed | GRU prefix | 0.820 |
+| 50% of events observed | XGBoost cumulative | 0.847 |
+| 100% (full possession) | Ensemble (XGB + GRU) | **0.965** |
+
+Key finding: danger is forecastable well before the possession ends — by halfway through, models already exceed 0.82 AUC.  The GRU tipping point occurs at median fraction 0.619; dribbles are the dominant trigger (64.4%).
+
+### Key results (all versions)
+
+| Model | Level | Task | Test ROC AUC |
+|-------|-------|------|-------------|
+| XGBoost (event-only, 27 features) | Pass | dangerous_progression_k | **0.881** |
+| XGBoost (event+360, 41 features) | Pass | dangerous_progression_k | 0.882 |
+| PassFrameGNN (graph) | Pass | dangerous_progression_k | 0.841 (val) |
+| XGBoost (41 possession features) | Possession | poss_dangerous | **0.9505** |
+| PossessionGRU (event sequences) | Possession | poss_dangerous | **0.9524** |
+| **Ensemble (XGB + GRU)** | **Possession** | **poss_dangerous** | **0.9650** |
+| XGBoost cumulative @50% | Possession (early) | poss_dangerous | 0.8472 |
+| XGBoost cumulative @75% | Possession (early) | poss_dangerous | 0.8912 |
 
 ### Hard constraints
 
@@ -50,18 +91,51 @@ Frame2Threat/
 ├── README.md
 ├── pyproject.toml
 ├── configs/                   # All experiment config (data, labels, features, models, eval)
+│   ├── data.yaml
+│   ├── labels.yaml
+│   ├── features.yaml
+│   ├── model_baseline.yaml
+│   ├── model_gnn.yaml
+│   ├── model_gru.yaml         # v2 GRU architecture + training config
+│   ├── model_possession.yaml  # v2/v3 possession XGBoost + early-warning config
+│   └── eval.yaml
 ├── data/raw|interim|processed # Data directories (gitignored)
-├── notebooks/                 # 01_data_audit … 06_error_analysis
-├── reports/                   # data_dictionary, label_methodology, experiment_log, final_report
+├── models/                    # Trained model artefacts (gitignored)
+│   ├── xgboost_dp_event_only.joblib        # v1 pass-level XGBoost (event-only)
+│   ├── xgboost_dp_event_360.joblib         # v1 pass-level XGBoost (event+360)
+│   ├── xgboost_poss_dangerous.joblib       # v2 possession XGBoost
+│   ├── gru_poss_dangerous.pt               # v2 PossessionGRU
+│   ├── xgboost_start_only.joblib           # v3 start-only XGBoost
+│   ├── xgboost_cumulative_25pct.joblib     # v3 cumulative XGBoost @25%
+│   ├── xgboost_cumulative_50pct.joblib     # v3 cumulative XGBoost @50%
+│   ├── xgboost_cumulative_75pct.joblib     # v3 cumulative XGBoost @75%
+│   ├── v1_results_summary.json
+│   └── results_summary.json
+├── notebooks/                 # 01–10 analysis notebooks
+├── reports/                   # Documentation + figures
+│   ├── 01_research_motivation.md
+│   ├── 02_football_analytics_landscape.md
+│   ├── 03_methodology.md
+│   ├── data_dictionary.md
+│   ├── label_methodology.md
+│   ├── experiment_log.md
+│   ├── final_report.md
+│   └── figures/               # 49 PNG figures
 ├── src/
-│   ├── data/     ingest, inventory, parse_events/lineups/360, join_pass_frames, splits
-│   ├── labels/   line_break, dangerous_progression, downstream_outcomes, validation_sampling
-│   ├── features/ event_features, geometry_features, graph_builder, sequence_context
-│   ├── models/   baselines, tabular, gnn, hybrid, ranking
-│   ├── evaluation/ metrics, calibration, ablations, tactical_review
+│   ├── data/     ingest, inventory, parse_events/lineups/360, join_pass_frames,
+│   │             parse_possessions, splits
+│   ├── labels/   line_break, dangerous_progression, downstream_outcomes,
+│   │             possession_labels, validation_sampling
+│   ├── features/ event_features, geometry_features, graph_builder,
+│   │             sequence_context, possession_features, early_features
+│   ├── models/   baselines, tabular, gnn, hybrid, gru_possession, ranking,
+│   │             gru_train_script, train_early_models
+│   ├── evaluation/ metrics, calibration, ablations, tactical_review,
+│   │               possession_attribution, early_evaluation
 │   ├── visualization/ pitch_plots, freeze_frame_view, explanations
-│   └── app/      app.py (Streamlit)
-└── tests/        conftest, test_ingestion, test_labels, test_features, test_splits, test_models
+│   └── app/      app.py (Streamlit), cli.py (CLI pipeline)
+└── tests/        conftest, test_ingestion, test_labels, test_features,
+                  test_splits, test_models (69 tests)
 ```
 
 ---
@@ -73,11 +147,13 @@ pip install -e .                    # core
 pip install -e ".[dev,notebooks]"   # + pytest, jupyter
 ```
 
-PyTorch and `torch-geometric` are optional (required only for GNN models).
+PyTorch and `torch-geometric` are optional (required only for GNN and GRU models).
 
 ---
 
 ## Running the pipeline
+
+### v1 — Pass-level
 
 ```python
 # 1. Ingest + inventory
@@ -105,9 +181,65 @@ from src.models.tabular import TabularClassifier
 X_train = build_event_features(train_df)
 clf = TabularClassifier(model_type="xgboost", task="dangerous_progression_k")
 clf.fit(X_train, train_df["dangerous_progression_k"])
+```
 
-# 6. App
-# streamlit run src/app/app.py
+### v2 — Possession-level
+
+```python
+# 1. Build possession sequences (includes labels)
+from src.data.parse_possessions import build_possession_sequences, save_possession_sequences
+poss = build_possession_sequences(events)
+save_possession_sequences(poss)
+
+# 2. Train XGBoost on possession features
+# See notebooks/07_possession_features.ipynb
+
+# 3. Train GRU on event sequences
+# See notebooks/08_possession_sequence_model.ipynb
+
+# 4. Attribution analysis
+from src.evaluation.possession_attribution import attribute_possession, player_attribution_summary
+# See notebooks/09_possession_team_analysis.ipynb
+```
+
+### v3 — Early danger forecasting
+
+```python
+# 1. Build prefix-aware features
+from src.features.early_features import build_start_features, build_cumulative_tabular_features
+X_start = build_start_features(poss_df)                    # start-only context
+X_50pct = build_cumulative_tabular_features(poss_df, 0.50)  # first 50% of events
+
+# 2. Evaluate prefix GRU
+from src.evaluation.early_evaluation import evaluate_prefix_gru
+results = evaluate_prefix_gru(gru_model, poss_df, fracs=[0.25, 0.50, 0.75, 1.00])
+
+# 3. Train + save cumulative XGBoost models
+# python src/models/train_early_models.py
+```
+
+### CLI — Early-warning pipeline
+
+The `frame2threat` CLI provides batch and live danger scoring using the saved v2/v3 models:
+
+```bash
+# Score all possessions in a parquet file at 50% and 100% observation
+frame2threat score-batch data/processed/possession_sequences.parquet \
+    -o scores.csv --fracs 0.50,1.00
+
+# Score a single possession event-by-event (prints danger trajectory)
+frame2threat score-live possession_events.json
+
+# (Re)train the v3 early-prediction XGBoost models
+frame2threat train-early
+```
+
+The CLI is registered as a console entry point in `pyproject.toml`.  Run `frame2threat --help` for full usage.
+
+### App
+
+```bash
+streamlit run src/app/app.py
 ```
 
 ---
@@ -115,7 +247,7 @@ clf.fit(X_train, train_df["dangerous_progression_k"])
 ## Testing
 
 ```bash
-pytest tests/ -v
+pytest tests/ -v    # 69 tests, all passing
 ```
 
 | Test file | Covers |
@@ -130,14 +262,18 @@ pytest tests/ -v
 
 ## Notebooks
 
-| Notebook | Purpose |
-|----------|---------|
-| `01_data_audit.ipynb` | Inventory, parsing, missingness |
-| `02_label_validation.ipynb` | Prevalence, sanity checks, zone breakdown |
-| `03_eda.ipynb` | Distributions, heatmaps, 360 coverage |
-| `04_baselines.ipynb` | Rule-based → LogReg → XGBoost + SHAP |
-| `05_gnn.ipynb` | GNN training and ablations |
-| `06_error_analysis.ipynb` | FP/FN, explanations, player profiles |
+| Notebook | Purpose | Level |
+|----------|---------|-------|
+| `01_data_audit.ipynb` | Inventory, parsing, missingness | Data |
+| `02_label_validation.ipynb` | Prevalence, sanity checks, zone breakdown | Labels |
+| `03_eda.ipynb` | Distributions, heatmaps, 360 coverage | EDA |
+| `04_baselines.ipynb` | Rule-based → LogReg → XGBoost + SHAP | v1 models |
+| `05_gnn.ipynb` | GNN training and ablations | v1 models |
+| `06_error_analysis.ipynb` | FP/FN, explanations, player profiles | v1 eval |
+| `07_possession_features.ipynb` | Possession label EDA + XGBoost baseline | v2 models |
+| `08_possession_sequence_model.ipynb` | GRU training, ensemble, H1–H4 testing | v2 models |
+| `09_possession_team_analysis.ipynb` | Team/player attribution, tactical analysis | v2 eval |
+| `10_early_prediction.ipynb` | Start-only, prefix GRU, cumulative XGB, tipping-point analysis | v3 early forecasting |
 
 ---
 
@@ -145,10 +281,26 @@ pytest tests/ -v
 
 | Document | Contents |
 |----------|---------|
-| `reports/data_dictionary.md` | Full schema for all canonical tables |
-| `reports/label_methodology.md` | Operational definitions, invariants, borderline cases |
-| `reports/experiment_log.md` | Experiment registry and results table |
-| `reports/final_report.md` | Full research report |
+| `reports/01_research_motivation.md` | Why dangerous progression matters; real-world applications |
+| `reports/02_football_analytics_landscape.md` | Football analytics eras; where Frame2Threat fits |
+| `reports/03_methodology.md` | Full technical approach: pipeline, features, models, evaluation |
+| `reports/data_dictionary.md` | Schema for all canonical tables (v1 + v2) |
+| `reports/label_methodology.md` | Operational label definitions, invariants, borderline cases |
+| `reports/experiment_log.md` | 19-experiment registry with results (EXP-001 to EXP-019, v1–v3) |
+| `reports/final_report.md` | Comprehensive project report with all results |
+
+---
+
+## Research questions and answers
+
+| RQ | Question | Answer |
+|----|----------|--------|
+| RQ1 | Does 360 context improve prediction? | Marginally (+0.001 AUC) |
+| RQ2 | Which geometry features matter? | n_defenders_goal_side, pass_corridor_clear, receiver_between_lines |
+| RQ3 | How to predict possession danger? | XGB 0.950, GRU 0.952, Ensemble **0.965**; early forecast viable at 0.82+ AUC by 50% |
+| RQ4 | Which events matter most? | Moderate concentration (Gini 0.495); dribbles dominate tipping points (64.4%) |
+| RQ5 | Player-level attribution? | Yes — 453-player leaderboard, domain-consistent |
+| RQ6 | GNN vs. tabular? | Near-parity (0.841 vs 0.845 on 360 subset) |
 
 ---
 
@@ -163,8 +315,10 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 1. 360 coverage is partial — not all matches have freeze-frame data.
 2. Positional snapshots, not tracking — no velocity or trajectory.
 3. Partial pitch visibility — not all 22 players are always visible.
-4. Open-play only — set-piece passes are excluded.
+4. Open-play only — set-piece passes excluded from v1 modelling.
 5. Threat gain is a zone proxy — not a full possession-value model.
+6. Limited sample size — StatsBomb open data covers ~100 matches.
+7. Evaluation is held-out, not causal.
 
 ---
 

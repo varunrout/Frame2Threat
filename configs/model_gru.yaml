@@ -1,0 +1,30 @@
+# Frame2Threat v2 — PossessionGRU configuration
+# Single source of truth for architecture + training hyperparameters.
+# Read by src/models/gru_train_script.py at training time.
+# The architecture section is also embedded into the saved .pt checkpoint
+# so inference (load_gru_model) never needs to read this file directly.
+
+architecture:
+  input_size: 8          # features per event timestep (x, y, type_enc, is_pass, is_carry, is_shot, under_pressure, x_gain)
+  hidden_size: 64
+  num_layers: 1          # single layer — adequate for 12k sequences, 2x faster than 2-layer
+  dropout: 0.0           # inter-layer dropout; irrelevant for num_layers=1
+  bidirectional: false
+  # Hybrid mode: set tab_size = len(tab_features) to concatenate possession-level
+  # tabular features to the GRU hidden state before classification.
+  # Set tab_size: 0 and tab_features: [] to use pure-sequence mode (default).
+  tab_size: 0
+  tab_features: []
+  # To enable hybrid, set tab_size: 9 and fill tab_features, e.g.:
+  # tab_features: [poss_tempo, poss_verticality, poss_recycled,
+  #                poss_broke_pressure, poss_bypassed_lines,
+  #                phase_counter, phase_build_up, phase_progression, phase_final_third]
+
+training:
+  lr: 0.001
+  n_epochs: 60
+  batch_size: 512        # larger batches → fewer steps per epoch → faster on CPU
+  patience: 6            # early-stopping patience (epochs)
+  test_batch_size: 256
+  random_seed: 42
+  label: poss_dangerous

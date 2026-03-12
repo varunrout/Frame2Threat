@@ -173,6 +173,167 @@ Built by `src/data/join_pass_frames.py :: build_pass_instances()`.  One row per 
 
 ---
 
+## Table: `possession_sequences` (v2 modelling table)
+
+Built by `src/data/parse_possessions.py :: build_possession_sequences()`.  One row per possession (minimum 2 events).  Labels attached automatically by `src/labels/possession_labels.py :: attach_possession_labels()`.
+
+![Possession data structure](figures/poss_eda_structure.png)
+*Figure: Possession-level data structure overview — from flat event stream to one-row-per-possession.*
+
+![Possession label prevalence](figures/poss_eda_label_prevalence.png)
+*Figure: Prevalence rates for all 13 possession-level labels.*
+
+### Identity columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `match_id` | int32 | Foreign key → `matches.match_id` |
+| `possession_id` | int32 | Possession sequence id (resets when possession changes) |
+| `team_name` | str | Team in possession |
+| `period` | int32 | Match period (1–4) |
+| `origin_type` | str | How the possession was won (`Regular Play`, `From Corner`, etc.) |
+
+### Spatial columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `start_x` | float32 | x-coordinate of the first event in the possession |
+| `start_y` | float32 | y-coordinate of the first event |
+| `end_x` | float32 | x-coordinate of the last event |
+| `end_y` | float32 | y-coordinate of the last event |
+| `max_x_reached` | float32 | Maximum x-coordinate of any event in the possession |
+| `territory_gained` | float32 | `max_x_reached − start_x` (metres; NaN if either is missing) |
+
+### Temporal / counting columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `n_events` | int32 | Total events in the possession |
+| `n_passes` | int32 | Number of pass events |
+| `n_carries` | int32 | Number of carry events |
+| `n_pressures_faced` | int32 | Events where the acting player was under pressure |
+| `duration_seconds` | int32 | `(last_minute×60 + last_second) − (first_minute×60 + first_second)` |
+
+### Meta columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `mean_pass_length` | float32 | Mean Euclidean pass length (metres) across all passes in the possession; NaN if no passes |
+| `has_pressure` | bool | `n_pressures_faced > 0` |
+
+### Sequence columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `event_sequence` | list[dict] (JSON-serialised in parquet) | Per-event feature vectors for GRU/sequence model input.  Each dict has 8 keys: `type_id` (int, TYPE_VOCAB-encoded), `loc_x_norm` (x/120), `loc_y_norm` (y/80), `end_x_norm`, `end_y_norm`, `under_pressure` (0/1), `pass_length_norm` (length/60), `minute_norm` (minute/90). |
+| `player_sequence` | list[str] (JSON-serialised in parquet) | Player name for each event step, aligned 1-to-1 with `event_sequence`.  `"Unknown"` when the event has no player actor. |
+
+**TYPE_VOCAB** (event type → integer encoding for `type_id`):
+
+| Type | ID |
+|------|----|
+| pass | 1 |
+| carry | 2 |
+| ball receipt / ball receipt* | 3 |
+| dribble | 4 |
+| shot | 5 |
+| pressure | 6 |
+| duel | 7 |
+| clearance | 8 |
+| interception | 9 |
+| block | 10 |
+| foul committed | 11 |
+| foul won | 12 |
+| goalkeeper / goal keeper | 13 |
+| (other) | 0 |
+
+### Label columns — Group A (core outcome)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `poss_has_shot` | bool | At least one shot event exists in the possession's event sequence |
+| `poss_entered_final_third` | bool | `max_x_reached ≥ 80` |
+| `poss_entered_box` | bool | At least one event has `x ≥ 102` AND `18 ≤ y ≤ 62` (penalty-box entry) |
+| `poss_dangerous` | bool | `poss_has_shot OR poss_entered_box` — **primary v2 prediction target** |
+
+### Label columns — Group B (richer outcome)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `poss_xg_generated` | float | Sum of shot xG within the possession (NaN if events_df was not provided at build time) |
+| `poss_has_goal` | bool | A goal was scored during the possession |
+| `poss_outcome_tier` | int8 | 0 = nothing, 1 = final-third entry only, 2 = box entry, 3 = shot, 4 = goal |
+
+### Label columns — Group C (tempo / structural)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `poss_tempo` | float32 | `n_events / max(duration_seconds, 1)` — events per second |
+| `poss_verticality` | float32 | `territory_gained / (n_events × mean_pass_length + ε)` — how directly the possession advanced |
+| `poss_recycled` | bool | x fell ≥ 15 m during the possession and then recovered ≥ 15 m (ball recycled through the back) |
+| `poss_phase` | str | Possession phase classification: `counter`, `build_up`, `progression`, or `final_third` (based on tempo and start_x thresholds) |
+
+### Label columns — Group D (defensive disruption)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `poss_broke_pressure` | bool | The team survived ≥ 1 pressure event and continued for ≥ 3 more events afterwards |
+| `poss_bypassed_lines` | bool | Reached `max_x ≥ 80` within the first 4 events AND `start_x ≤ 50` — rapid line bypass |
+
+### Label columns — derived (used for possession-level XGBoost features)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `poss_pressure_index` | float | `n_pressures_faced / n_events` — normalised defensive pressure faced |
+| `poss_built_up` | bool | `poss_phase == "build_up"` — binary indicator for build-up possessions |
+
+---
+
+## Early-warning feature sets (v3)
+
+Built by `src/features/early_features.py`.  These are *derived feature matrices* (not stored columns) used by v3 models and the CLI pipeline.
+
+### Start-only features
+
+Built by `build_start_features(poss_df)`.  ~19 features available at possession start (before any within-possession events are observed).
+
+| Feature | Type | Description |
+|---------|------|-------------|
+| `start_x` | float | x-coordinate of the first event |
+| `start_y` | float | y-coordinate of the first event |
+| `start_x_norm` | float | `start_x / 120` |
+| `start_y_norm` | float | `start_y / 80` |
+| `started_final_third` | int | `start_x ≥ 80` |
+| `started_own_half` | int | `start_x < 40` |
+| `started_mid_third` | int | `40 ≤ start_x < 80` |
+| `dist_to_box_start` | float | Euclidean distance from start to centre of penalty box |
+| `start_zone` | int | 0=left flank, 1=central, 2=right flank |
+| `period` | int | Match period (1–4) |
+| `origin_*` | int | One-hot columns for `origin_type` (regular play, counter, goal kick, etc.) |
+
+### Cumulative prefix features
+
+Built by `build_cumulative_tabular_features(poss_df, frac)`.  Returns the same ~41 columns as `build_tabular_features()`, but counting/spatial/temporal aggregates are recomputed from only the first `frac` of each possession's event sequence.  Label-derived columns (`poss_tempo`, `poss_verticality`, `poss_recycled`, `poss_broke_pressure`, `poss_bypassed_lines`) are zeroed for `frac < 1.0` to prevent retrospective leakage.
+
+---
+
+## Model artefacts
+
+| Artefact | Path | Version | Description |
+|----------|------|---------|-------------|
+| v1 XGBoost (event-only) | `models/xgboost_dp_event_only.joblib` | v1 | 27 event features, EXP-003 |
+| v1 XGBoost (event+360) | `models/xgboost_dp_event_360.joblib` | v1 | 41 features (event+geometry), EXP-004 |
+| v2 XGBoost (possession) | `models/xgboost_poss_dangerous.joblib` | v2 | 41 possession features, EXP-009 |
+| v2 PossessionGRU | `models/gru_poss_dangerous.pt` | v2 | GRU checkpoint (arch+weights), EXP-010 |
+| v3 XGBoost start-only | `models/xgboost_start_only.joblib` | v3 | ~19 start features, EXP-015 |
+| v3 XGBoost cumulative @25% | `models/xgboost_cumulative_25pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
+| v3 XGBoost cumulative @50% | `models/xgboost_cumulative_50pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
+| v3 XGBoost cumulative @75% | `models/xgboost_cumulative_75pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
+| v1 results | `models/v1_results_summary.json` | v1 | All v1 metrics |
+| v2+v3 results | `models/results_summary.json` | v2+v3 | All v2/v3 metrics + ensemble |
+
+---
+
 ## Provenance
 
 | Item | Detail |
@@ -192,3 +353,7 @@ Built by `src/data/join_pass_frames.py :: build_pass_instances()`.  One row per 
 3. **Partial pitch visibility.** Not all 22 players are visible in every freeze frame. Pass option ranking is restricted to *visible* teammates only.
 4. **Recipient visibility.** The nominal pass recipient may not be visible in the freeze frame.
 5. **Open-play filter.** The `pass_instances` table contains only open-play passes. Set-piece deliveries are excluded from modelling.
+6. **Possession boundary inherited from StatsBomb.** The `possession_id` definition is StatsBomb's own segmentation — it resets on turnovers and certain dead-ball events. Short possessions (< 2 events) are dropped during `build_possession_sequences()`.
+7. **`player_sequence` relies on `player_name` in events.** Some event types (e.g. ball receipt, goalkeeper events) may have missing or generic player names, returned as `"Unknown"`.
+8. **`poss_xg_generated` / `poss_has_goal` require full events table.** If `events_df` is not passed to `attach_possession_labels()`, xG is NaN and goals default to False.
+9. **Sequence length varies.** Possessions range from 2 events to 50+. GRU input is padded/truncated to a fixed length at training time; very long possessions lose tail information.
