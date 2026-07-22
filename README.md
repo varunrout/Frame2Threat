@@ -60,9 +60,11 @@ Can we predict danger *before* the possession ends?  v3 evaluates forward-lookin
 | 0% (start context only) | XGBoost start-only | 0.624 |
 | 50% of events observed | GRU prefix | 0.820 |
 | 50% of events observed | XGBoost cumulative | 0.847 |
-| 100% (full possession) | Ensemble (XGB + GRU) | **0.965** |
+| 100% (full possession, retrospective upper bound) | Ensemble (XGB + GRU) | **0.965** |
 
 Key finding: danger is forecastable well before the possession ends — by halfway through, models already exceed 0.82 AUC.  This early-forecasting result is the strongest predictive story in the project.  The GRU tipping point occurs at median fraction 0.619; dribbles are the dominant trigger (64.4%).
+
+Timing audit: the full-possession v2 scores are retrospective upper bounds, not leakage-free early predictions.  The tabular model uses completed-possession summaries such as `max_x_reached` and `territory_gained`, while `poss_dangerous` includes box entry.  See `reports/feature_timing_audit.md` for the feature-level audit.
 
 ### Key results (all versions)
 
@@ -71,9 +73,9 @@ Key finding: danger is forecastable well before the possession ends — by halfw
 | XGBoost (event-only, 27 features) | Pass | dangerous_progression_k | **0.881** |
 | XGBoost (event+360, 41 features) | Pass | dangerous_progression_k | 0.882 |
 | PassFrameGNN (graph) | Pass | dangerous_progression_k | 0.841 (val) |
-| XGBoost (41 possession features) | Possession | poss_dangerous | **0.9505** |
-| PossessionGRU (event sequences) | Possession | poss_dangerous | **0.9524** |
-| **Ensemble (XGB + GRU)** | **Possession** | **poss_dangerous** | **0.9650** |
+| XGBoost (41 possession features, retrospective) | Possession | poss_dangerous | 0.9505 |
+| PossessionGRU (full event sequence, retrospective) | Possession | poss_dangerous | 0.9524 |
+| Ensemble (XGB + GRU, retrospective upper bound) | Possession | poss_dangerous | 0.9650 |
 | XGBoost cumulative @50% | Possession (early) | poss_dangerous | 0.8472 |
 | XGBoost cumulative @75% | Possession (early) | poss_dangerous | 0.8912 |
 
@@ -290,6 +292,7 @@ pytest tests/ -v    # 69 tests, all passing
 | `reports/02_football_analytics_landscape.md` | Football analytics eras; where Frame2Threat fits |
 | `reports/03_methodology.md` | Full technical approach: pipeline, features, models, evaluation |
 | `reports/data_dictionary.md` | Schema for all canonical tables (v1 + v2) |
+| `reports/feature_timing_audit.md` | Possession feature timing audit and leakage caveats |
 | `reports/label_methodology.md` | Operational label definitions, invariants, borderline cases |
 | `reports/experiment_log.md` | 19-experiment registry with results (EXP-001 to EXP-019, v1–v3) |
 | `reports/final_report.md` | Comprehensive project report with all results |
@@ -302,7 +305,7 @@ pytest tests/ -v    # 69 tests, all passing
 |----|----------|--------|
 | RQ1 | Does 360 context improve prediction? | Barely: +0.001 ROC AUC at pass level, so event attributes carry nearly all measured signal |
 | RQ2 | Which geometry features matter? | n_defenders_goal_side, pass_corridor_clear, receiver_between_lines |
-| RQ3 | How to predict possession danger? | Early forecasting is viable at 0.82+ AUC by 50%; full-possession models report XGB 0.950, GRU 0.952, Ensemble **0.965** |
+| RQ3 | How to predict possession danger? | Leakage-free early forecasting is viable at 0.82+ AUC by 50%; full-possession models report retrospective upper-bound scores of XGB 0.950, GRU 0.952, Ensemble 0.965 |
 | RQ4 | Which events matter most? | Moderate concentration (Gini 0.495); dribbles dominate tipping points (64.4%) |
 | RQ5 | Player-level attribution? | Yes — 453-player leaderboard, domain-consistent |
 | RQ6 | GNN vs. tabular? | Near-parity (0.841 vs 0.845 on 360 subset) |
@@ -323,7 +326,8 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 4. Open-play only — set-piece passes excluded from v1 modelling.
 5. Threat gain is a zone proxy — not a full possession-value model.
 6. Limited sample size — StatsBomb open data covers ~100 matches.
-7. Evaluation is held-out, not causal.
+7. Full-possession v2 scores are retrospective upper bounds because some features summarise the completed possession.
+8. Evaluation is held-out, not causal.
 
 ---
 

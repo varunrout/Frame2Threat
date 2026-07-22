@@ -69,6 +69,8 @@ def build_tabular_features(poss_df: pd.DataFrame) -> pd.DataFrame:
     feats: dict[str, pd.Series] = {}
 
     # --- raw spatial pass-throughs ---
+    # max_x_reached and territory_gained summarise the completed possession.
+    # They are valid for retrospective analysis, but not leakage-free early prediction.
     feats["start_x"]           = df["start_x"].astype(float)
     feats["start_y"]           = df["start_y"].astype(float)
     feats["max_x_reached"]     = df["max_x_reached"].astype(float)

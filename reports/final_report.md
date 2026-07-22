@@ -260,14 +260,14 @@ Full details in `reports/experiment_log.md`.
 > |-------|------|-------------|---------|-----|
 > | XGBoost event-only (v1) | pass | single event | 0.881 | 0.891 |
 > | XGBoost event+360 (v1) | pass | single event + freeze frame | 0.882 | 0.892 |
-> | XGBoost tabular (v2) | possession | full possession | 0.948 | 0.887 |
-> | GRU sequence (v2) | possession | full possession | 0.936 | 0.906 |
-> | **Ensemble XGB+GRU (v2)** | **possession** | **full possession** | **0.965** | **0.936** |
+> | XGBoost tabular (v2) | possession | full possession, retrospective | 0.948 | 0.887 |
+> | GRU sequence (v2) | possession | full sequence, retrospective | 0.936 | 0.906 |
+> | Ensemble XGB+GRU (v2) | possession | retrospective upper bound | 0.965 | 0.936 |
 > | XGBoost start-only (v3) | possession | 0% observed | 0.624 | 0.535 |
 > | GRU prefix (v3) | possession | 50% observed | 0.820 | 0.773 |
 > | XGBoost cumulative (v3) | possession | 50% observed | 0.847 | 0.762 |
 >
-> *Note: v1, v2, and v3 are not directly comparable — they operate at different units and observation horizons.*
+> *Note: v1, v2, and v3 are not directly comparable — they operate at different units and observation horizons. v2 full-possession metrics are retrospective upper bounds because they use completed-possession information.*
 > *v1 positive rate: ~37% | v2/v3 positive rate: ~36%*
 
 ### 9.1 Dataset summary
@@ -354,16 +354,18 @@ Label prevalence (`poss_dangerous`): ~25%.
 
 | Model | Input | Test ROC AUC | Test AP |
 |-------|-------|-------------|---------|
-| XGBoost | 41 tabular features | 0.9505 | 0.8947 |
-| PossessionGRU | 8-dim event sequence | 0.9524 | 0.9282 |
-| **Ensemble (XGB+GRU)** | **combined** | **0.9650** | **0.9358** |
+| XGBoost | 41 tabular features, retrospective | 0.9505 | 0.8947 |
+| PossessionGRU | 8-dim full event sequence, retrospective | 0.9524 | 0.9282 |
+| Ensemble (XGB+GRU) | retrospective upper bound | 0.9650 | 0.9358 |
 | XGBoost (origin-only) | origin_type | 0.591 | — |
 
 **Key findings:**
-- Possession-level prediction dramatically outperforms pass-level (0.950+ vs 0.881)
+- Full-possession retrospective classification dramatically outperforms pass-level prediction (0.950+ vs 0.881), but this is not a leakage-free early-prediction comparison
 - GRU marginally outperforms XGBoost (+0.002 AUC, +0.033 AP)
 - Ensemble gains +1.3 AUC points over best single model
 - Origin type alone is insufficient (0.591 AUC)
+
+Timing caveat: the v2 tabular model includes completion-dependent features such as `max_x_reached` and `territory_gained`, while `poss_dangerous` includes box entry. These metrics should be read as retrospective upper bounds unless the model is rebuilt with a strict event-time cutoff.
 
 ![v2 model comparison curves](figures/v2_model_comparison_curves.png)
 *Figure 9-7: ROC and PR curves for v2 models (XGBoost, GRU, Ensemble).*
@@ -494,7 +496,7 @@ Leave-one-out (LOO) attribution decomposes each possession's predicted danger in
 `n_defenders_goal_side`, `pass_corridor_clear`, `receiver_between_lines`, and `overload_target_zone` rank highest among the 14 geometry columns.
 
 ### RQ3 — How to predict possession-level danger?
-`poss_dangerous = poss_has_shot OR poss_entered_box`.  On full possessions, both XGBoost (0.950) and GRU (0.952) perform excellently and the ensemble reaches 0.965.  Under early-information constraints, danger is still forecastable: by halfway through a possession the GRU reaches 0.820 AUC and cumulative-feature XGBoost 0.847.
+`poss_dangerous = poss_has_shot OR poss_entered_box`.  The full-possession XGBoost (0.950), GRU (0.952), and ensemble (0.965) should be treated as retrospective upper-bound scores because they observe the completed possession. Under leakage-free early-information constraints, danger is still forecastable: by halfway through a possession the GRU reaches 0.820 AUC and cumulative-feature XGBoost reaches 0.847.
 
 ### RQ4 — Which events matter most?
 LOO attribution: median Gini 0.495 (moderate concentration).  2–3 pivotal events account for ~50% of danger.
@@ -700,7 +702,7 @@ Frame2Threat demonstrates that dangerous football progression can be accurately 
 
 **Pass level (v1):** XGBoost on 27 event features achieves 0.881 ROC AUC with excellent calibration (ECE 0.024).  360 geometry adds only +0.001 AUC.  The GNN confirms this ceiling by reaching near-parity (0.841 val) on raw spatial graphs.
 
-**Possession level (v2/v3):** Lifting the analysis to full possession sequences unlocks dramatically stronger predictions (0.950+ AUC).  The ensemble of XGBoost and GRU reaches **0.965 AUC** by combining tabular aggregation with sequential event processing.  Crucially, v3 shows this is not purely retrospective: by 50% of a possession, models already reach 0.820–0.847 AUC, and the GRU identifies a tipping point in 92% of dangerous possessions.
+**Possession level (v2/v3):** Full-possession v2 models reach 0.950+ AUC, with the XGBoost+GRU ensemble reaching 0.965 AUC, but those scores are retrospective upper bounds because the models observe completed-possession information. The leakage-free v3 result is the stronger predictive claim: by 50% of a possession, models already reach 0.820–0.847 AUC, and the GRU identifies a tipping point in 92% of dangerous possessions.
 
 **Early-warning pipeline:** The `frame2threat` CLI operationalises v3 findings into a deployable tool for batch scoring (with per-fraction AUC diagnostics) and live event-by-event danger trajectory analysis.
 
