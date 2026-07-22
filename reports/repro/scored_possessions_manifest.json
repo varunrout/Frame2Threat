@@ -1,0 +1,30 @@
+{
+  "generated_from": {
+    "data": "data/processed/possession_sequences.parquet",
+    "models": [
+      "models/xgboost_start_only.joblib",
+      "models/xgboost_cumulative_50pct.joblib",
+      "models/xgboost_cumulative_75pct.joblib",
+      "models/xgboost_poss_dangerous.joblib"
+    ]
+  },
+  "n_rows": 25,
+  "columns": [
+    "match_id",
+    "possession_id",
+    "team_name",
+    "period",
+    "origin_type",
+    "n_events",
+    "poss_dangerous",
+    "xgb_start_prob",
+    "xgb_50pct_prob",
+    "xgb_75pct_prob",
+    "xgb_full_retro_prob"
+  ],
+  "notes": [
+    "Sample uses the first 25 possessions by match_id and possession_id from the local processed table.",
+    "xgb_start_prob, xgb_50pct_prob, and xgb_75pct_prob are prefix/early XGBoost scores.",
+    "xgb_full_retro_prob is included as a retrospective upper-bound score, not a leakage-free early prediction."
+  ]
+}

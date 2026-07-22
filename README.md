@@ -294,6 +294,7 @@ pytest tests/ -v    # 69 tests, all passing
 | `reports/data_dictionary.md` | Schema for all canonical tables (v1 + v2) |
 | `reports/feature_timing_audit.md` | Possession feature timing audit and leakage caveats |
 | `reports/label_methodology.md` | Operational label definitions, invariants, borderline cases |
+| `reports/repro/` | Inspectable scored sample, model cards, and repro evidence pack |
 | `reports/experiment_log.md` | 19-experiment registry with results (EXP-001 to EXP-019, v1–v3) |
 | `reports/final_report.md` | Comprehensive project report with all results |
 
