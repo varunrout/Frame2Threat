@@ -1,4 +1,5 @@
 """Tests for match-level data splits — critical for leakage prevention."""
+
 from __future__ import annotations
 
 import tempfile
@@ -12,6 +13,7 @@ from src.data.splits import (
     apply_manifest_splits,
     create_match_level_splits,
     load_split_manifest,
+    materialise_split_parquets,
     split_summary,
 )
 
@@ -19,6 +21,7 @@ from src.data.splits import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_pass_df(n_matches: int = 10, passes_per_match: int = 50, seed: int = 0) -> pd.DataFrame:
     """Small synthetic pass_instances DataFrame."""
@@ -83,14 +86,14 @@ class TestCreateMatchLevelSplits:
             in_val = (val["match_id"] == match_id).sum()
             in_test = (test["match_id"] == match_id).sum()
             splits_present = sum([in_train > 0, in_val > 0, in_test > 0])
-            assert splits_present == 1, (
-                f"Match {match_id} found in {splits_present} splits"
-            )
+            assert splits_present == 1, f"Match {match_id} found in {splits_present} splits"
 
     def test_split_fractions_approximate(self):
         """Splits are approximately the correct size (±15% tolerance for small N)."""
         df = _make_pass_df(n_matches=30, passes_per_match=20)
-        train, val, test = create_match_level_splits(df, train_frac=0.7, val_frac=0.15, test_frac=0.15)
+        train, val, test = create_match_level_splits(
+            df, train_frac=0.7, val_frac=0.15, test_frac=0.15
+        )
         total = len(df)
         assert len(train) / total > 0.50, "Train set unexpectedly small"
         assert len(val) / total > 0.05, "Val set unexpectedly small"
@@ -148,6 +151,41 @@ class TestManifest:
             assert set(t1["match_id"]) == set(t2["match_id"])
             assert set(v1["match_id"]) == set(v2["match_id"])
             assert set(s1["match_id"]) == set(s2["match_id"])
+
+
+class TestMaterialiseSplitParquets:
+    def test_writes_split_parquets_and_manifest(self, tmp_path: Path):
+        pytest.importorskip("pyarrow")
+        df = _make_pass_df(n_matches=12, passes_per_match=5)
+
+        paths = materialise_split_parquets(df, output_dir=tmp_path, seed=7)
+
+        assert set(paths) == {"train", "val", "test", "manifest"}
+        assert paths["manifest"].exists()
+        split_frames = {
+            split_name: pd.read_parquet(paths[split_name])
+            for split_name in ["train", "val", "test"]
+        }
+        assert all(paths[split_name].exists() for split_name in ["train", "val", "test"])
+        assert sum(len(split_df) for split_df in split_frames.values()) == len(df)
+
+    def test_reuses_existing_manifest(self, tmp_path: Path):
+        pytest.importorskip("pyarrow")
+        df = _make_pass_df(n_matches=12, passes_per_match=5)
+        manifest_path = tmp_path / "split_manifest.csv"
+        create_match_level_splits(df, seed=11, manifest_path=manifest_path)
+
+        paths = materialise_split_parquets(
+            df,
+            output_dir=tmp_path,
+            manifest_path=manifest_path,
+            seed=99,
+        )
+
+        manifest = load_split_manifest(manifest_path)
+        expected_train_ids = set(manifest.loc[manifest["split"] == "train", "match_id"])
+        actual_train_ids = set(pd.read_parquet(paths["train"])["match_id"])
+        assert actual_train_ids == expected_train_ids
 
 
 class TestSplitSummary:
