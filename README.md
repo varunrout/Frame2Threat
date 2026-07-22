@@ -1,5 +1,7 @@
 # Frame2Threat
 
+[![CI](https://github.com/varunrout/Frame2Threat/actions/workflows/ci.yml/badge.svg)](https://github.com/varunrout/Frame2Threat/actions/workflows/ci.yml)
+
 **Breaking the Block: Predicting and Explaining Dangerous Progression from StatsBomb Event Data and 360 Freeze Frames**
 
 A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots — using StatsBomb Open Data event attributes combined with 360 freeze-frame spatial context.  Extended with possession-level sequential modelling and player-level attribution.

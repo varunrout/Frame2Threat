@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint, Type Check, Test, and Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "poetry"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install dependencies
+        run: poetry install --extras dev --no-interaction
+
+      - name: Lint
+        run: poetry run ruff check src tests --select E9,F63,F7
+
+      - name: Format check
+        continue-on-error: true
+        run: poetry run black --check src tests
+
+      - name: Type check
+        continue-on-error: true
+        run: poetry run mypy src
+
+      - name: Tests with coverage
+        run: poetry run pytest --cov=src --cov-report=term-missing
+
+      - name: Build package
+        run: poetry build
