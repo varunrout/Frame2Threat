@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/varunrout/Frame2Threat/actions/workflows/ci.yml/badge.svg)](https://github.com/varunrout/Frame2Threat/actions/workflows/ci.yml)
 
-**Breaking the Block: Predicting and Explaining Dangerous Progression from StatsBomb Event Data and 360 Freeze Frames**
+**Breaking the Block: Predicting and Explaining Dangerous Progression from StatsBomb Event Data**
 
-A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots — using StatsBomb Open Data event attributes combined with 360 freeze-frame spatial context.  Extended with possession-level sequential modelling and player-level attribution.
+A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots using StatsBomb Open Data.  The project evaluates 360 freeze-frame spatial context directly and finds that, in this dataset, event attributes carry almost all of the pass-level predictive signal: adding 360 geometry improves ROC AUC by only +0.001.  Extended with possession-level sequential modelling and player-level attribution.
 
 ---
 
@@ -22,7 +22,7 @@ pytest tests/ -q               # run all tests (69 passing)
 
 ## Project overview
 
-StatsBomb's 360 data provides a spatial snapshot of all visible players at the moment of each event.  Frame2Threat treats this as *event-conditioned positional intelligence*: for each open-play pass, it combines the event attributes (length, angle, body part, pressure, etc.) with the geometric structure of the visible defensive block to predict downstream attacking danger.
+Frame2Threat models attacking danger from StatsBomb event data, then tests whether 360 freeze-frame geometry adds meaningful signal beyond those event attributes.  The central finding is deliberately modest: 360 context is useful for interpretability and geometry-dependent labels such as line breaks, but it does not materially improve the headline pass-level danger model here (+0.001 ROC AUC).
 
 The system operates at **two complementary granularities**:
 
@@ -62,7 +62,7 @@ Can we predict danger *before* the possession ends?  v3 evaluates forward-lookin
 | 50% of events observed | XGBoost cumulative | 0.847 |
 | 100% (full possession) | Ensemble (XGB + GRU) | **0.965** |
 
-Key finding: danger is forecastable well before the possession ends — by halfway through, models already exceed 0.82 AUC.  The GRU tipping point occurs at median fraction 0.619; dribbles are the dominant trigger (64.4%).
+Key finding: danger is forecastable well before the possession ends — by halfway through, models already exceed 0.82 AUC.  This early-forecasting result is the strongest predictive story in the project.  The GRU tipping point occurs at median fraction 0.619; dribbles are the dominant trigger (64.4%).
 
 ### Key results (all versions)
 
@@ -77,11 +77,14 @@ Key finding: danger is forecastable well before the possession ends — by halfw
 | XGBoost cumulative @50% | Possession (early) | poss_dangerous | 0.8472 |
 | XGBoost cumulative @75% | Possession (early) | poss_dangerous | 0.8912 |
 
+At pass level, the event-only model (0.881) and event+360 model (0.882) are effectively tied.  Treat the 360 result as an honest negative/marginal finding, not as the main source of model lift.
+
 ### Hard constraints
 
-- Uses **StatsBomb Open Data** only — event data plus 360 freeze frames.
+- Uses **StatsBomb Open Data** only — event data plus partial 360 freeze-frame coverage.
 - **Not** a full tracking-data system. No continuous trajectories, velocities, or pitch control.
 - 360 features and geometry-dependent labels are **NaN** for events without freeze-frame coverage.
+- 360 geometry adds only **+0.001 ROC AUC** to the pass-level danger model in the reported ablation.
 - Pass option ranking is restricted to **visible teammates** in the freeze frame.
 
 ---
@@ -297,9 +300,9 @@ pytest tests/ -v    # 69 tests, all passing
 
 | RQ | Question | Answer |
 |----|----------|--------|
-| RQ1 | Does 360 context improve prediction? | Marginally (+0.001 AUC) |
+| RQ1 | Does 360 context improve prediction? | Barely: +0.001 ROC AUC at pass level, so event attributes carry nearly all measured signal |
 | RQ2 | Which geometry features matter? | n_defenders_goal_side, pass_corridor_clear, receiver_between_lines |
-| RQ3 | How to predict possession danger? | XGB 0.950, GRU 0.952, Ensemble **0.965**; early forecast viable at 0.82+ AUC by 50% |
+| RQ3 | How to predict possession danger? | Early forecasting is viable at 0.82+ AUC by 50%; full-possession models report XGB 0.950, GRU 0.952, Ensemble **0.965** |
 | RQ4 | Which events matter most? | Moderate concentration (Gini 0.495); dribbles dominate tipping points (64.4%) |
 | RQ5 | Player-level attribution? | Yes — 453-player leaderboard, domain-consistent |
 | RQ6 | GNN vs. tabular? | Near-parity (0.841 vs 0.845 on 360 subset) |
@@ -314,7 +317,7 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 
 ## Limitations
 
-1. 360 coverage is partial — not all matches have freeze-frame data.
+1. 360 coverage is partial — not all matches have freeze-frame data, and the measured pass-level lift from 360 geometry is only +0.001 ROC AUC.
 2. Positional snapshots, not tracking — no velocity or trajectory.
 3. Partial pitch visibility — not all 22 players are always visible.
 4. Open-play only — set-piece passes excluded from v1 modelling.
