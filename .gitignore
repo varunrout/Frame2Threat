@@ -31,6 +31,7 @@ data/raw/
 data/interim/
 data/processed/
 data/repro/
+data/store/
 
 # Serialised model artefacts
 *.pkl

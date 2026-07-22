@@ -160,6 +160,30 @@ PyTorch and `torch-geometric` are optional (required only for GNN and GRU models
 
 ## Running the pipeline
 
+### Data store
+
+Build the parquet + SQLite store from configured StatsBomb Open Data:
+
+```bash
+make store
+```
+
+For a no-network smoke build:
+
+```bash
+make store-smoke
+```
+
+The direct command is:
+
+```bash
+python -m src.data.build_store --verbose
+```
+
+The store writes partitioned pass-instance parquet under `data/store/pass_instances/`,
+train/validation/test split parquet under `data/store/processed/`, and SQLite
+metadata/provenance at `data/store/metadata.sqlite`.
+
 ### v1 — Pass-level
 
 One-command raw-to-scores reproduction is available for the event-only v1 pass model:

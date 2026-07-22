@@ -55,6 +55,9 @@ jobs:
       - name: Tests with coverage
         run: pytest --cov=src --cov-report=term-missing
 
+      - name: Store smoke
+        run: python -m src.data.build_store --synthetic --output-dir data/store/smoke
+
       - name: Reproduce smoke
         run: python scripts/run_pipeline.py --smoke --synthetic --output-dir data/repro/v1_smoke
 
