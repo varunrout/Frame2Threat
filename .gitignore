@@ -30,6 +30,7 @@ venv.bak/
 data/raw/
 data/interim/
 data/processed/
+data/repro/
 
 # Serialised model artefacts
 *.pkl

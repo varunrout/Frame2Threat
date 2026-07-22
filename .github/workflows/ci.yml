@@ -41,5 +41,8 @@ jobs:
       - name: Tests with coverage
         run: poetry run pytest --cov=src --cov-report=term-missing
 
+      - name: Reproduce smoke
+        run: poetry run python scripts/reproduce_v1.py --smoke --synthetic --output-dir data/repro/v1_smoke
+
       - name: Build package
         run: poetry build

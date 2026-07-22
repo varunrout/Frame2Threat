@@ -162,6 +162,21 @@ PyTorch and `torch-geometric` are optional (required only for GNN and GRU models
 
 ### v1 — Pass-level
 
+One-command reproduction is available for the event-only v1 pass model:
+
+```bash
+make reproduce
+```
+
+For a quick no-network smoke check:
+
+```bash
+make reproduce-smoke
+```
+
+The full command fetches/parses configured StatsBomb Open Data when local
+caches are absent and writes generated outputs under `data/repro/v1/`.
+
 ```python
 # 1. Ingest + inventory
 from src.data.inventory import build_inventory
