@@ -56,7 +56,7 @@ jobs:
         run: pytest --cov=src --cov-report=term-missing
 
       - name: Reproduce smoke
-        run: python scripts/reproduce_v1.py --smoke --synthetic --output-dir data/repro/v1_smoke
+        run: python scripts/run_pipeline.py --smoke --synthetic --output-dir data/repro/v1_smoke
 
       - name: Build package
         run: python -m pip install --no-deps .

@@ -162,20 +162,34 @@ PyTorch and `torch-geometric` are optional (required only for GNN and GRU models
 
 ### v1 — Pass-level
 
-One-command reproduction is available for the event-only v1 pass model:
+One-command raw-to-scores reproduction is available for the event-only v1 pass model:
 
 ```bash
-make reproduce
+make pipeline
 ```
 
 For a quick no-network smoke check:
 
 ```bash
-make reproduce-smoke
+make pipeline-smoke
 ```
 
 The full command fetches/parses configured StatsBomb Open Data when local
-caches are absent and writes generated outputs under `data/repro/v1/`.
+caches are absent and writes generated outputs under `data/repro/v1/`,
+including:
+
+- `pass_instances.parquet`
+- `split_manifest.csv`
+- `train.parquet`, `val.parquet`, `test.parquet`
+- `v1_event_only_model.joblib`
+- `v1_event_only_scored_passes.csv`
+- `v1_event_only_summary.json`
+
+The equivalent direct command is:
+
+```bash
+python scripts/run_pipeline.py --verbose
+```
 
 ```python
 # 1. Ingest + inventory
