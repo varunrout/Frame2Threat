@@ -14,6 +14,7 @@ Design principles
 
 from __future__ import annotations
 
+import argparse
 import logging
 from pathlib import Path
 from typing import Optional
@@ -66,9 +67,7 @@ def create_match_level_splits(
 
     total = train_frac + val_frac + test_frac
     if abs(total - 1.0) > 0.01:
-        raise ValueError(
-            f"train_frac + val_frac + test_frac must sum to 1.0, got {total:.4f}"
-        )
+        raise ValueError(f"train_frac + val_frac + test_frac must sum to 1.0, got {total:.4f}")
 
     match_ids = np.array(sorted(pass_instances_df["match_id"].unique()))
     rng = np.random.default_rng(seed)
@@ -157,6 +156,66 @@ def apply_manifest_splits(
     return train_df, val_df, test_df
 
 
+def materialise_split_parquets(
+    pass_instances_df: pd.DataFrame,
+    output_dir: Path | str = Path("data/processed"),
+    manifest_path: Optional[Path | str] = None,
+    train_frac: float = _DEFAULT_TRAIN,
+    val_frac: float = _DEFAULT_VAL,
+    test_frac: float = _DEFAULT_TEST,
+    seed: int = _DEFAULT_SEED,
+) -> dict[str, Path]:
+    """Write train / val / test parquet files from match-level splits.
+
+    If ``manifest_path`` points to an existing manifest, the persisted splits
+    are derived from that manifest. Otherwise a new manifest is created using
+    :func:`create_match_level_splits`.
+
+    Parameters
+    ----------
+    pass_instances_df:
+        Canonical pass instances table with ``match_id`` column.
+    output_dir:
+        Directory where ``train.parquet``, ``val.parquet`` and ``test.parquet``
+        should be written.
+    manifest_path:
+        Existing or target split manifest path. Defaults to
+        ``output_dir / "split_manifest.csv"``.
+    train_frac, val_frac, test_frac, seed:
+        Split parameters used only when a new manifest is created.
+
+    Returns
+    -------
+    dict[str, Path]
+        Paths keyed by ``train``, ``val``, ``test`` and ``manifest``.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = Path(manifest_path) if manifest_path else output_dir / "split_manifest.csv"
+
+    if manifest_path.exists():
+        manifest = load_split_manifest(manifest_path)
+        train_df, val_df, test_df = apply_manifest_splits(pass_instances_df, manifest)
+        logger.info("Applied existing split manifest from %s", manifest_path)
+    else:
+        train_df, val_df, test_df = create_match_level_splits(
+            pass_instances_df,
+            train_frac=train_frac,
+            val_frac=val_frac,
+            test_frac=test_frac,
+            seed=seed,
+            manifest_path=manifest_path,
+        )
+
+    split_frames = {"train": train_df, "val": val_df, "test": test_df}
+    split_paths = {split_name: output_dir / f"{split_name}.parquet" for split_name in split_frames}
+    for split_name, split_df in split_frames.items():
+        split_df.to_parquet(split_paths[split_name], index=False)
+        logger.info("Wrote %s split parquet to %s", split_name, split_paths[split_name])
+
+    return {**split_paths, "manifest": manifest_path}
+
+
 def split_summary(
     train_df: pd.DataFrame,
     val_df: pd.DataFrame,
@@ -185,3 +244,50 @@ def split_summary(
             {"split": name, "n_matches": n_matches, "n_passes": n_passes, "pct_passes": pct}
         )
     return pd.DataFrame(rows).set_index("split")
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Materialise match-level train/val/test parquet split files."
+    )
+    parser.add_argument(
+        "--input",
+        default="data/processed/pass_instances.parquet",
+        help="Path to the canonical pass_instances parquet file.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default="data/processed",
+        help="Directory for train.parquet, val.parquet and test.parquet.",
+    )
+    parser.add_argument(
+        "--manifest",
+        default=None,
+        help="Existing or target split manifest CSV. Defaults to output-dir/split_manifest.csv.",
+    )
+    parser.add_argument("--seed", type=int, default=_DEFAULT_SEED)
+    parser.add_argument("--train-frac", type=float, default=_DEFAULT_TRAIN)
+    parser.add_argument("--val-frac", type=float, default=_DEFAULT_VAL)
+    parser.add_argument("--test-frac", type=float, default=_DEFAULT_TEST)
+    return parser.parse_args()
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
+    args = _parse_args()
+    pass_instances = pd.read_parquet(args.input)
+    paths = materialise_split_parquets(
+        pass_instances,
+        output_dir=args.output_dir,
+        manifest_path=args.manifest,
+        train_frac=args.train_frac,
+        val_frac=args.val_frac,
+        test_frac=args.test_frac,
+        seed=args.seed,
+    )
+    for split_name, path in paths.items():
+        logger.info("%s: %s", split_name, path)
+
+
+if __name__ == "__main__":
+    main()

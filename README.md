@@ -192,9 +192,11 @@ from src.labels.dangerous_progression import compute_downstream_labels
 pass_instances = compute_line_break_labels(pass_instances, frames, label_cfg["line_break"])
 pass_instances = compute_downstream_labels(events, pass_instances, label_cfg)
 
-# 4. Split (match-level, no leakage)
-from src.data.splits import create_match_level_splits
+# 4. Split (match-level, no leakage) and materialise pipeline artifacts
+from src.data.splits import create_match_level_splits, materialise_split_parquets
 train_df, val_df, test_df = create_match_level_splits(pass_instances, seed=42,
+    manifest_path="data/processed/split_manifest.csv")
+materialise_split_parquets(pass_instances, output_dir="data/processed",
     manifest_path="data/processed/split_manifest.csv")
 
 # 5. Features + train
