@@ -30,7 +30,7 @@ from src.data.inventory import build_inventory
 from src.data.join_pass_frames import build_pass_instances
 from src.data.parse_360 import get_frame_summary, parse_360_frames
 from src.data.parse_events import parse_events
-from src.data.splits import create_match_level_splits
+from src.data.splits import create_match_level_splits, materialise_split_parquets
 from src.evaluation.metrics import classification_metrics
 from src.features.event_features import build_event_features
 from src.labels.dangerous_progression import compute_downstream_labels
@@ -121,9 +121,7 @@ def _load_processed_passes(path: Path) -> pd.DataFrame:
     LOGGER.info("Loading processed pass instances from %s", path)
     passes = pd.read_parquet(path)
     if "dangerous_progression_k" not in passes.columns:
-        raise RuntimeError(
-            f"{path} does not contain dangerous_progression_k; rebuild labels first"
-        )
+        raise RuntimeError(f"{path} does not contain dangerous_progression_k; rebuild labels first")
     return passes
 
 
@@ -251,9 +249,17 @@ def reproduce(args: argparse.Namespace) -> dict[str, Any]:
     if args.smoke and len(passes) > args.smoke_rows:
         passes = _limit_rows_preserving_matches(passes, args.smoke_rows)
 
+    pass_instances_path = output_dir / "pass_instances.parquet"
+    passes.to_parquet(pass_instances_path, index=False)
+
     train_df, val_df, test_df = create_match_level_splits(
         passes,
         seed=int(data_cfg["splits"]["random_seed"]),
+        manifest_path=output_dir / "split_manifest.csv",
+    )
+    split_paths = materialise_split_parquets(
+        passes,
+        output_dir=output_dir,
         manifest_path=output_dir / "split_manifest.csv",
     )
 
@@ -271,6 +277,8 @@ def reproduce(args: argparse.Namespace) -> dict[str, Any]:
         config=_xgb_config(model_cfg, smoke=args.smoke),
     )
     clf.fit(X_train, y_train, X_val=X_val, y_val=y_val)
+    model_path = output_dir / "v1_event_only_model.joblib"
+    clf.save(model_path)
 
     y_prob = clf.predict_proba(X_test)[:, 1]
     metrics = classification_metrics(y_test, y_prob)
@@ -291,7 +299,15 @@ def reproduce(args: argparse.Namespace) -> dict[str, Any]:
 
     summary = {
         "mode": "smoke" if args.smoke else "full",
-        "source": "synthetic" if args.synthetic else "data/processed/pass_instances.parquet" if args.use_processed else "statsbomb_open_data",
+        "source": (
+            "synthetic"
+            if args.synthetic
+            else (
+                "data/processed/pass_instances.parquet"
+                if args.use_processed
+                else "statsbomb_open_data"
+            )
+        ),
         "task": "dangerous_progression_k",
         "n_matches": int(passes["match_id"].nunique()),
         "n_passes": int(len(passes)),
@@ -301,7 +317,12 @@ def reproduce(args: argparse.Namespace) -> dict[str, Any]:
         "n_features": int(X_train.shape[1]),
         "metrics": metrics,
         "outputs": {
+            "pass_instances": str(pass_instances_path),
             "split_manifest": str(output_dir / "split_manifest.csv"),
+            "train_parquet": str(split_paths["train"]),
+            "val_parquet": str(split_paths["val"]),
+            "test_parquet": str(split_paths["test"]),
+            "model": str(model_path),
             "scored_passes": str(output_dir / "v1_event_only_scored_passes.csv"),
             "summary": str(output_dir / "v1_event_only_summary.json"),
         },
