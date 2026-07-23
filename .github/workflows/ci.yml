@@ -53,7 +53,7 @@ jobs:
         run: mypy src
 
       - name: Tests with coverage
-        run: pytest --cov=src --cov-report=term-missing
+        run: pytest --cov=src --cov-report=term-missing --cov-fail-under=24
 
       - name: Store smoke
         run: python -m src.data.build_store --synthetic --output-dir data/store/smoke
