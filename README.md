@@ -184,6 +184,15 @@ The store writes partitioned pass-instance parquet under `data/store/pass_instan
 train/validation/test split parquet under `data/store/processed/`, and SQLite
 metadata/provenance at `data/store/metadata.sqlite`.
 
+### Tests
+
+CI runs the full pytest suite with coverage and currently enforces a 24%
+minimum coverage floor:
+
+```bash
+pytest --cov=src --cov-report=term-missing --cov-fail-under=24
+```
+
 ### v1 — Pass-level
 
 One-command raw-to-scores reproduction is available for the event-only v1 pass model:
