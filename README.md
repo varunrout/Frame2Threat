@@ -6,6 +6,8 @@
 
 A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots using StatsBomb Open Data.  The project evaluates 360 freeze-frame spatial context directly and finds that, in this dataset, event attributes carry almost all of the pass-level predictive signal: adding 360 geometry improves ROC AUC by only +0.001.  Extended with possession-level sequential modelling and player-level attribution.
 
+> **Upfront caveats:** This is a StatsBomb Open Data project with partial 360 coverage, not a production tracking-data model.  The reported 360 lift is marginal (+0.001 ROC AUC), so the strongest result is the event/possession modelling rather than a claim that freeze frames transform performance.  Several higher-level workflows were assembled with agent assistance and then grounded with tests, CI, reproducibility scripts, and explicit limitations.
+
 ---
 
 ## Quick start
@@ -15,7 +17,7 @@ git clone https://github.com/varunrout/Frame2Threat.git
 cd Frame2Threat
 pip install -e ".[dev]"
 streamlit run src/app/app.py   # demo app (works without data via demo mode)
-pytest tests/ -q               # run all tests (69 passing)
+pytest tests/ -q               # run all tests (74 passing)
 ```
 
 ---
@@ -142,7 +144,8 @@ Frame2Threat/
 │   ├── visualization/ pitch_plots, freeze_frame_view, explanations
 │   └── app/      app.py (Streamlit), cli.py (CLI pipeline)
 └── tests/        conftest, test_ingestion, test_labels, test_features,
-                  test_splits, test_models (69 tests)
+                  test_splits, test_models, test_build_store,
+                  test_reproduce_pipeline (74 tests)
 ```
 
 ---
@@ -170,7 +173,7 @@ poetry run pre-commit run --all-files
 
 ---
 
-## Running the pipeline
+## Reproduce in one command
 
 ### Data store
 
@@ -330,7 +333,7 @@ streamlit run src/app/app.py
 ## Testing
 
 ```bash
-pytest tests/ -v    # 69 tests, all passing
+pytest tests/ -v    # 74 tests, all passing
 ```
 
 | Test file | Covers |
