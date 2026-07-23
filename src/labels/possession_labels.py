@@ -65,33 +65,33 @@ import pandas as pd
 # Pitch constants (must match parse_possessions.py)
 # ---------------------------------------------------------------------------
 PITCH_LENGTH = 120.0
-PITCH_WIDTH  =  80.0
+PITCH_WIDTH = 80.0
 
-FINAL_THIRD_X = 80.0           # x >= 80  → final third
-BOX_X         = 102.0          # x >= 102 → penalty area
-BOX_Y_LO      =  18.0
-BOX_Y_HI      =  62.0
+FINAL_THIRD_X = 80.0  # x >= 80  → final third
+BOX_X = 102.0  # x >= 102 → penalty area
+BOX_Y_LO = 18.0
+BOX_Y_HI = 62.0
 
 # Normalised thresholds (used when reading from event_sequence)
-_FT_X_NORM   = FINAL_THIRD_X / PITCH_LENGTH          # 0.6667
-_BOX_X_NORM  = BOX_X         / PITCH_LENGTH          # 0.850
-_BOX_YLO_NORM = BOX_Y_LO     / PITCH_WIDTH           # 0.225
-_BOX_YHI_NORM = BOX_Y_HI     / PITCH_WIDTH           # 0.775
+_FT_X_NORM = FINAL_THIRD_X / PITCH_LENGTH  # 0.6667
+_BOX_X_NORM = BOX_X / PITCH_LENGTH  # 0.850
+_BOX_YLO_NORM = BOX_Y_LO / PITCH_WIDTH  # 0.225
+_BOX_YHI_NORM = BOX_Y_HI / PITCH_WIDTH  # 0.775
 
 # TYPE_VOCAB IDs (matching parse_possessions.py)
-_SHOT_TYPE_ID     = 5
+_SHOT_TYPE_ID = 5
 _PRESSURE_TYPE_ID = 6
 
 # Tempo / phase thresholds
-_COUNTER_TEMPO_THRESHOLD  = 2.0    # events per second
+_COUNTER_TEMPO_THRESHOLD = 2.0  # events per second
 _COUNTER_START_X_THRESHOLD = 50.0  # possession starting in own half
-_BUILD_UP_START_X_MAX     = 40.0   # deep own half
-_FINAL_THIRD_START_X      = 80.0   # already in FT
+_BUILD_UP_START_X_MAX = 40.0  # deep own half
+_FINAL_THIRD_START_X = 80.0  # already in FT
 
 # Recycling / bypass thresholds
-_RECYCLE_DROP_M  = 15.0            # x must fall by this many metres
-_BYPASS_MAX_STEP = 4               # must reach FT within this many events
-_BYPASS_START_X  = 50.0            # possession must start in own half
+_RECYCLE_DROP_M = 15.0  # x must fall by this many metres
+_BYPASS_MAX_STEP = 4  # must reach FT within this many events
+_BYPASS_START_X = 50.0  # possession must start in own half
 
 EPSILON = 1e-6
 
@@ -99,6 +99,7 @@ EPSILON = 1e-6
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def attach_possession_labels(
     poss_df: pd.DataFrame,
@@ -129,14 +130,15 @@ def attach_possession_labels(
         )
 
     # Pre-compute per-row sequence summaries once (avoids repeated iteration)
-    seq_data = df["event_sequence"].apply(_parse_sequence) if "event_sequence" in df.columns \
-               else pd.Series([_empty_seq_summary()] * len(df), index=df.index)
+    seq_data = (
+        df["event_sequence"].apply(_parse_sequence)
+        if "event_sequence" in df.columns
+        else pd.Series([_empty_seq_summary()] * len(df), index=df.index)
+    )
 
     # ── Group A — Core outcome ───────────────────────────────────────────────
     df["poss_has_shot"] = seq_data.apply(lambda s: s["has_shot"])
-    df["poss_entered_final_third"] = (
-        df["max_x_reached"].fillna(0) >= FINAL_THIRD_X
-    )
+    df["poss_entered_final_third"] = df["max_x_reached"].fillna(0) >= FINAL_THIRD_X
     df["poss_entered_box"] = seq_data.apply(lambda s: s["entered_box"])
     df["poss_dangerous"] = df["poss_has_shot"] | df["poss_entered_box"]
 
@@ -145,17 +147,15 @@ def attach_possession_labels(
         xg_map, goal_map = _build_xg_goal_maps(events_df)
         key = list(zip(df["match_id"], df["possession_id"]))
         df["poss_xg_generated"] = [float(xg_map.get(k, 0.0)) for k in key]
-        df["poss_has_goal"]     = [bool(goal_map.get(k, False)) for k in key]
+        df["poss_has_goal"] = [bool(goal_map.get(k, False)) for k in key]
     else:
         df["poss_xg_generated"] = np.nan
-        df["poss_has_goal"]     = False
+        df["poss_has_goal"] = False
 
     df["poss_outcome_tier"] = _outcome_tier(df).astype("int8")
 
     # ── Group C — Tempo / structural ─────────────────────────────────────────
-    df["poss_tempo"] = (
-        df["n_events"] / df["duration_seconds"].clip(lower=1)
-    ).astype("float32")
+    df["poss_tempo"] = (df["n_events"] / df["duration_seconds"].clip(lower=1)).astype("float32")
 
     df["poss_verticality"] = (
         df["territory_gained"].fillna(0)
@@ -167,10 +167,10 @@ def attach_possession_labels(
     df["poss_phase"] = _assign_phase(df)
 
     # ── Group D — Defensive disruption ──────────────────────────────────────
-    df["poss_broke_pressure"]  = seq_data.apply(lambda s: s["broke_pressure"])
-    df["poss_bypassed_lines"]  = seq_data.apply(
-        lambda s: s["bypassed_lines"]
-    ) & (df["start_x"].fillna(PITCH_LENGTH) <= _BYPASS_START_X)
+    df["poss_broke_pressure"] = seq_data.apply(lambda s: s["broke_pressure"])
+    df["poss_bypassed_lines"] = seq_data.apply(lambda s: s["bypassed_lines"]) & (
+        df["start_x"].fillna(PITCH_LENGTH) <= _BYPASS_START_X
+    )
 
     _set_label_dtypes(df)
     return df
@@ -180,15 +180,16 @@ def attach_possession_labels(
 # Sequence parsing — done once per row
 # ---------------------------------------------------------------------------
 
+
 def _parse_sequence(seq: list[dict]) -> dict:
     """
     Extract all sequence-derived label features from one possession's
     event_sequence in a single pass.
     """
-    has_shot      = False
-    entered_box   = False
+    has_shot = False
+    entered_box = False
     broke_pressure = False
-    recycled       = False
+    recycled = False
     bypassed_lines = False
 
     n = len(seq)
@@ -215,14 +216,14 @@ def _parse_sequence(seq: list[dict]) -> dict:
         broke_pressure = True
 
     # --- recycled: x dropped ≥15m then recovered ≥15m ---
-    peak_x   = xs[0]
+    peak_x = xs[0]
     trough_x = xs[0]
     for x in xs[1:]:
         if x > peak_x:
             if (peak_x - trough_x) >= _RECYCLE_DROP_M and (x - trough_x) >= _RECYCLE_DROP_M:
                 recycled = True
                 break
-            peak_x   = x
+            peak_x = x
             trough_x = x
         elif x < trough_x:
             trough_x = x
@@ -235,10 +236,10 @@ def _parse_sequence(seq: list[dict]) -> dict:
             break
 
     return {
-        "has_shot":       has_shot,
-        "entered_box":    entered_box,
+        "has_shot": has_shot,
+        "entered_box": entered_box,
         "broke_pressure": broke_pressure,
-        "recycled":       recycled,
+        "recycled": recycled,
         "bypassed_lines": bypassed_lines,
     }
 
@@ -257,6 +258,7 @@ def _empty_seq_summary() -> dict:
 # xG / goal maps from events_df
 # ---------------------------------------------------------------------------
 
+
 def _build_xg_goal_maps(
     events_df: pd.DataFrame,
 ) -> tuple[dict, dict]:
@@ -269,7 +271,7 @@ def _build_xg_goal_maps(
     """
     shots = events_df[events_df["type_name"] == "Shot"].copy()
 
-    xg_map: dict   = {}
+    xg_map: dict = {}
     goal_map: dict = {}
 
     if shots.empty:
@@ -304,6 +306,7 @@ def _build_xg_goal_maps(
 # Derived label helpers
 # ---------------------------------------------------------------------------
 
+
 def _outcome_tier(df: pd.DataFrame) -> pd.Series:
     """
     Ordinal outcome tier:
@@ -315,10 +318,10 @@ def _outcome_tier(df: pd.DataFrame) -> pd.Series:
     """
     tier = pd.Series(0, index=df.index, dtype="int8")
     tier = tier.where(~df["poss_entered_final_third"], 1)
-    tier = tier.where(~df["poss_entered_box"],         2)
-    tier = tier.where(~df["poss_has_shot"],            3)
+    tier = tier.where(~df["poss_entered_box"], 2)
+    tier = tier.where(~df["poss_has_shot"], 3)
     if "poss_has_goal" in df.columns:
-        tier = tier.where(~df["poss_has_goal"],        4)
+        tier = tier.where(~df["poss_has_goal"], 4)
     return tier
 
 
@@ -330,18 +333,18 @@ def _assign_phase(df: pd.DataFrame) -> pd.Series:
       build_up     — starts deep in own half (x ≤ 40)
       progression  — everything else: midfield build / structured attack
     """
-    start_x  = df["start_x"].fillna(PITCH_LENGTH / 2)
-    tempo    = df["poss_tempo"].fillna(0.0)
-    origin   = df["origin_type"].fillna("").str.lower()
+    start_x = df["start_x"].fillna(PITCH_LENGTH / 2)
+    tempo = df["poss_tempo"].fillna(0.0)
+    origin = df["origin_type"].fillna("").str.lower()
 
-    is_counter     = (tempo >= _COUNTER_TEMPO_THRESHOLD) | origin.str.contains("counter")
+    is_counter = (tempo >= _COUNTER_TEMPO_THRESHOLD) | origin.str.contains("counter")
     is_final_third = (~is_counter) & (start_x >= _FINAL_THIRD_START_X)
-    is_build_up    = (~is_counter) & (~is_final_third) & (start_x <= _BUILD_UP_START_X_MAX)
+    is_build_up = (~is_counter) & (~is_final_third) & (start_x <= _BUILD_UP_START_X_MAX)
 
     phase = pd.Series("progression", index=df.index, dtype=object)
-    phase = phase.where(~is_build_up,    "build_up")
+    phase = phase.where(~is_build_up, "build_up")
     phase = phase.where(~is_final_third, "final_third")
-    phase = phase.where(~is_counter,     "counter")
+    phase = phase.where(~is_counter, "counter")
     return phase.astype("category")
 
 
@@ -384,55 +387,68 @@ def _set_label_dtypes(df: pd.DataFrame) -> None:
 
 LABEL_DEFINITIONS: dict[str, dict] = {
     "poss_has_shot": {
-        "type": "bool", "group": "A",
+        "type": "bool",
+        "group": "A",
         "description": "At least one Shot event occurred in the possession.",
     },
     "poss_entered_final_third": {
-        "type": "bool", "group": "A",
+        "type": "bool",
+        "group": "A",
         "description": "At least one event occurred at x ≥ 80 m (final third).",
     },
     "poss_entered_box": {
-        "type": "bool", "group": "A",
+        "type": "bool",
+        "group": "A",
         "description": "At least one event inside the penalty area (x≥102, y∈[18,62]).",
     },
     "poss_dangerous": {
-        "type": "bool", "group": "A",
+        "type": "bool",
+        "group": "A",
         "description": "poss_has_shot OR poss_entered_box — primary binary target.",
     },
     "poss_xg_generated": {
-        "type": "float", "group": "B",
+        "type": "float",
+        "group": "B",
         "description": "Sum of StatsBomb xG for all shots in the possession. NaN if no events_df.",
     },
     "poss_has_goal": {
-        "type": "bool", "group": "B",
+        "type": "bool",
+        "group": "B",
         "description": "Possession ended with a goal. Requires events_df.",
     },
     "poss_outcome_tier": {
-        "type": "int8", "group": "B",
+        "type": "int8",
+        "group": "B",
         "description": "Ordinal outcome: 0=nothing, 1=FT, 2=box, 3=shot, 4=goal.",
     },
     "poss_tempo": {
-        "type": "float", "group": "C",
+        "type": "float",
+        "group": "C",
         "description": "Events per second (n_events / duration_seconds, clipped at 1 s).",
     },
     "poss_verticality": {
-        "type": "float", "group": "C",
+        "type": "float",
+        "group": "C",
         "description": "territory_gained / (n_events × mean_pass_length). High = direct. Low = circulatory.",
     },
     "poss_recycled": {
-        "type": "bool", "group": "C",
+        "type": "bool",
+        "group": "C",
         "description": "x fell ≥15 m then recovered ≥15 m — possession went backwards then rebuilt.",
     },
     "poss_phase": {
-        "type": "category", "group": "C",
+        "type": "category",
+        "group": "C",
         "description": "counter | build_up | progression | final_third — tactical phase at possession start.",
     },
     "poss_broke_pressure": {
-        "type": "bool", "group": "D",
+        "type": "bool",
+        "group": "D",
         "description": "Survived at least one pressure event with ≥3 subsequent events (played through the press).",
     },
     "poss_bypassed_lines": {
-        "type": "bool", "group": "D",
+        "type": "bool",
+        "group": "D",
         "description": "Reached x≥80 m within the first 4 events, starting from own half (x≤50 m).",
     },
 }

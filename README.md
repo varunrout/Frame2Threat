@@ -150,11 +150,23 @@ Frame2Threat/
 ## Installation
 
 ```bash
+poetry install --extras dev         # deterministic install from poetry.lock
+poetry run pre-commit install       # optional local git hooks
+
+# Alternative editable install:
 pip install -e .                    # core
 pip install -e ".[dev,notebooks]"   # + pytest, jupyter
 ```
 
 PyTorch and `torch-geometric` are optional (required only for GNN and GRU models).
+
+The repository pins the development Python line with `.python-version` (`3.11`)
+and commits `poetry.lock` for repeatable dependency resolution. To run the same
+local checks as the pre-commit hooks:
+
+```bash
+poetry run pre-commit run --all-files
+```
 
 ---
 

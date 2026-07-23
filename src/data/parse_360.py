@@ -99,6 +99,7 @@ def parse_360_frames(raw_frames_df: pd.DataFrame) -> pd.DataFrame:
             df[col] = pd.NA
 
     if "x" not in df.columns and "location" in df.columns:
+
         def _loc_coord(v: object, i: int) -> float:
             if v is None or (isinstance(v, float) and v != v):
                 return np.nan
@@ -238,12 +239,10 @@ def _explode_freeze_frames(df: pd.DataFrame) -> pd.DataFrame:
                     "keeper": player.get("keeper"),
                     "x": loc[0] if loc and len(loc) > 0 else None,
                     "y": loc[1] if loc and len(loc) > 1 else None,
-                    "player_id": player_info.get("id")
-                    if isinstance(player_info, dict)
-                    else None,
-                    "player_name": player_info.get("name")
-                    if isinstance(player_info, dict)
-                    else None,
+                    "player_id": player_info.get("id") if isinstance(player_info, dict) else None,
+                    "player_name": (
+                        player_info.get("name") if isinstance(player_info, dict) else None
+                    ),
                 }
             )
     return pd.DataFrame(rows)

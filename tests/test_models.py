@@ -1,4 +1,5 @@
 """Tests for model implementations."""
+
 from __future__ import annotations
 
 import tempfile
@@ -15,6 +16,7 @@ from src.models.tabular import MultitaskTabular, TabularClassifier
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_xy(n: int = 200, seed: int = 0) -> tuple[pd.DataFrame, np.ndarray]:
     """Synthetic tabular feature matrix and binary labels."""

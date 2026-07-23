@@ -21,8 +21,7 @@ _GOAL_X: float = 120.0
 class _Classifier(Protocol):
     """Minimal duck-type interface expected from any classifier."""
 
-    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
-        ...
+    def predict_proba(self, X: pd.DataFrame) -> np.ndarray: ...
 
 
 class PassOptionRanker:
@@ -104,12 +103,14 @@ class PassOptionRanker:
                 logger.debug("predict_proba failed for candidate %d: %s", idx, exc)
                 prob = np.nan
 
-            rows.append({
-                "candidate_idx": int(idx),
-                "x": cx,
-                "y": cy,
-                "predicted_prob": prob,
-            })
+            rows.append(
+                {
+                    "candidate_idx": int(idx),
+                    "x": cx,
+                    "y": cy,
+                    "predicted_prob": prob,
+                }
+            )
 
         result = pd.DataFrame(rows)
         result = result.sort_values("predicted_prob", ascending=False, na_position="last")
@@ -160,13 +161,13 @@ class PassOptionRanker:
         actual_synth = pd.DataFrame([_build_synthetic_pass_row(actual_row, actual_ex, actual_ey)])
         try:
             actual_proba = classifier.predict_proba(actual_synth)
-            actual_prob = float(actual_proba[0, 1]) if actual_proba.ndim == 2 else float(actual_proba[0])
+            actual_prob = (
+                float(actual_proba[0, 1]) if actual_proba.ndim == 2 else float(actual_proba[0])
+            )
         except Exception:
             actual_prob = np.nan
 
-        alternatives = self.rank_options(
-            event_uuid, pass_instances_df, frames_df, classifier
-        )
+        alternatives = self.rank_options(event_uuid, pass_instances_df, frames_df, classifier)
 
         if alternatives.empty:
             return {
@@ -197,6 +198,7 @@ class PassOptionRanker:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _find_row(
     pass_instances_df: pd.DataFrame,
@@ -240,24 +242,26 @@ def _build_synthetic_pass_row(
     dx = end_x - sx
     dy = end_y - sy
 
-    pass_length = float(np.sqrt(dx ** 2 + dy ** 2))
+    pass_length = float(np.sqrt(dx**2 + dy**2))
     pass_angle = float(np.arctan2(dy, dx))
 
     dist_to_goal_start = float(np.sqrt((_GOAL_X - sx) ** 2 + (_GOAL_Y - sy) ** 2))
     dist_to_goal_end = float(np.sqrt((_GOAL_X - end_x) ** 2 + (_GOAL_Y - end_y) ** 2))
     goal_dist_gain = dist_to_goal_start - dist_to_goal_end
 
-    row.update({
-        "end_x": end_x,
-        "end_y": end_y,
-        "pass_length": pass_length,
-        "pass_angle": pass_angle,
-        "pass_angle_rad": pass_angle,
-        "pass_angle_sin": float(np.sin(pass_angle)),
-        "pass_angle_cos": float(np.cos(pass_angle)),
-        "x_gain": dx,
-        "is_forward": float(end_x > sx),
-        "dist_to_goal_end": dist_to_goal_end,
-        "goal_dist_gain": goal_dist_gain,
-    })
+    row.update(
+        {
+            "end_x": end_x,
+            "end_y": end_y,
+            "pass_length": pass_length,
+            "pass_angle": pass_angle,
+            "pass_angle_rad": pass_angle,
+            "pass_angle_sin": float(np.sin(pass_angle)),
+            "pass_angle_cos": float(np.cos(pass_angle)),
+            "x_gain": dx,
+            "is_forward": float(end_x > sx),
+            "dist_to_goal_end": dist_to_goal_end,
+            "goal_dist_gain": goal_dist_gain,
+        }
+    )
     return row

@@ -43,10 +43,10 @@ import torch
 # Constants (must match parse_possessions / possession_features)
 # ---------------------------------------------------------------------------
 PITCH_LENGTH = 120.0
-PITCH_WIDTH  =  80.0
-MAX_SEQ_LEN  =  40
-N_SEQ_FEAT   =   8   # [type_id, loc_x_norm, loc_y_norm, end_x_norm, end_y_norm,
-                     #  under_pressure, pass_length_norm, minute_norm]
+PITCH_WIDTH = 80.0
+MAX_SEQ_LEN = 40
+N_SEQ_FEAT = 8  # [type_id, loc_x_norm, loc_y_norm, end_x_norm, end_y_norm,
+#  under_pressure, pass_length_norm, minute_norm]
 
 EVENT_TYPE_LABELS: dict[int, str] = {
     0: "Pass",
@@ -66,6 +66,7 @@ EVENT_TYPE_LABELS: dict[int, str] = {
 # 1. Model loading
 # ---------------------------------------------------------------------------
 
+
 def load_gru_model(path: str | Path = "models/gru_poss_dangerous.pt"):
     """
     Load a saved PossessionGRU checkpoint.
@@ -77,14 +78,14 @@ def load_gru_model(path: str | Path = "models/gru_poss_dangerous.pt"):
     """
     from src.models.gru_possession import PossessionGRU
 
-    ckpt   = torch.load(path, map_location="cpu", weights_only=False)
+    ckpt = torch.load(path, map_location="cpu", weights_only=False)
     config = ckpt["config"]
-    model  = PossessionGRU(
-        input_size   = config.get("input_size",   8),
-        hidden_size  = config.get("hidden_size",  64),
-        num_layers   = config.get("num_layers",   1),
-        dropout      = config.get("dropout",      0.0),
-        bidirectional= config.get("bidirectional", False),
+    model = PossessionGRU(
+        input_size=config.get("input_size", 8),
+        hidden_size=config.get("hidden_size", 64),
+        num_layers=config.get("num_layers", 1),
+        dropout=config.get("dropout", 0.0),
+        bidirectional=config.get("bidirectional", False),
     )
     model.load_state_dict(ckpt["model_state"])
     model.eval()
@@ -94,6 +95,7 @@ def load_gru_model(path: str | Path = "models/gru_poss_dangerous.pt"):
 # ---------------------------------------------------------------------------
 # 2. Sequence helpers
 # ---------------------------------------------------------------------------
+
 
 def _parse_event_seq(poss_row: pd.Series) -> list[dict]:
     """Return the event_sequence list from a possession row."""
@@ -110,18 +112,18 @@ def _events_to_tensor(events: list[dict]) -> tuple[torch.Tensor, torch.Tensor]:
     x_tensor : (1, T_trunc, 8)   float32
     length   : (1,)              int64
     """
-    T     = min(len(events), MAX_SEQ_LEN)
-    arr   = np.zeros((1, T, N_SEQ_FEAT), dtype=np.float32)
+    T = min(len(events), MAX_SEQ_LEN)
+    arr = np.zeros((1, T, N_SEQ_FEAT), dtype=np.float32)
     for t, ev in enumerate(events[:T]):
-        arr[0, t, 0] = float(ev.get("type_id",            0))
-        arr[0, t, 1] = float(ev.get("loc_x_norm",         0))
-        arr[0, t, 2] = float(ev.get("loc_y_norm",         0))
-        arr[0, t, 3] = float(ev.get("end_x_norm",         0))
-        arr[0, t, 4] = float(ev.get("end_y_norm",         0))
-        arr[0, t, 5] = float(ev.get("under_pressure",     0))
-        arr[0, t, 6] = float(ev.get("pass_length_norm",   0))
-        arr[0, t, 7] = float(ev.get("minute_norm",        0))
-    x_t  = torch.from_numpy(arr)
+        arr[0, t, 0] = float(ev.get("type_id", 0))
+        arr[0, t, 1] = float(ev.get("loc_x_norm", 0))
+        arr[0, t, 2] = float(ev.get("loc_y_norm", 0))
+        arr[0, t, 3] = float(ev.get("end_x_norm", 0))
+        arr[0, t, 4] = float(ev.get("end_y_norm", 0))
+        arr[0, t, 5] = float(ev.get("under_pressure", 0))
+        arr[0, t, 6] = float(ev.get("pass_length_norm", 0))
+        arr[0, t, 7] = float(ev.get("minute_norm", 0))
+    x_t = torch.from_numpy(arr)
     len_t = torch.tensor([T], dtype=torch.long)
     return x_t, len_t
 
@@ -141,6 +143,7 @@ def _score_sequence(
 # 3. Core attribution methods
 # ---------------------------------------------------------------------------
 
+
 @torch.no_grad()
 def cumulative_danger_scores(
     events: list[dict],
@@ -155,18 +158,18 @@ def cumulative_danger_scores(
     Implementation: batches all T prefix sequences in one forward pass using
     packed sequences with varying lengths — ~T× speedup over individual calls.
     """
-    T        = min(len(events), MAX_SEQ_LEN)
+    T = min(len(events), MAX_SEQ_LEN)
     x_one, _ = _events_to_tensor(events)  # (1, T, 8)
-    x_one    = x_one.squeeze(0)           # (T, 8)
+    x_one = x_one.squeeze(0)  # (T, 8)
 
     # Repeat the full sequence T times; mask timesteps > t for prefix t
-    batch   = x_one.unsqueeze(0).expand(T, -1, -1).clone()  # (T, T, 8)
+    batch = x_one.unsqueeze(0).expand(T, -1, -1).clone()  # (T, T, 8)
     for t in range(T):
-        batch[t, t + 1:, :] = 0.0   # zero-pad the tail
+        batch[t, t + 1 :, :] = 0.0  # zero-pad the tail
 
     lengths = torch.arange(1, T + 1, dtype=torch.long)  # [1,2,...,T]
-    logits  = model(batch, lengths)                       # (T,)
-    probs   = torch.sigmoid(logits).numpy()
+    logits = model(batch, lengths)  # (T,)
+    probs = torch.sigmoid(logits).numpy()
     return probs.astype(np.float32)
 
 
@@ -189,22 +192,22 @@ def leave_one_out_attribution(
     Implementation: batches all T masked sequences in a single forward pass
     (batch size = T+1) for ~40x speedup over individual calls.
     """
-    T         = min(len(events), MAX_SEQ_LEN)
-    x_one, _  = _events_to_tensor(events)   # (1, T, 8)
-    x_one     = x_one.squeeze(0)             # (T, 8)
+    T = min(len(events), MAX_SEQ_LEN)
+    x_one, _ = _events_to_tensor(events)  # (1, T, 8)
+    x_one = x_one.squeeze(0)  # (T, 8)
 
     # Build batch of T+1 sequences: [full, mask_t=0, mask_t=1, ...]
     # All have the same length T.
     batch = x_one.unsqueeze(0).expand(T + 1, -1, -1).clone()  # (T+1, T, 8)
     for t in range(T):
-        batch[t + 1, t, :] = 0.0   # row t+1 has event t zeroed
+        batch[t + 1, t, :] = 0.0  # row t+1 has event t zeroed
 
     lengths = torch.full((T + 1,), T, dtype=torch.long)
-    logits  = model(batch, lengths)               # (T+1,)
-    probs   = torch.sigmoid(logits).numpy()
+    logits = model(batch, lengths)  # (T+1,)
+    probs = torch.sigmoid(logits).numpy()
 
     score_full = probs[0]
-    attrs      = score_full - probs[1:]           # (T,)
+    attrs = score_full - probs[1:]  # (T,)
     return attrs.astype(np.float32)
 
 
@@ -221,6 +224,7 @@ def unlock_event_index(attributions: np.ndarray) -> int:
 # ---------------------------------------------------------------------------
 # 4. Full possession report
 # ---------------------------------------------------------------------------
+
 
 def attribute_possession(
     poss_row: pd.Series,
@@ -248,41 +252,44 @@ def attribute_possession(
     if not events:
         return {"error": "empty event sequence"}
 
-    T          = min(len(events), MAX_SEQ_LEN)
-    events_tr  = events[:T]
+    T = min(len(events), MAX_SEQ_LEN)
+    events_tr = events[:T]
 
-    cum    = cumulative_danger_scores(events_tr, gru_model)
-    loo    = leave_one_out_attribution(events_tr, gru_model)
+    cum = cumulative_danger_scores(events_tr, gru_model)
+    loo = leave_one_out_attribution(events_tr, gru_model)
     unlock = unlock_event_index(loo)
 
     enriched = []
     for t, ev in enumerate(events_tr):
-        enriched.append({
-            **ev,
-            "step"        : t,
-            "type_label"  : EVENT_TYPE_LABELS.get(int(ev.get("type_id", 9)), "Other"),
-            "cum_score"   : float(cum[t]),
-            "loo_attr"    : float(loo[t]),
-            "is_unlock"   : (t == unlock),
-        })
+        enriched.append(
+            {
+                **ev,
+                "step": t,
+                "type_label": EVENT_TYPE_LABELS.get(int(ev.get("type_id", 9)), "Other"),
+                "cum_score": float(cum[t]),
+                "loo_attr": float(loo[t]),
+                "is_unlock": (t == unlock),
+            }
+        )
 
     return {
-        "possession_id" : str(poss_row.get("possession_id", "")),
-        "match_id"      : poss_row.get("match_id"),
-        "team"          : str(poss_row.get("team_name", "")),
-        "n_events"      : T,
+        "possession_id": str(poss_row.get("possession_id", "")),
+        "match_id": poss_row.get("match_id"),
+        "team": str(poss_row.get("team_name", "")),
+        "n_events": T,
         "poss_dangerous": bool(poss_row.get("poss_dangerous", False)),
-        "final_score"   : float(cum[-1]) if len(cum) else 0.0,
-        "cumulative"    : cum.tolist(),
-        "loo_attr"      : loo.tolist(),
-        "unlock_index"  : unlock,
-        "events"        : enriched,
+        "final_score": float(cum[-1]) if len(cum) else 0.0,
+        "cumulative": cum.tolist(),
+        "loo_attr": loo.tolist(),
+        "unlock_index": unlock,
+        "events": enriched,
     }
 
 
 # ---------------------------------------------------------------------------
 # 5. Player-level aggregation
 # ---------------------------------------------------------------------------
+
 
 def player_attribution_summary(
     poss_df: pd.DataFrame,
@@ -328,7 +335,7 @@ def player_attribution_summary(
         if not events:
             continue
 
-        T      = min(len(events), MAX_SEQ_LEN)
+        T = min(len(events), MAX_SEQ_LEN)
         events = events[:T]
 
         try:
@@ -350,44 +357,52 @@ def player_attribution_summary(
         unlock_idx = unlock_event_index(loo)
 
         for t in range(T):
-            rows.append({
-                "player"           : players[t],
-                "team"             : team,
-                "loo_attr"         : float(loo[t]),
-                "cum_score"        : float(cum[t]),
-                "is_unlock"        : (t == unlock_idx and unlock_idx >= 0),
-                "possession_id"    : str(row.get("possession_id", "")),
-                "match_id"         : row.get("match_id"),
-            })
+            rows.append(
+                {
+                    "player": players[t],
+                    "team": team,
+                    "loo_attr": float(loo[t]),
+                    "cum_score": float(cum[t]),
+                    "is_unlock": (t == unlock_idx and unlock_idx >= 0),
+                    "possession_id": str(row.get("possession_id", "")),
+                    "match_id": row.get("match_id"),
+                }
+            )
 
     if verbose:
         print()
 
     if not rows:
-        return pd.DataFrame(columns=[
-            "player", "team", "n_touches", "n_unlocks",
-            "mean_loo_attr", "p90_loo_attr", "mean_score_at_touch", "n_possessions"
-        ])
+        return pd.DataFrame(
+            columns=[
+                "player",
+                "team",
+                "n_touches",
+                "n_unlocks",
+                "mean_loo_attr",
+                "p90_loo_attr",
+                "mean_score_at_touch",
+                "n_possessions",
+            ]
+        )
 
     touches = pd.DataFrame(rows)
 
     summary = (
         touches.groupby(["player", "team"])
         .agg(
-            n_touches          = ("loo_attr",      "count"),
-            n_unlocks          = ("is_unlock",     "sum"),
-            mean_loo_attr      = ("loo_attr",      "mean"),
-            p90_loo_attr       = ("loo_attr",      lambda s: np.percentile(s, 90)),
-            mean_score_at_touch= ("cum_score",     "mean"),
-            n_possessions      = ("possession_id", "nunique"),
+            n_touches=("loo_attr", "count"),
+            n_unlocks=("is_unlock", "sum"),
+            mean_loo_attr=("loo_attr", "mean"),
+            p90_loo_attr=("loo_attr", lambda s: np.percentile(s, 90)),
+            mean_score_at_touch=("cum_score", "mean"),
+            n_possessions=("possession_id", "nunique"),
         )
         .reset_index()
     )
 
     summary = summary[summary["n_touches"] >= min_touches].copy()
-    summary["unlock_rate"] = (
-        summary["n_unlocks"] / summary["n_touches"]
-    ).round(4)
+    summary["unlock_rate"] = (summary["n_unlocks"] / summary["n_touches"]).round(4)
     summary = summary.sort_values("mean_loo_attr", ascending=False)
     return summary
 
@@ -395,6 +410,7 @@ def player_attribution_summary(
 # ---------------------------------------------------------------------------
 # 6. Batch scoring utility
 # ---------------------------------------------------------------------------
+
 
 @torch.no_grad()
 def score_all_possessions(
@@ -432,6 +448,7 @@ def score_all_possessions(
 
 if __name__ == "__main__":
     import sys
+
     sys.path.insert(0, ".")
     warnings.filterwarnings("ignore")
 
@@ -447,7 +464,7 @@ if __name__ == "__main__":
     print(f"  {len(poss):,} total | {len(dangerous):,} dangerous")
 
     # Attribute a sample possession
-    row    = dangerous.iloc[0]
+    row = dangerous.iloc[0]
     report = attribute_possession(row, gru)
     print(f"\nPossession: {report['possession_id']}  |  team: {report['team']}")
     print(f"  n_events     : {report['n_events']}")
@@ -456,8 +473,9 @@ if __name__ == "__main__":
     unlock = report["unlock_index"]
     if unlock >= 0:
         ev = report["events"][unlock]
-        print(f"  unlock event : step {unlock} — {ev['type_label']} "
-              f"(attr={ev['loo_attr']:+.3f})")
+        print(
+            f"  unlock event : step {unlock} — {ev['type_label']} " f"(attr={ev['loo_attr']:+.3f})"
+        )
 
     # Mini player summary on 200 possessions
     print("\nBuilding player attribution summary (sample 200) …")

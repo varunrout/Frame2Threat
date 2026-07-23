@@ -17,9 +17,7 @@ try:
     _MPLSOCCER_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _MPLSOCCER_AVAILABLE = False
-    logger.warning(
-        "mplsoccer not available; pitch visualization functions will raise ImportError"
-    )
+    logger.warning("mplsoccer not available; pitch visualization functions will raise ImportError")
 
 # StatsBomb pitch dimensions
 _PITCH_LENGTH = 120.0
@@ -236,12 +234,8 @@ def plot_threat_gain_map(
         df["threat_gain"] = 0.0
 
     df = df.copy()
-    df["col_idx"] = np.clip(
-        (df["start_x"] / _PITCH_LENGTH * _N_COLS).astype(int), 0, _N_COLS - 1
-    )
-    df["row_idx"] = np.clip(
-        (df["start_y"] / _PITCH_WIDTH * _N_ROWS).astype(int), 0, _N_ROWS - 1
-    )
+    df["col_idx"] = np.clip((df["start_x"] / _PITCH_LENGTH * _N_COLS).astype(int), 0, _N_COLS - 1)
+    df["row_idx"] = np.clip((df["start_y"] / _PITCH_WIDTH * _N_ROWS).astype(int), 0, _N_ROWS - 1)
 
     zone_means = (
         df.groupby(["col_idx", "row_idx"])["threat_gain"]
@@ -358,7 +352,9 @@ def plot_player_profile(
     # Panel 4 – top-10 pass list
     ax4 = fig.add_subplot(2, 2, 4)
     top10 = player_df.nlargest(10, "predicted_score")
-    cols_to_show = [c for c in ["start_x", "start_y", "end_x", "end_y", "predicted_score"] if c in top10.columns]
+    cols_to_show = [
+        c for c in ["start_x", "start_y", "end_x", "end_y", "predicted_score"] if c in top10.columns
+    ]
     table_data = top10[cols_to_show].round(2).values
     col_labels = [c.replace("predicted_score", "score") for c in cols_to_show]
     ax4.axis("off")

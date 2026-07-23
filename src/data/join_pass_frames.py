@@ -132,9 +132,7 @@ def build_pass_instances(
     # ------------------------------------------------------------------
     # 5. Join 360 summary
     # ------------------------------------------------------------------
-    has_frames = (
-        frames_summary_df is not None and not frames_summary_df.empty
-    )
+    has_frames = frames_summary_df is not None and not frames_summary_df.empty
 
     if has_frames:
         passes = passes.merge(
@@ -167,9 +165,7 @@ def build_pass_instances(
     for label_col in _LABEL_COLUMNS:
         result[label_col] = np.nan
 
-    logger.info(
-        "Built pass_instances table: %d rows, %d columns", len(result), len(result.columns)
-    )
+    logger.info("Built pass_instances table: %d rows, %d columns", len(result), len(result.columns))
     return result.reset_index(drop=True)
 
 
@@ -214,9 +210,7 @@ def _select_output_columns(
 
     # Identity
     out["match_id"] = _get("match_id")
-    out["competition_id"] = (
-        competition_id if competition_id is not None else _get("competition_id")
-    )
+    out["competition_id"] = competition_id if competition_id is not None else _get("competition_id")
     out["season_id"] = season_id if season_id is not None else _get("season_id")
     out["event_uuid"] = _get("event_uuid")
     out["possession_id"] = _get("possession_id")
@@ -255,19 +249,31 @@ def _select_output_columns(
     out["n_visible_opponents"] = _get("n_visible_opponents")
 
     # Type coercions
-    for int_col in ("match_id", "competition_id", "season_id", "possession_id",
-                     "minute", "second", "period",
-                     "n_visible_players", "n_visible_teammates", "n_visible_opponents"):
+    for int_col in (
+        "match_id",
+        "competition_id",
+        "season_id",
+        "possession_id",
+        "minute",
+        "second",
+        "period",
+        "n_visible_players",
+        "n_visible_teammates",
+        "n_visible_opponents",
+    ):
         out[int_col] = pd.to_numeric(out[int_col], errors="coerce").astype("Int64")
 
-    for float_col in ("start_x", "start_y", "end_x", "end_y",
-                       "pass_length", "pass_angle"):
+    for float_col in ("start_x", "start_y", "end_x", "end_y", "pass_length", "pass_angle"):
         out[float_col] = pd.to_numeric(out[float_col], errors="coerce").astype(float)
 
     for bool_col in ("under_pressure", "pass_switch", "pass_cross", "has_360"):
         col_data = out[bool_col]
         out[bool_col] = col_data.map(
-            lambda v: False if (v is pd.NA or v is None or (isinstance(v, float) and pd.isna(v))) else bool(v)
+            lambda v: (
+                False
+                if (v is pd.NA or v is None or (isinstance(v, float) and pd.isna(v)))
+                else bool(v)
+            )
         ).astype(bool)
 
     return out
@@ -276,13 +282,34 @@ def _select_output_columns(
 def _empty_pass_instances() -> pd.DataFrame:
     """Return an empty DataFrame with the canonical pass_instances schema."""
     cols = [
-        "match_id", "competition_id", "season_id", "event_uuid", "possession_id",
-        "team_name", "player_name", "pass_recipient_name",
-        "minute", "second", "period",
-        "start_x", "start_y", "end_x", "end_y",
-        "pass_length", "pass_angle", "pass_body_part", "pass_height", "pass_type",
-        "pass_outcome_name", "under_pressure", "pass_switch", "pass_cross",
-        "has_360", "n_visible_players", "n_visible_teammates", "n_visible_opponents",
+        "match_id",
+        "competition_id",
+        "season_id",
+        "event_uuid",
+        "possession_id",
+        "team_name",
+        "player_name",
+        "pass_recipient_name",
+        "minute",
+        "second",
+        "period",
+        "start_x",
+        "start_y",
+        "end_x",
+        "end_y",
+        "pass_length",
+        "pass_angle",
+        "pass_body_part",
+        "pass_height",
+        "pass_type",
+        "pass_outcome_name",
+        "under_pressure",
+        "pass_switch",
+        "pass_cross",
+        "has_360",
+        "n_visible_players",
+        "n_visible_teammates",
+        "n_visible_opponents",
         *_LABEL_COLUMNS,
     ]
     return pd.DataFrame(columns=cols)

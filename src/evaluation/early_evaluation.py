@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 # 1. Prefix GRU evaluation  (EXP-016)
 # ---------------------------------------------------------------------------
 
+
 def _get_prefix_proba(
     events: list[dict],
     model: "PossessionGRU",
@@ -109,15 +110,17 @@ def prefix_gru_auc_curve(
 
         y_pred = np.array(probas)
         roc = roc_auc_score(y_arr, y_pred)
-        pr  = average_precision_score(y_arr, y_pred)
+        pr = average_precision_score(y_arr, y_pred)
 
-        results.append({
-            "frac": frac,
-            "pct_label": f"{frac:.0%}",
-            "n_poss": n_total,
-            "roc_auc": round(roc, 4),
-            "pr_auc": round(pr, 4),
-        })
+        results.append(
+            {
+                "frac": frac,
+                "pct_label": f"{frac:.0%}",
+                "n_poss": n_total,
+                "roc_auc": round(roc, 4),
+                "pr_auc": round(pr, 4),
+            }
+        )
         if verbose:
             print(f"    frac={frac:.0%}  ROC-AUC={roc:.4f}  PR-AUC={pr:.4f}")
 
@@ -127,6 +130,7 @@ def prefix_gru_auc_curve(
 # ---------------------------------------------------------------------------
 # 2. Tipping-point analysis  (EXP-019)
 # ---------------------------------------------------------------------------
+
 
 def tipping_point_analysis(
     poss_df: pd.DataFrame,
@@ -174,9 +178,7 @@ def tipping_point_analysis(
         for t in range(T):
             if cum[t] >= threshold:
                 tipping_step = t
-                tipping_type = EVENT_TYPE_LABELS.get(
-                    int(events[t].get("type_id", 9)), "Other"
-                )
+                tipping_type = EVENT_TYPE_LABELS.get(int(events[t].get("type_id", 9)), "Other")
                 break
 
         # Largest single-step delta
@@ -192,20 +194,22 @@ def tipping_point_analysis(
             max_delta_val = 0.0
             max_delta_type = "N/A"
 
-        records.append({
-            "possession_id": str(row.get("possession_id", "")),
-            "match_id":      row.get("match_id"),
-            "team_name":     str(row.get("team_name", "")),
-            "n_events":      T,
-            "poss_dangerous": int(row.get(label_col, 0)),
-            "tipping_step":  tipping_step,
-            "tipping_frac":  round(tipping_step / T, 3) if tipping_step >= 0 else np.nan,
-            "tipping_event_type": tipping_type,
-            "final_score":   float(cum[-1]),
-            "max_delta_step":  max_delta_idx + 1,
-            "max_delta_type":  max_delta_type,
-            "max_delta_value": round(max_delta_val, 4),
-        })
+        records.append(
+            {
+                "possession_id": str(row.get("possession_id", "")),
+                "match_id": row.get("match_id"),
+                "team_name": str(row.get("team_name", "")),
+                "n_events": T,
+                "poss_dangerous": int(row.get(label_col, 0)),
+                "tipping_step": tipping_step,
+                "tipping_frac": round(tipping_step / T, 3) if tipping_step >= 0 else np.nan,
+                "tipping_event_type": tipping_type,
+                "final_score": float(cum[-1]),
+                "max_delta_step": max_delta_idx + 1,
+                "max_delta_type": max_delta_type,
+                "max_delta_value": round(max_delta_val, 4),
+            }
+        )
 
     if verbose:
         print()
@@ -216,6 +220,7 @@ def tipping_point_analysis(
 # ---------------------------------------------------------------------------
 # 3. Summary helpers for notebook plots
 # ---------------------------------------------------------------------------
+
 
 def tipping_summary_by_origin(tip_df: pd.DataFrame, poss_df: pd.DataFrame) -> pd.DataFrame:
     """

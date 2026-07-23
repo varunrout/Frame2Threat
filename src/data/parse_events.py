@@ -46,6 +46,7 @@ _NON_OPEN_PLAY_PATTERNS: frozenset[str] = frozenset(
 
 def _extract_coord(series: pd.Series, idx: int) -> pd.Series:
     """Extract a single coordinate (0=x, 1=y) from a list/array-valued Series."""
+
     def _get(v: object) -> float:
         if v is None or (isinstance(v, float) and np.isnan(v)):
             return np.nan
@@ -59,8 +60,8 @@ def _extract_coord(series: pd.Series, idx: int) -> pd.Series:
 
 def _safe_str(series: pd.Series) -> pd.Series:
     """Convert a series to str, mapping NaN/None to pd.NA."""
-    return series.where(series.notna(), other=pd.NA).astype(object).where(
-        series.notna(), other=pd.NA
+    return (
+        series.where(series.notna(), other=pd.NA).astype(object).where(series.notna(), other=pd.NA)
     )
 
 

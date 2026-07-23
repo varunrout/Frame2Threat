@@ -17,20 +17,18 @@ try:
     _MPLSOCCER_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _MPLSOCCER_AVAILABLE = False
-    logger.warning(
-        "mplsoccer not available; freeze-frame visualization will raise ImportError"
-    )
+    logger.warning("mplsoccer not available; freeze-frame visualization will raise ImportError")
 
 # Player marker sizes
 _PLAYER_MS = 120
 _PASSER_MS = 220
 
 # Colour scheme
-_TEAMMATE_COLOR = "#1f78b4"   # blue
-_OPPONENT_COLOR = "#e31a1c"   # red
-_KEEPER_COLOR = "#ffff33"     # yellow
-_PASSER_COLOR = "#33a02c"     # green star
-_ARROW_COLOR = "#ffffff"       # actual pass arrow
+_TEAMMATE_COLOR = "#1f78b4"  # blue
+_OPPONENT_COLOR = "#e31a1c"  # red
+_KEEPER_COLOR = "#ffff33"  # yellow
+_PASSER_COLOR = "#33a02c"  # green star
+_ARROW_COLOR = "#ffffff"  # actual pass arrow
 _RANKED_CMAP = plt.cm.RdYlGn  # type: ignore[attr-defined]
 
 
@@ -210,10 +208,46 @@ def plot_freeze_frame(
     from matplotlib.lines import Line2D
 
     legend_elements = [
-        Line2D([0], [0], marker="*", color="w", markerfacecolor=_PASSER_COLOR, markersize=12, label="Passer", linestyle="None"),
-        Line2D([0], [0], marker="o", color="w", markerfacecolor=_TEAMMATE_COLOR, markersize=8, label="Teammate", linestyle="None"),
-        Line2D([0], [0], marker="o", color="w", markerfacecolor=_OPPONENT_COLOR, markersize=8, label="Opponent", linestyle="None"),
-        Line2D([0], [0], marker="D", color="w", markerfacecolor=_KEEPER_COLOR, markersize=8, label="Keeper", linestyle="None"),
+        Line2D(
+            [0],
+            [0],
+            marker="*",
+            color="w",
+            markerfacecolor=_PASSER_COLOR,
+            markersize=12,
+            label="Passer",
+            linestyle="None",
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor=_TEAMMATE_COLOR,
+            markersize=8,
+            label="Teammate",
+            linestyle="None",
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor=_OPPONENT_COLOR,
+            markersize=8,
+            label="Opponent",
+            linestyle="None",
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker="D",
+            color="w",
+            markerfacecolor=_KEEPER_COLOR,
+            markersize=8,
+            label="Keeper",
+            linestyle="None",
+        ),
     ]
     ax.legend(handles=legend_elements, loc="upper right", fontsize=9, framealpha=0.7)
 
@@ -256,7 +290,8 @@ def plot_ranked_options(
         raise ImportError("mplsoccer is required for plot_ranked_options")
 
     top_options = (
-        ranked_options.nsmallest(top_k, "rank") if "rank" in ranked_options.columns
+        ranked_options.nsmallest(top_k, "rank")
+        if "rank" in ranked_options.columns
         else ranked_options.head(top_k)
     )
 
@@ -280,6 +315,7 @@ def plot_ranked_options(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _plot_ranked_arrows(
     pitch: Any,
     ax: Any,
@@ -295,8 +331,7 @@ def _plot_ranked_arrows(
     cmap = _RANKED_CMAP
 
     sorted_opts = (
-        ranked_options.sort_values("rank") if "rank" in ranked_options.columns
-        else ranked_options
+        ranked_options.sort_values("rank") if "rank" in ranked_options.columns else ranked_options
     )
 
     for i, (_, row) in enumerate(sorted_opts.iterrows()):

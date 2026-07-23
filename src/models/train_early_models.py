@@ -18,6 +18,7 @@ Hyperparameters are read from configs/model_possession.yaml → xgboost_early.
 """
 
 import sys, json, warnings
+
 sys.path.insert(0, ".")
 warnings.filterwarnings("ignore")
 
@@ -53,12 +54,12 @@ if "poss_tempo" not in poss.columns:
     poss = attach_possession_labels(poss)
 
 train_ids = pd.read_parquet("data/processed/train.parquet")["match_id"].unique()
-val_ids   = pd.read_parquet("data/processed/val.parquet")["match_id"].unique()
-test_ids  = pd.read_parquet("data/processed/test.parquet")["match_id"].unique()
+val_ids = pd.read_parquet("data/processed/val.parquet")["match_id"].unique()
+test_ids = pd.read_parquet("data/processed/test.parquet")["match_id"].unique()
 
 train_poss = poss[poss["match_id"].isin(train_ids)].reset_index(drop=True)
-val_poss   = poss[poss["match_id"].isin(val_ids)].reset_index(drop=True)
-test_poss  = poss[poss["match_id"].isin(test_ids)].reset_index(drop=True)
+val_poss = poss[poss["match_id"].isin(val_ids)].reset_index(drop=True)
+test_poss = poss[poss["match_id"].isin(test_ids)].reset_index(drop=True)
 
 y_tr = train_poss[LABEL].astype(int).values
 y_va = val_poss[LABEL].astype(int).values
@@ -98,7 +99,7 @@ def _train_save(
     model.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=False)
     proba = model.predict_proba(X_te)[:, 1]
     roc = roc_auc_score(y_te, proba)
-    ap  = average_precision_score(y_te, proba)
+    ap = average_precision_score(y_te, proba)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, out_path)
@@ -125,7 +126,9 @@ X_te_start = build_start_features(test_poss).fillna(0)
 
 start_result = _train_save(
     "xgboost_start_only",
-    X_tr_start, X_va_start, X_te_start,
+    X_tr_start,
+    X_va_start,
+    X_te_start,
     Path("models/xgboost_start_only.joblib"),
 )
 
@@ -140,7 +143,9 @@ for i, frac in enumerate([0.25, 0.50, 0.75], start=2):
 
     res = _train_save(
         f"xgboost_cumulative_{pct}pct",
-        X_tr_c, X_va_c, X_te_c,
+        X_tr_c,
+        X_va_c,
+        X_te_c,
         Path(f"models/xgboost_cumulative_{pct}pct.joblib"),
     )
     cumulative_results.append(res)

@@ -168,17 +168,13 @@ def compute_line_break_labels(
     # ------------------------------------------------------------------
     # Build defender-count table via vectorised merge
     # ------------------------------------------------------------------
-    passes_360 = working.loc[
-        has_360_mask, ["event_uuid", "start_x", "end_x"]
-    ].copy()
+    passes_360 = working.loc[has_360_mask, ["event_uuid", "start_x", "end_x"]].copy()
 
     # Left-join: each pass row × all opponents in same freeze frame
     merged = passes_360.merge(opponents, on="event_uuid", how="left")
 
     # Defender is "between" passer and receiver in x (strict inequalities)
-    merged["_between"] = merged["x"].gt(merged["start_x"]) & merged["x"].lt(
-        merged["end_x"]
-    )
+    merged["_between"] = merged["x"].gt(merged["start_x"]) & merged["x"].lt(merged["end_x"])
 
     # Aggregate: total defenders between per pass
     defender_counts = (
@@ -199,8 +195,8 @@ def compute_line_break_labels(
     forward_ok = forward_gain >= min_forward_gain_m
     n_def = passes_360["_n_def_between"]
 
-    passes_360["strict_line_break"] = (forward_ok & (n_def >= 2))
-    passes_360["loose_line_break"] = (forward_ok & (n_def >= 1))
+    passes_360["strict_line_break"] = forward_ok & (n_def >= 2)
+    passes_360["loose_line_break"] = forward_ok & (n_def >= 1)
 
     # ------------------------------------------------------------------
     # Merge computed labels back into working copy
@@ -209,9 +205,7 @@ def compute_line_break_labels(
     working.loc[has_360_mask, "strict_line_break"] = False
     working.loc[has_360_mask, "loose_line_break"] = False
 
-    label_lookup = passes_360.set_index("event_uuid")[
-        ["strict_line_break", "loose_line_break"]
-    ]
+    label_lookup = passes_360.set_index("event_uuid")[["strict_line_break", "loose_line_break"]]
     for col in ("strict_line_break", "loose_line_break"):
         mapped = working.loc[has_360_mask, "event_uuid"].map(label_lookup[col])
         working.loc[has_360_mask, col] = mapped.values
@@ -229,7 +223,11 @@ def compute_line_break_labels(
     logger.info(
         "Line-break labels: strict=%d (%.1f%%), loose=%d (%.1f%%) "
         "out of %d passes with 360 data.",
-        n_strict, pct_strict, n_loose, pct_loose, n_with_360,
+        n_strict,
+        pct_strict,
+        n_loose,
+        pct_loose,
+        n_with_360,
     )
 
     return result
@@ -305,11 +303,7 @@ def _detect_defensive_layer(
     if defenders_df is None or defenders_df.empty or end_x <= start_x:
         return None
 
-    x_vals = (
-        pd.to_numeric(defenders_df["x"], errors="coerce")
-        .dropna()
-        .values
-    )
+    x_vals = pd.to_numeric(defenders_df["x"], errors="coerce").dropna().values
     # Keep only opponents strictly between passer and receiver
     x_between = np.sort(x_vals[(x_vals > start_x) & (x_vals < end_x)])
 

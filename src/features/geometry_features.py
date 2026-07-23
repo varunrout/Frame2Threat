@@ -85,8 +85,7 @@ def build_geometry_features(
     frames_by_uuid: dict[str, pd.DataFrame] = {}
     if frames_df is not None and not frames_df.empty:
         frames_by_uuid = {
-            uuid: grp.reset_index(drop=True)
-            for uuid, grp in frames_df.groupby("event_uuid")
+            uuid: grp.reset_index(drop=True) for uuid, grp in frames_df.groupby("event_uuid")
         }
 
     for _, row in pass_instances_df.iterrows():
@@ -117,6 +116,7 @@ def build_geometry_features(
 # Single-event geometry computation
 # ---------------------------------------------------------------------------
 
+
 def _compute_frame_features(
     pass_row: "pd.Series",
     frame: pd.DataFrame,
@@ -131,8 +131,7 @@ def _compute_frame_features(
     opponents = frame[~frame["teammate"].fillna(False).astype(bool)].copy()
     # Exclude actor from teammate set for geometry
     teammates = frame[
-        frame["teammate"].fillna(False).astype(bool)
-        & ~frame["actor"].fillna(False).astype(bool)
+        frame["teammate"].fillna(False).astype(bool) & ~frame["actor"].fillna(False).astype(bool)
     ].copy()
 
     opp_x = opponents["x"].astype(float)
@@ -161,12 +160,16 @@ def _compute_frame_features(
     opp_depth = float(opp_x.max() - opp_x.min()) if len(opp_x) >= 2 else 0.0
 
     # ---- overload near receiver ----
-    tm_near = int(
-        (np.sqrt((tm_x - ex) ** 2 + (tm_y - ey) ** 2) <= _OVERLOAD_RADIUS).sum()
-    ) if len(teammates) > 0 else 0
-    opp_near = int(
-        (np.sqrt((opp_x - ex) ** 2 + (opp_y - ey) ** 2) <= _OVERLOAD_RADIUS).sum()
-    ) if len(opponents) > 0 else 0
+    tm_near = (
+        int((np.sqrt((tm_x - ex) ** 2 + (tm_y - ey) ** 2) <= _OVERLOAD_RADIUS).sum())
+        if len(teammates) > 0
+        else 0
+    )
+    opp_near = (
+        int((np.sqrt((opp_x - ex) ** 2 + (opp_y - ey) ** 2) <= _OVERLOAD_RADIUS).sum())
+        if len(opponents) > 0
+        else 0
+    )
     overload = tm_near - opp_near
 
     # ---- receiver between lines ----
@@ -201,10 +204,14 @@ def _compute_frame_features(
 # Helper functions (public for testing)
 # ---------------------------------------------------------------------------
 
+
 def _dist_point_to_segment(
-    px: float, py: float,
-    ax: float, ay: float,
-    bx: float, by: float,
+    px: float,
+    py: float,
+    ax: float,
+    ay: float,
+    bx: float,
+    by: float,
 ) -> float:
     """Compute distance from point (px, py) to line segment (ax,ay)-(bx,by).
 
@@ -264,9 +271,12 @@ def _count_players_in_corridor(
     count = 0
     for _, p in opponents_df.iterrows():
         d = _dist_point_to_segment(
-            float(p["x"]), float(p["y"]),
-            start_x, start_y,
-            end_x, end_y,
+            float(p["x"]),
+            float(p["y"]),
+            start_x,
+            start_y,
+            end_x,
+            end_y,
         )
         if d <= width:
             count += 1
@@ -309,16 +319,19 @@ def _detect_defensive_lines(
             continue
         group_xs = xs_sorted[idx_group]
         margin = 2.0
-        bands.append(_LineBand(
-            x_lo=float(group_xs.min()) - margin,
-            x_hi=float(group_xs.max()) + margin,
-        ))
+        bands.append(
+            _LineBand(
+                x_lo=float(group_xs.min()) - margin,
+                x_hi=float(group_xs.max()) + margin,
+            )
+        )
     return bands
 
 
 # ---------------------------------------------------------------------------
 # Private utilities
 # ---------------------------------------------------------------------------
+
 
 def _nearest_dist(
     opp_x: "pd.Series",

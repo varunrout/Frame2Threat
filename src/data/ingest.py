@@ -43,6 +43,7 @@ def _raw_dir() -> Path:
 # statsbombpy import (suppress credentials warning for open data)
 # ---------------------------------------------------------------------------
 
+
 def _sb():
     """Lazy import of statsbombpy.sb, suppressing open-data auth warnings."""
     with warnings.catch_warnings():
@@ -106,9 +107,7 @@ def get_matches(competition_id: int, season_id: int) -> pd.DataFrame:
         logger.info("Loading matches from cache: %s", cache)
         return pd.read_parquet(cache)
 
-    logger.info(
-        "Fetching matches for competition_id=%d season_id=%d", competition_id, season_id
-    )
+    logger.info("Fetching matches for competition_id=%d season_id=%d", competition_id, season_id)
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -210,9 +209,7 @@ def get_360_frames(match_id: int) -> Optional[pd.DataFrame]:
         logger.debug("Saved %d frame rows to %s (raw fallback)", len(df), cache)
         return df
     except Exception as exc:
-        logger.warning(
-            "Raw 360 fetch failed for match_id=%d: %s. Returning None.", match_id, exc
-        )
+        logger.warning("Raw 360 fetch failed for match_id=%d: %s. Returning None.", match_id, exc)
         return None
 
 
@@ -242,12 +239,16 @@ def _fetch_frames_raw(match_id: int) -> Optional[pd.DataFrame]:
                     "keeper": player.get("keeper"),
                     "x": loc[0] if loc and len(loc) > 0 else None,
                     "y": loc[1] if loc and len(loc) > 1 else None,
-                    "player_id": player.get("player", {}).get("id")
-                    if isinstance(player.get("player"), dict)
-                    else None,
-                    "player_name": player.get("player", {}).get("name")
-                    if isinstance(player.get("player"), dict)
-                    else None,
+                    "player_id": (
+                        player.get("player", {}).get("id")
+                        if isinstance(player.get("player"), dict)
+                        else None
+                    ),
+                    "player_name": (
+                        player.get("player", {}).get("name")
+                        if isinstance(player.get("player"), dict)
+                        else None
+                    ),
                 }
             )
     return pd.DataFrame(rows)
@@ -265,9 +266,7 @@ def _normalise_frames_df(df: pd.DataFrame, match_id: int) -> pd.DataFrame:
 
     # Rename id → id (already done), handle location list if present
     if "location" in out.columns and "x" not in out.columns:
-        locs = out["location"].apply(
-            lambda v: v if isinstance(v, list) else [None, None]
-        )
+        locs = out["location"].apply(lambda v: v if isinstance(v, list) else [None, None])
         out["x"] = locs.apply(lambda v: v[0] if v else None)
         out["y"] = locs.apply(lambda v: v[1] if v else None)
         out = out.drop(columns=["location"])

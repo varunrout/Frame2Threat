@@ -124,8 +124,7 @@ def compute_threat_gain(
 
     if events_df is None or events_df.empty:
         logger.warning(
-            "compute_threat_gain: events_df is empty; "
-            "all threat_gain values will be NaN."
+            "compute_threat_gain: events_df is empty; " "all threat_gain values will be NaN."
         )
         result["threat_gain"] = np.nan
         return result
@@ -150,7 +149,10 @@ def compute_threat_gain(
         """Vectorised zone-value lookup."""
         keys = list(zip(zone_col_x.astype("Int64"), zone_col_y.astype("Int64")))
         return pd.Series(
-            [zone_value_map.get(k, 0.0) if pd.notna(k[0]) and pd.notna(k[1]) else np.nan for k in keys],
+            [
+                zone_value_map.get(k, 0.0) if pd.notna(k[0]) and pd.notna(k[1]) else np.nan
+                for k in keys
+            ],
             index=zone_col_x.index,
         )
 
@@ -299,7 +301,8 @@ def _build_zone_value_map(
 
     logger.debug(
         "Zone-value map built: %d zones, max_raw=%.4f",
-        len(zone_map), float(max_val) if max_val > 0 else 0.0,
+        len(zone_map),
+        float(max_val) if max_val > 0 else 0.0,
     )
     return zone_map
 

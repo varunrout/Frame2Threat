@@ -97,9 +97,7 @@ def compute_shap_values(
 
     if hasattr(raw, "values"):
         shap_vals = raw.values
-        expected_value = float(
-            raw.base_values[0] if raw.base_values.ndim > 0 else raw.base_values
-        )
+        expected_value = float(raw.base_values[0] if raw.base_values.ndim > 0 else raw.base_values)
     else:
         shap_vals = np.asarray(raw)
         exp = explainer.expected_value
@@ -110,7 +108,7 @@ def compute_shap_values(
         shap_vals = shap_vals[:, :, 1]
     elif shap_vals.ndim == 2 and shap_vals.shape[1] == 2 * len(feature_names):
         # Some explainers concatenate both class SHAP values
-        shap_vals = shap_vals[:, len(feature_names):]
+        shap_vals = shap_vals[:, len(feature_names) :]
 
     logger.info("SHAP computation complete, shape=%s", shap_vals.shape)
     return {
@@ -159,9 +157,7 @@ def plot_shap_summary(
     else:
         fig = ax.get_figure()
 
-    colors = plt.cm.viridis(  # type: ignore[attr-defined]
-        np.linspace(0.2, 0.8, len(ordered_names))
-    )
+    colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(ordered_names)))  # type: ignore[attr-defined]
     bars = ax.barh(
         range(len(ordered_names)),
         ordered_values[::-1],
@@ -359,6 +355,7 @@ def generate_explanation_narrative(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _build_explainer(model: Any, X_background: np.ndarray) -> Any:
     """Select and build the most appropriate SHAP explainer."""
     model_class = type(model).__name__.lower()
@@ -373,7 +370,9 @@ def _build_explainer(model: Any, X_background: np.ndarray) -> Any:
 
     if any(name in model_class for name in ("logistic", "linear", "ridge", "lasso")):
         try:
-            background = shap.maskers.Independent(X_background, max_samples=min(100, len(X_background)))
+            background = shap.maskers.Independent(
+                X_background, max_samples=min(100, len(X_background))
+            )
             explainer = shap.LinearExplainer(model, background)
             logger.debug("Using LinearExplainer for %s", model_class)
             return explainer
@@ -383,9 +382,7 @@ def _build_explainer(model: Any, X_background: np.ndarray) -> Any:
     # Generic fallback – slow but universal
     background_sample = shap.sample(X_background, min(50, len(X_background)))
     logger.debug("Using KernelExplainer (slow) for %s", model_class)
-    return shap.KernelExplainer(
-        lambda x: model.predict_proba(x)[:, 1], background_sample
-    )
+    return shap.KernelExplainer(lambda x: model.predict_proba(x)[:, 1], background_sample)
 
 
 def _extract_geometry_context(
@@ -397,8 +394,12 @@ def _extract_geometry_context(
     uuid_col = "event_uuid" if "event_uuid" in frames_df.columns else "id"
     frame_rows = frames_df[frames_df[uuid_col] == event_uuid]
 
-    n_teammates = int((frame_rows["teammate"] == True).sum()) if not frame_rows.empty else 0  # noqa: E712
-    n_opponents = int((frame_rows["teammate"] == False).sum()) if not frame_rows.empty else 0  # noqa: E712
+    n_teammates = (
+        int((frame_rows["teammate"] == True).sum()) if not frame_rows.empty else 0
+    )  # noqa: E712
+    n_opponents = (
+        int((frame_rows["teammate"] == False).sum()) if not frame_rows.empty else 0
+    )  # noqa: E712
 
     context: dict[str, Any] = {
         "n_players_visible": len(frame_rows),
@@ -428,15 +429,22 @@ def _extract_geometry_context(
 def _format_feature_value(feature_name: str, value: float) -> str:
     """Return a human-readable representation of a feature value."""
     bool_features = {
-        "is_forward", "is_cross", "is_through_ball", "is_switch",
-        "under_pressure", "receiver_between_lines", "pass_corridor_clear",
+        "is_forward",
+        "is_cross",
+        "is_through_ball",
+        "is_switch",
+        "under_pressure",
+        "receiver_between_lines",
+        "pass_corridor_clear",
     }
     if feature_name in bool_features:
         return "Yes" if value >= 0.5 else "No"
 
     count_features = {
-        "n_defenders_in_corridor", "n_defenders_goal_side",
-        "n_teammates_visible", "n_opponents_visible",
+        "n_defenders_in_corridor",
+        "n_defenders_goal_side",
+        "n_teammates_visible",
+        "n_opponents_visible",
     }
     if feature_name in count_features:
         return str(int(round(value)))

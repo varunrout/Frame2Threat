@@ -98,6 +98,7 @@ COMPLETION_DEPENDENT_COLS: list[str] = [
 # 1. Start-only features  (EXP-015)
 # ---------------------------------------------------------------------------
 
+
 def build_start_features(poss_df: pd.DataFrame) -> pd.DataFrame:
     """
     Return only the features known at possession-start.
@@ -118,7 +119,7 @@ def build_start_features(poss_df: pd.DataFrame) -> pd.DataFrame:
 # 2. Cumulative features  (EXP-017)
 # ---------------------------------------------------------------------------
 
-_EVENT_TYPE_PASS  = 0
+_EVENT_TYPE_PASS = 0
 _EVENT_TYPE_CARRY = 1
 
 
@@ -156,7 +157,7 @@ def _recompute_aggregates_from_prefix(
 
         # Counts
         np_ = sum(1 for e in prefix if int(e.get("type_id", 9)) == _EVENT_TYPE_PASS)
-        nc  = sum(1 for e in prefix if int(e.get("type_id", 9)) == _EVENT_TYPE_CARRY)
+        nc = sum(1 for e in prefix if int(e.get("type_id", 9)) == _EVENT_TYPE_CARRY)
         nprs = sum(int(e.get("under_pressure", 0)) for e in prefix)
 
         new_n_events.append(len(prefix))
@@ -165,10 +166,9 @@ def _recompute_aggregates_from_prefix(
         new_n_pressures.append(nprs)
 
         # Spatial — convert normalised coords back to pitch coords
-        xs = (
-            [float(e.get("loc_x_norm", 0)) * PITCH_LENGTH for e in prefix]
-            + [float(e.get("end_x_norm", 0)) * PITCH_LENGTH for e in prefix]
-        )
+        xs = [float(e.get("loc_x_norm", 0)) * PITCH_LENGTH for e in prefix] + [
+            float(e.get("end_x_norm", 0)) * PITCH_LENGTH for e in prefix
+        ]
         mx = max(xs) if xs else float(row.get("start_x", 0))
         new_max_x.append(mx)
         new_territory.append(mx - float(row.get("start_x", 0)))
@@ -194,20 +194,23 @@ def _recompute_aggregates_from_prefix(
         new_has_pressure.append(int(nprs > 0))
 
     # Overwrite DataFrame columns
-    df["n_events"]         = new_n_events
-    df["n_passes"]         = new_n_passes
-    df["n_carries"]        = new_n_carries
+    df["n_events"] = new_n_events
+    df["n_passes"] = new_n_passes
+    df["n_carries"] = new_n_carries
     df["n_pressures_faced"] = new_n_pressures
-    df["max_x_reached"]    = new_max_x
+    df["max_x_reached"] = new_max_x
     df["territory_gained"] = new_territory
     df["duration_seconds"] = new_duration
     df["mean_pass_length"] = new_mean_pass_len
-    df["has_pressure"]     = new_has_pressure
+    df["has_pressure"] = new_has_pressure
 
     # Zero possession-label features (not derivable from partial sequence)
     for col in [
-        "poss_tempo", "poss_verticality", "poss_recycled",
-        "poss_broke_pressure", "poss_bypassed_lines",
+        "poss_tempo",
+        "poss_verticality",
+        "poss_recycled",
+        "poss_broke_pressure",
+        "poss_bypassed_lines",
     ]:
         if col in df.columns:
             df[col] = 0.0

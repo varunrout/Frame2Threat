@@ -19,6 +19,7 @@ try:
     import torch
     import torch.nn as nn
     import torch.nn.functional as F
+
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
@@ -26,6 +27,7 @@ except ImportError:
 
 try:
     from torch_geometric.nn import SAGEConv, global_mean_pool
+
     _PYG_AVAILABLE = True
 except ImportError:
     _PYG_AVAILABLE = False
@@ -40,6 +42,7 @@ _DEFAULT_TASKS = [
 
 
 if _TORCH_AVAILABLE:
+
     class HybridGNNSeq(nn.Module):
         """Hybrid model fusing GNN graph embedding with a GRU sequence encoder.
 
@@ -148,9 +151,7 @@ if _TORCH_AVAILABLE:
             )
 
             # ---- Multitask heads ----
-            self.heads = nn.ModuleList([
-                nn.Linear(hidden_dim, 1) for _ in range(num_tasks)
-            ])
+            self.heads = nn.ModuleList([nn.Linear(hidden_dim, 1) for _ in range(num_tasks)])
 
         def forward(
             self,
@@ -176,8 +177,11 @@ if _TORCH_AVAILABLE:
             """
             # -- Graph encoding --
             x, edge_index = data.x, data.edge_index
-            batch = data.batch if hasattr(data, "batch") and data.batch is not None \
+            batch = (
+                data.batch
+                if hasattr(data, "batch") and data.batch is not None
                 else torch.zeros(x.shape[0], dtype=torch.long, device=x.device)
+            )
 
             h = self.node_proj(x)
             for layer in self.gnn_layers:
@@ -195,23 +199,24 @@ if _TORCH_AVAILABLE:
                 graph_emb = torch.zeros(B, self.hidden_dim, device=h.device)
                 counts = torch.zeros(B, 1, device=h.device)
                 graph_emb.scatter_add_(0, batch.unsqueeze(1).expand_as(h), h)
-                counts.scatter_add_(0, batch.unsqueeze(1), torch.ones(len(batch), 1, device=h.device))
+                counts.scatter_add_(
+                    0, batch.unsqueeze(1), torch.ones(len(batch), 1, device=h.device)
+                )
                 graph_emb = graph_emb / counts.clamp(min=1)
 
             # -- Event context encoding --
             ev_emb = self.event_proj(event_features)  # (B, hidden_dim)
 
             # -- Sequence encoding --
-            _, h_n = self.gru(sequence)           # h_n: (1, B, seq_hidden_dim)
-            seq_emb = h_n.squeeze(0)              # (B, seq_hidden_dim)
+            _, h_n = self.gru(sequence)  # h_n: (1, B, seq_hidden_dim)
+            seq_emb = h_n.squeeze(0)  # (B, seq_hidden_dim)
 
             # -- Fusion --
             fused = torch.cat([graph_emb, ev_emb, seq_emb], dim=-1)
-            fused = self.fusion(fused)            # (B, hidden_dim)
+            fused = self.fusion(fused)  # (B, hidden_dim)
 
             return {
-                name: self.heads[i](fused).squeeze(-1)
-                for i, name in enumerate(self.task_names)
+                name: self.heads[i](fused).squeeze(-1) for i, name in enumerate(self.task_names)
             }
 
         def save(self, path: str | pathlib.Path) -> None:
@@ -263,6 +268,7 @@ if _TORCH_AVAILABLE:
             return model
 
 else:
+
     class HybridGNNSeq:  # type: ignore[no-redef]
         """Stub – PyTorch not installed."""
 
