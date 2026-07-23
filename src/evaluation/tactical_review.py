@@ -299,9 +299,7 @@ def breakdown_by_competition(
     comp_col = (
         "competition_name"
         if "competition_name" in df.columns
-        else "competition_id"
-        if "competition_id" in df.columns
-        else None
+        else "competition_id" if "competition_id" in df.columns else None
     )
     if comp_col is None:
         logger.warning("breakdown_by_competition: no competition column found")
@@ -434,6 +432,7 @@ def team_progression_profile(
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _derive_zone(df: pd.DataFrame) -> pd.Series:
     """Derive zone_start (1–6) from start_x / start_y coordinates."""

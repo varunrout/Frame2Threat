@@ -36,6 +36,7 @@ warnings.filterwarnings("ignore")
 # Helpers — lazy-loaded so the CLI stays fast for --help
 # ---------------------------------------------------------------------------
 
+
 def _project_root() -> Path:
     """Walk up from this file to find the project root (contains src/)."""
     p = Path(__file__).resolve().parent
@@ -49,6 +50,7 @@ def _project_root() -> Path:
 
 def _load_config(root: Path) -> dict:
     import yaml
+
     cfg_path = root / "configs" / "model_possession.yaml"
     with open(cfg_path) as f:
         return yaml.safe_load(f)
@@ -58,6 +60,7 @@ def _load_gru(root: Path, cfg: dict):
     """Load the GRU model (returns model, config dict)."""
     sys.path.insert(0, str(root))
     from src.evaluation.possession_attribution import load_gru_model
+
     gru_path = root / cfg["early_warning"]["gru_model"]
     return load_gru_model(str(gru_path))
 
@@ -65,6 +68,7 @@ def _load_gru(root: Path, cfg: dict):
 def _load_xgb_cumulative(root: Path, cfg: dict, pct: int):
     """Load a cumulative XGBoost model for a given percentage."""
     import joblib
+
     pattern = cfg["early_warning"]["xgb_model_pattern"]
     model_path = root / pattern.format(pct=pct)
     if model_path.exists():
@@ -75,6 +79,7 @@ def _load_xgb_cumulative(root: Path, cfg: dict, pct: int):
 def _load_xgb_start(root: Path, cfg: dict):
     """Load the start-only XGBoost model."""
     import joblib
+
     model_path = root / cfg["early_warning"]["start_model"]
     if model_path.exists():
         return joblib.load(model_path)
@@ -84,6 +89,7 @@ def _load_xgb_start(root: Path, cfg: dict):
 # ---------------------------------------------------------------------------
 # score-batch
 # ---------------------------------------------------------------------------
+
 
 def cmd_score_batch(args: argparse.Namespace) -> None:
     """Score all possessions in a parquet file at multiple observation fractions."""
@@ -136,6 +142,7 @@ def cmd_score_batch(args: argparse.Namespace) -> None:
         pct = int(frac * 100)
         if pct == 100:
             import joblib
+
             main_path = root / "models" / "xgboost_poss_dangerous.joblib"
             if main_path.exists():
                 xgb_models[pct] = joblib.load(main_path)
@@ -148,7 +155,7 @@ def cmd_score_batch(args: argparse.Namespace) -> None:
 
     # --- Vectorised XGBoost scoring (one batch per fraction) ----------------
     print(f"Building tabular features for {len(fracs)} fraction(s) …")
-    xgb_probs: dict[int, np.ndarray] = {}   # pct → array(N,)
+    xgb_probs: dict[int, np.ndarray] = {}  # pct → array(N,)
     for frac in fracs:
         pct = int(frac * 100)
         if pct not in xgb_models:
@@ -204,19 +211,21 @@ def cmd_score_batch(args: argparse.Namespace) -> None:
             if xgb_prob is not None:
                 alert = alert or (xgb_prob >= threshold)
 
-            rows.append({
-                "match_id": match_ids[i],
-                "possession_id": poss_ids[i],
-                "team_name": teams[i],
-                "n_events": n_ev,
-                "fraction": frac,
-                "events_observed": t,
-                "gru_prob": round(gru_prob, 4),
-                "xgb_prob": round(xgb_prob, 4) if xgb_prob is not None else None,
-                "start_prob": round(sp, 4) if sp is not None else None,
-                "alert": int(alert),
-                "true_label": labels[i],
-            })
+            rows.append(
+                {
+                    "match_id": match_ids[i],
+                    "possession_id": poss_ids[i],
+                    "team_name": teams[i],
+                    "n_events": n_ev,
+                    "fraction": frac,
+                    "events_observed": t,
+                    "gru_prob": round(gru_prob, 4),
+                    "xgb_prob": round(xgb_prob, 4) if xgb_prob is not None else None,
+                    "start_prob": round(sp, 4) if sp is not None else None,
+                    "alert": int(alert),
+                    "true_label": labels[i],
+                }
+            )
 
     result = pd.DataFrame(rows)
 
@@ -232,6 +241,7 @@ def cmd_score_batch(args: argparse.Namespace) -> None:
             subset = labelled[labelled["fraction"] == frac]
             if len(subset) > 0 and subset["true_label"].nunique() > 1:
                 from sklearn.metrics import roc_auc_score
+
                 gru_auc = roc_auc_score(subset["true_label"], subset["gru_prob"])
                 line = f"  frac={frac:.0%}  GRU AUC={gru_auc:.4f}"
                 if subset["xgb_prob"].notna().any():
@@ -246,6 +256,7 @@ def cmd_score_batch(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 # score-live
 # ---------------------------------------------------------------------------
+
 
 def cmd_score_live(args: argparse.Namespace) -> None:
     """Score a single possession event-by-event, printing the danger trajectory."""
@@ -313,8 +324,10 @@ def cmd_score_live(args: argparse.Namespace) -> None:
     print(f"Final danger score: {final:.4f}")
     if alerted:
         first_cross = next(t for t in range(len(cum_scores)) if cum_scores[t] >= threshold)
-        print(f"First alert at step {first_cross + 1}/{len(cum_scores)} "
-              f"({(first_cross + 1) / len(cum_scores):.0%} through)")
+        print(
+            f"First alert at step {first_cross + 1}/{len(cum_scores)} "
+            f"({(first_cross + 1) / len(cum_scores):.0%} through)"
+        )
     else:
         print("No alert triggered — possession stayed below threshold.")
 
@@ -323,9 +336,11 @@ def cmd_score_live(args: argparse.Namespace) -> None:
 # train-early
 # ---------------------------------------------------------------------------
 
+
 def cmd_train_early(args: argparse.Namespace) -> None:
     """Run the early-model training script."""
     import subprocess
+
     root = _project_root()
     script = root / "src" / "models" / "train_early_models.py"
     print(f"Running {script} …")
@@ -340,6 +355,7 @@ def cmd_train_early(args: argparse.Namespace) -> None:
 # Main parser
 # ---------------------------------------------------------------------------
 
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="frame2threat",
@@ -353,15 +369,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="Score possessions in a parquet file at multiple observation fractions",
     )
     p_batch.add_argument(
-        "parquet", type=str,
+        "parquet",
+        type=str,
         help="Path to possession_sequences.parquet (or any parquet with event_sequence col)",
     )
     p_batch.add_argument(
-        "-o", "--output", type=str, default=None,
+        "-o",
+        "--output",
+        type=str,
+        default=None,
         help="Output CSV path (default: early_warning_scores.csv)",
     )
     p_batch.add_argument(
-        "--fracs", type=str, default=None,
+        "--fracs",
+        type=str,
+        default=None,
         help="Comma-separated observation fractions (default: from config)",
     )
     p_batch.set_defaults(func=cmd_score_batch)
@@ -372,7 +394,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Score a single possession event-by-event (JSON input)",
     )
     p_live.add_argument(
-        "json_file", type=str,
+        "json_file",
+        type=str,
         help="Path to JSON file containing a list of event dicts",
     )
     p_live.set_defaults(func=cmd_score_live)

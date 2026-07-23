@@ -68,8 +68,7 @@ def build_sequence_features(
 
     # Pre-index events by possession_id for fast lookup
     poss_groups: dict[int, pd.DataFrame] = {
-        pid: grp.reset_index(drop=True)
-        for pid, grp in events.groupby("possession_id")
+        pid: grp.reset_index(drop=True) for pid, grp in events.groupby("possession_id")
     }
 
     # Also build event-uuid → (possession_id, position_in_possession)
@@ -125,6 +124,7 @@ def build_sequence_features(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _compute_seq_features(
     uuid: str,
     prior: pd.DataFrame,
@@ -138,7 +138,11 @@ def _compute_seq_features(
         return _zero_row(uuid)
 
     # Action type counts
-    types = prior["type_name"].fillna("Unknown").str.lower() if "type_name" in prior.columns else pd.Series(dtype=str)
+    types = (
+        prior["type_name"].fillna("Unknown").str.lower()
+        if "type_name" in prior.columns
+        else pd.Series(dtype=str)
+    )
     carry_count = int(types.str.contains("carry").sum())
     duel_count = int(types.str.contains("duel").sum())
     pressure_count = int(types.str.contains("pressure").sum())
@@ -224,8 +228,6 @@ def _time_to_seconds(period: float, minute: float, second: float) -> float:
     return period_offset + minute * 60 + second
 
 
-def _time_to_seconds_series(
-    period: pd.Series, minute: pd.Series, second: pd.Series
-) -> pd.Series:
+def _time_to_seconds_series(period: pd.Series, minute: pd.Series, second: pd.Series) -> pd.Series:
     period_offset = (period - 1) * 60 * 60
     return period_offset + minute * 60 + second

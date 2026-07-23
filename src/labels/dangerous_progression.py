@@ -102,8 +102,7 @@ def compute_downstream_labels(
     """
     if events_df is None or events_df.empty:
         logger.warning(
-            "compute_downstream_labels: events_df is empty; "
-            "all downstream labels will be False."
+            "compute_downstream_labels: events_df is empty; " "all downstream labels will be False."
         )
         return _fill_false_labels(pass_instances_df.copy())
 
@@ -126,7 +125,10 @@ def compute_downstream_labels(
 
     logger.debug(
         "downstream labels: k_ft=%d, k_box=%d, k_shot=%d, k_max=%d",
-        k_ft, k_box, k_shot, k_max,
+        k_ft,
+        k_box,
+        k_shot,
+        k_max,
     )
 
     # ------------------------------------------------------------------
@@ -139,12 +141,8 @@ def compute_downstream_labels(
         logger.error("events_df missing required columns: %s", _missing)
         return _fill_false_labels(pass_instances_df.copy())
 
-    events = events.sort_values(
-        ["match_id", "possession_id", "index"], kind="mergesort"
-    )
-    events["_pos_rank"] = (
-        events.groupby(["match_id", "possession_id"], sort=False).cumcount()
-    )
+    events = events.sort_values(["match_id", "possession_id", "index"], kind="mergesort")
+    events["_pos_rank"] = events.groupby(["match_id", "possession_id"], sort=False).cumcount()
 
     # ------------------------------------------------------------------
     # 2. Compute ball destination for each event
@@ -157,12 +155,8 @@ def compute_downstream_labels(
     loc_y = events.get("location_y", pd.Series(np.nan, index=events.index))
 
     # For pass events, ball destination is pass_end; otherwise it is location
-    events["_ball_x"] = np.where(
-        is_pass & pass_end_x.notna(), pass_end_x, loc_x
-    )
-    events["_ball_y"] = np.where(
-        is_pass & pass_end_y.notna(), pass_end_y, loc_y
-    )
+    events["_ball_x"] = np.where(is_pass & pass_end_x.notna(), pass_end_x, loc_x)
+    events["_ball_y"] = np.where(is_pass & pass_end_y.notna(), pass_end_y, loc_y)
 
     # ------------------------------------------------------------------
     # 3. Pre-compute per-event outcome flags
@@ -178,9 +172,9 @@ def compute_downstream_labels(
     # ------------------------------------------------------------------
     # 4. Get within-possession rank for each pass in pass_instances_df
     # ------------------------------------------------------------------
-    pass_rank_lookup = events[
-        ["event_uuid", "match_id", "possession_id", "_pos_rank"]
-    ].rename(columns={"_pos_rank": "_pass_rank"})
+    pass_rank_lookup = events[["event_uuid", "match_id", "possession_id", "_pos_rank"]].rename(
+        columns={"_pos_rank": "_pass_rank"}
+    )
 
     result = pass_instances_df.copy()
 
@@ -189,9 +183,7 @@ def compute_downstream_labels(
         if col in result.columns:
             result[col] = pd.to_numeric(result[col], errors="coerce")
         if col in pass_rank_lookup.columns:
-            pass_rank_lookup[col] = pd.to_numeric(
-                pass_rank_lookup[col], errors="coerce"
-            )
+            pass_rank_lookup[col] = pd.to_numeric(pass_rank_lookup[col], errors="coerce")
 
     result = result.merge(
         pass_rank_lookup,
@@ -220,9 +212,7 @@ def compute_downstream_labels(
     ]
     future_events = events[future_cols].copy()
 
-    passes_for_join = result[
-        ["event_uuid", "match_id", "possession_id", "_pass_rank"]
-    ].copy()
+    passes_for_join = result[["event_uuid", "match_id", "possession_id", "_pass_rank"]].copy()
 
     cross = passes_for_join.merge(
         future_events,
@@ -231,9 +221,7 @@ def compute_downstream_labels(
     )
 
     # Keep only events strictly after the pass and within k_max steps
-    valid_future = (
-        cross["_pos_rank"] > cross["_pass_rank"]
-    ) & (
+    valid_future = (cross["_pos_rank"] > cross["_pass_rank"]) & (
         cross["_pos_rank"] <= cross["_pass_rank"] + k_max
     )
     cross = cross.loc[valid_future].copy()
@@ -246,25 +234,28 @@ def compute_downstream_labels(
     ) -> pd.Series:
         """Aggregate a boolean flag over the next k_val events per pass."""
         within_k = cross_df[cross_df["_pos_rank"] <= cross_df["_pass_rank"] + k_val]
-        return (
-            within_k.groupby("event_uuid")[flag_col]
-            .any()
-            .rename(flag_col)
-        )
+        return within_k.groupby("event_uuid")[flag_col].any().rename(flag_col)
 
     shot_agg = _aggregate_label(cross, "_is_shot", k_shot)
     ft_agg = _aggregate_label(cross, "_is_ft", k_ft)
     box_agg = _aggregate_label(cross, "_is_box", k_box)
 
     agg = (
-        pd.DataFrame({"shot_within_k": shot_agg, "final_third_entry_k": ft_agg, "box_entry_k": box_agg})
+        pd.DataFrame(
+            {"shot_within_k": shot_agg, "final_third_entry_k": ft_agg, "box_entry_k": box_agg}
+        )
         .reset_index()
         .rename(columns={"index": "event_uuid"})
     )
 
     # Drop any pre-existing label columns to avoid pandas _x/_y suffix conflicts
     # (pass_instances from build_pass_instances already has NaN-initialised labels).
-    _output_cols = ["shot_within_k", "final_third_entry_k", "box_entry_k", "dangerous_progression_k"]
+    _output_cols = [
+        "shot_within_k",
+        "final_third_entry_k",
+        "box_entry_k",
+        "dangerous_progression_k",
+    ]
     result = result.drop(columns=[c for c in _output_cols if c in result.columns], errors="ignore")
 
     result = result.merge(agg, on="event_uuid", how="left")
@@ -276,9 +267,7 @@ def compute_downstream_labels(
         result[col] = result[col].fillna(False).astype(bool)
 
     result["dangerous_progression_k"] = (
-        result["shot_within_k"]
-        | result["final_third_entry_k"]
-        | result["box_entry_k"]
+        result["shot_within_k"] | result["final_third_entry_k"] | result["box_entry_k"]
     )
 
     # Drop temporary helper column

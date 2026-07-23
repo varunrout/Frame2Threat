@@ -55,10 +55,10 @@ _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 _PROCESSED_DIR = _REPO_ROOT / "data" / "processed"
 _MODELS_DIR = _REPO_ROOT / "models"
 
-_PASS_INSTANCES_PATH    = _PROCESSED_DIR / "pass_instances.parquet"
-_FRAMES_PATH            = _PROCESSED_DIR / "frames_360.parquet"
-_POSSESSION_SEQ_PATH    = _PROCESSED_DIR / "possession_sequences.parquet"
-_GRU_MODEL_PATH         = _MODELS_DIR / "gru_poss_dangerous.pt"
+_PASS_INSTANCES_PATH = _PROCESSED_DIR / "pass_instances.parquet"
+_FRAMES_PATH = _PROCESSED_DIR / "frames_360.parquet"
+_POSSESSION_SEQ_PATH = _PROCESSED_DIR / "possession_sequences.parquet"
+_GRU_MODEL_PATH = _MODELS_DIR / "gru_poss_dangerous.pt"
 
 # ---------------------------------------------------------------------------
 # Data loading helpers
@@ -106,6 +106,7 @@ def _load_gru_model() -> Any | None:
         return None
     try:
         from src.evaluation.possession_attribution import load_gru_model
+
         model, _ = load_gru_model(_GRU_MODEL_PATH)
         return model
     except Exception as exc:
@@ -325,7 +326,7 @@ def main() -> None:
         frames_df = frames_df_real
 
     # Compute or simulate scores
-    _prediction_error: str | None = None   # carries any scoring error to the UI
+    _prediction_error: str | None = None  # carries any scoring error to the UI
 
     if model is not None and not demo_mode:
         try:
@@ -372,7 +373,7 @@ When the app tried to score passes using those 19 raw columns, the
 model rejected them because it expected 27 (event-only) or 41
 (event + 360 geometry) engineered features.
 
-**How it is now fixed:**  
+**How it is now fixed:**
 The app calls `build_event_features(pass_df)` before scoring, which
 reproduces exactly the 27-column feature matrix the model was trained
 on. The predictions you see now use those correct features.
@@ -385,7 +386,13 @@ on. The predictions you see now use those correct features.
     st.sidebar.header("🔍 Navigation")
     page = st.sidebar.radio(
         "View",
-        options=["🎯 Event Inspector", "📊 Match Overview", "👤 Player Profile", "📈 Model Diagnostics", "🏃 Possession Inspector"],
+        options=[
+            "🎯 Event Inspector",
+            "📊 Match Overview",
+            "👤 Player Profile",
+            "📈 Model Diagnostics",
+            "🏃 Possession Inspector",
+        ],
         index=0,
     )
 
@@ -398,7 +405,9 @@ on. The predictions you see now use those correct features.
             _match_label_map[_mid] = _label
         _label_to_mid = {v: k for k, v in _match_label_map.items()}
         _available_match_labels = sorted(_match_label_map.values())
-        selected_match_label = st.sidebar.selectbox("Select Match", _available_match_labels, index=0)
+        selected_match_label = st.sidebar.selectbox(
+            "Select Match", _available_match_labels, index=0
+        )
         _selected_mid = _label_to_mid[selected_match_label]
         match_mask = pass_df["match_id"] == _selected_mid
         match_df = pass_df[match_mask].reset_index(drop=True)
@@ -441,9 +450,7 @@ on. The predictions you see now use those correct features.
             _sx = _erow.get("start_x", 0) or 0
             _ex = _erow.get("end_x", 0) or 0
             _sc = float(_erow["_score"])
-            event_labels.append(
-                f"{_pname} | min {_min} | {_sx:.0f}→{_ex:.0f} m | ⚡ {_sc:.3f}"
-            )
+            event_labels.append(f"{_pname} | min {_min} | {_sx:.0f}→{_ex:.0f} m | ⚡ {_sc:.3f}")
         label_to_uuid = dict(zip(event_labels, event_options))
 
         selected_label = st.selectbox("Select Pass Event (sorted by danger score)", event_labels)
@@ -457,7 +464,11 @@ on. The predictions you see now use those correct features.
 
         # Key metrics row
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("🎯 Danger Score", f"{event_score:.3f}", help="Predicted dangerous progression probability")
+        col1.metric(
+            "🎯 Danger Score",
+            f"{event_score:.3f}",
+            help="Predicted dangerous progression probability",
+        )
         col2.metric("📐 Pass Length", f"{event_row.get('pass_length', 'N/A'):.1f}m")
         col3.metric("⏱ Minute", int(event_row.get("minute", 0)))
         col4.metric("🗺 Zone", f"Zone {int(event_row.get('zone_start', 0))}")
@@ -476,13 +487,23 @@ on. The predictions you see now use those correct features.
             sy = float(event_row.get("start_y", 40))
             ranked_opts = _make_ranked_options(sx, sy)
 
-        event_frames = frames_df[frames_df.get("event_uuid", frames_df.get("id", pd.Series())) == selected_uuid]
+        event_frames = frames_df[
+            frames_df.get("event_uuid", frames_df.get("id", pd.Series())) == selected_uuid
+        ]
         if event_frames.empty:
             st.info("No freeze-frame data available for this event. Showing pass arrow only.")
             # Create a minimal frame with just the passer
             passer_frame = pd.DataFrame(
-                [{"event_uuid": selected_uuid, "x": event_row.get("start_x", 60),
-                  "y": event_row.get("start_y", 40), "teammate": True, "actor": True, "keeper": False}]
+                [
+                    {
+                        "event_uuid": selected_uuid,
+                        "x": event_row.get("start_x", 60),
+                        "y": event_row.get("start_y", 40),
+                        "teammate": True,
+                        "actor": True,
+                        "keeper": False,
+                    }
+                ]
             )
             event_frames = passer_frame
 
@@ -532,11 +553,13 @@ on. The predictions you see now use those correct features.
                     if not reasons_df.empty:
                         st.dataframe(
                             reasons_df[["description", "value", "contribution"]]
-                            .rename(columns={
-                                "description": "Feature",
-                                "value": "Value",
-                                "contribution": "SHAP Contribution",
-                            })
+                            .rename(
+                                columns={
+                                    "description": "Feature",
+                                    "value": "Value",
+                                    "contribution": "SHAP Contribution",
+                                }
+                            )
                             .round(4),
                             use_container_width=True,
                         )
@@ -588,9 +611,19 @@ on. The predictions you see now use those correct features.
 
         top_passes = get_top_scoring_passes(match_df, match_scores, n=20)
         display_cols = [
-            c for c in ["player_name", "pass_recipient_name", "team_name",
-                        "minute", "start_x", "start_y", "end_x", "end_y",
-                        "pass_length", "predicted_score"]
+            c
+            for c in [
+                "player_name",
+                "pass_recipient_name",
+                "team_name",
+                "minute",
+                "start_x",
+                "start_y",
+                "end_x",
+                "end_y",
+                "pass_length",
+                "predicted_score",
+            ]
             if c in top_passes.columns
         ]
         st.dataframe(top_passes[display_cols].round(3), use_container_width=True)
@@ -598,9 +631,7 @@ on. The predictions you see now use those correct features.
         st.markdown("#### 📊 Breakdown by Zone")
         from src.evaluation.tactical_review import breakdown_by_zone
 
-        label_col = (
-            "line_break" if "line_break" in match_df.columns else None
-        )
+        label_col = "line_break" if "line_break" in match_df.columns else None
         if label_col is not None:
             zone_df = breakdown_by_zone(match_df, match_df[label_col].fillna(0), match_scores)
             st.dataframe(zone_df.round(4), use_container_width=True)
@@ -734,8 +765,7 @@ on. The predictions you see now use those correct features.
         if "match_id" in pass_df.columns and "team_name" in pass_df.columns:
             # Reuse the label map built earlier for the pass data
             _poss_match_labels = {
-                mid: _match_label_map.get(mid, f"Match {mid}")
-                for mid in poss_matches
+                mid: _match_label_map.get(mid, f"Match {mid}") for mid in poss_matches
             }
         else:
             _poss_match_labels = {mid: f"Match {mid}" for mid in poss_matches}
@@ -750,18 +780,22 @@ on. The predictions you see now use those correct features.
         match_poss = poss_df[poss_df["match_id"] == sel_mid].reset_index(drop=True)
 
         st.sidebar.markdown(f"**{len(match_poss)} possessions** in selected match")
-        label_rate = match_poss["poss_dangerous"].mean() if "poss_dangerous" in match_poss.columns else float("nan")
+        label_rate = (
+            match_poss["poss_dangerous"].mean()
+            if "poss_dangerous" in match_poss.columns
+            else float("nan")
+        )
         st.sidebar.markdown(f"**Dangerous rate:** {label_rate:.1%}")
 
         # ── Possession selector ───────────────────────────────────────
         # Build human-readable labels for possessions
-        poss_options  = match_poss.index.tolist()
-        poss_labels   = []
+        poss_options = match_poss.index.tolist()
+        poss_labels = []
         for _, pr in match_poss.iterrows():
-            _team   = str(pr.get("team_name", ""))[:18]
+            _team = str(pr.get("team_name", ""))[:18]
             _period = int(pr.get("period", 1))
-            _n_ev   = int(pr.get("n_events", 0))
-            _orig   = str(pr.get("origin_type", ""))[:16]
+            _n_ev = int(pr.get("n_events", 0))
+            _orig = str(pr.get("origin_type", ""))[:16]
             _danger = "🔴" if pr.get("poss_dangerous") else "⚪"
             poss_labels.append(f"{_danger} {_team} | P{_period} | {_n_ev} evs | {_orig}")
 
@@ -772,12 +806,11 @@ on. The predictions you see now use those correct features.
 
         # ── Possession summary metrics ────────────────────────────────
         col1, col2, col3, col4, col5 = st.columns(5)
-        col1.metric("Events",       int(poss_row.get("n_events", 0)))
-        col2.metric("Passes",       int(poss_row.get("n_passes", 0)))
-        col3.metric("Carries",      int(poss_row.get("n_carries", 0)))
+        col1.metric("Events", int(poss_row.get("n_events", 0)))
+        col2.metric("Passes", int(poss_row.get("n_passes", 0)))
+        col3.metric("Carries", int(poss_row.get("n_carries", 0)))
         col4.metric("Under Pressure", "Yes" if poss_row.get("has_pressure") else "No")
-        col5.metric("Outcome",
-                    "🔴 Dangerous" if poss_row.get("poss_dangerous") else "⚪ Safe")
+        col5.metric("Outcome", "🔴 Dangerous" if poss_row.get("poss_dangerous") else "⚪ Safe")
 
         # ── Attribution ───────────────────────────────────────────────
         from src.evaluation.possession_attribution import attribute_possession
@@ -788,16 +821,15 @@ on. The predictions you see now use those correct features.
 
             final_score = report["final_score"]
             st.metric("GRU Danger Score", f"{final_score:.3f}")
-            st.progress(float(np.clip(final_score, 0, 1)),
-                        text=f"{final_score:.1%} P(dangerous)")
+            st.progress(float(np.clip(final_score, 0, 1)), text=f"{final_score:.1%} P(dangerous)")
 
             events_enriched = report["events"]
-            n_evs           = len(events_enriched)
-            steps           = list(range(n_evs))
-            cum_scores      = [e["cum_score"]  for e in events_enriched]
-            loo_attrs       = [e["loo_attr"]   for e in events_enriched]
-            type_labels     = [e["type_label"] for e in events_enriched]
-            unlock_idx      = report["unlock_index"]
+            n_evs = len(events_enriched)
+            steps = list(range(n_evs))
+            cum_scores = [e["cum_score"] for e in events_enriched]
+            loo_attrs = [e["loo_attr"] for e in events_enriched]
+            type_labels = [e["type_label"] for e in events_enriched]
+            unlock_idx = report["unlock_index"]
 
             # ── Danger trajectory ─────────────────────────────────────
             st.markdown("#### 📈 Danger Trajectory")
@@ -806,10 +838,14 @@ on. The predictions you see now use those correct features.
             ax_t.fill_between(steps, 0, cum_scores, alpha=0.15, color="steelblue")
             ax_t.axhline(0.5, color="red", linestyle="--", linewidth=0.8, label="0.5 threshold")
             if unlock_idx >= 0:
-                ax_t.axvline(unlock_idx, color="orange", linestyle="--",
-                             linewidth=1.2, label=f"Unlock (step {unlock_idx})")
-                ax_t.scatter([unlock_idx], [cum_scores[unlock_idx]],
-                             color="orange", s=80, zorder=5)
+                ax_t.axvline(
+                    unlock_idx,
+                    color="orange",
+                    linestyle="--",
+                    linewidth=1.2,
+                    label=f"Unlock (step {unlock_idx})",
+                )
+                ax_t.scatter([unlock_idx], [cum_scores[unlock_idx]], color="orange", s=80, zorder=5)
             ax_t.set_xlabel("Event step")
             ax_t.set_ylabel("P(dangerous)")
             ax_t.set_ylim(0, 1)
@@ -819,9 +855,13 @@ on. The predictions you see now use those correct features.
             # Annotate every 5th event type
             for t in range(0, n_evs, max(1, n_evs // 8)):
                 ax_t.annotate(
-                    type_labels[t], (t, cum_scores[t]),
-                    textcoords="offset points", xytext=(0, 8),
-                    fontsize=6.5, ha="center", color="gray",
+                    type_labels[t],
+                    (t, cum_scores[t]),
+                    textcoords="offset points",
+                    xytext=(0, 8),
+                    fontsize=6.5,
+                    ha="center",
+                    color="gray",
                 )
             st.pyplot(traj_fig, use_container_width=True)
             plt.close(traj_fig)
@@ -829,8 +869,7 @@ on. The predictions you see now use those correct features.
             # ── LOO attribution bar chart ──────────────────────────────
             st.markdown("#### 🏷 Per-Event Attribution (Leave-One-Out)")
             bar_colors = [
-                "orange" if i == unlock_idx
-                else ("green" if v > 0 else "crimson")
+                "orange" if i == unlock_idx else ("green" if v > 0 else "crimson")
                 for i, v in enumerate(loo_attrs)
             ]
             attr_fig, ax_a = plt.subplots(figsize=(10, 3))
@@ -842,9 +881,10 @@ on. The predictions you see now use those correct features.
             ax_a.set_xlim(-0.5, n_evs - 0.5)
             ax_a.grid(axis="y", alpha=0.3)
             from matplotlib.patches import Patch
+
             legend_elements = [
-                Patch(facecolor="orange",  label="Unlock event"),
-                Patch(facecolor="green",   label="Positive attribution"),
+                Patch(facecolor="orange", label="Unlock event"),
+                Patch(facecolor="green", label="Positive attribution"),
                 Patch(facecolor="crimson", label="Negative attribution"),
             ]
             ax_a.legend(handles=legend_elements, fontsize=8)
@@ -853,19 +893,21 @@ on. The predictions you see now use those correct features.
 
             # ── Event table ───────────────────────────────────────────
             st.markdown("#### 📋 Event Attribution Table")
-            ev_table = pd.DataFrame([
-                {
-                    "Step"         : e["step"],
-                    "Type"         : e["type_label"],
-                    "Loc X"        : round(e.get("loc_x_norm", 0) * 120, 1),
-                    "Loc Y"        : round(e.get("loc_y_norm", 0) * 80,  1),
-                    "Under Press." : bool(e.get("under_pressure", 0)),
-                    "Cum Score"    : round(e["cum_score"], 3),
-                    "LOO Attr."    : round(e["loo_attr"],  4),
-                    "Unlock"       : "🔓" if e.get("is_unlock") else "",
-                }
-                for e in events_enriched
-            ])
+            ev_table = pd.DataFrame(
+                [
+                    {
+                        "Step": e["step"],
+                        "Type": e["type_label"],
+                        "Loc X": round(e.get("loc_x_norm", 0) * 120, 1),
+                        "Loc Y": round(e.get("loc_y_norm", 0) * 80, 1),
+                        "Under Press.": bool(e.get("under_pressure", 0)),
+                        "Cum Score": round(e["cum_score"], 3),
+                        "LOO Attr.": round(e["loo_attr"], 4),
+                        "Unlock": "🔓" if e.get("is_unlock") else "",
+                    }
+                    for e in events_enriched
+                ]
+            )
             st.dataframe(
                 ev_table.style.background_gradient(
                     subset=["LOO Attr."], cmap="RdYlGn", vmin=-0.15, vmax=0.15
@@ -877,45 +919,64 @@ on. The predictions you see now use those correct features.
             # ── Possession spatial summary ────────────────────────────
             st.markdown("#### 🗺 Possession Path")
             if _MPLSOCCER_AVAILABLE:
-                pitch = Pitch(pitch_type="statsbomb", pitch_color="grass",
-                              line_color="white", stripe=True)
+                pitch = Pitch(
+                    pitch_type="statsbomb", pitch_color="grass", line_color="white", stripe=True
+                )
                 path_fig, ax_p = pitch.draw(figsize=(10, 6))
 
                 # Draw event-to-event path coloured by cum_score
                 xs = [e.get("loc_x_norm", 0) * 120 for e in events_enriched]
-                ys = [e.get("loc_y_norm", 0) * 80  for e in events_enriched]
+                ys = [e.get("loc_y_norm", 0) * 80 for e in events_enriched]
                 import matplotlib.cm as cm
 
                 cmap = cm.RdYlGn
                 for i in range(len(xs) - 1):
                     c = cmap(float(cum_scores[i]))
                     ax_p.annotate(
-                        "", xy=(xs[i + 1], ys[i + 1]), xytext=(xs[i], ys[i]),
+                        "",
+                        xy=(xs[i + 1], ys[i + 1]),
+                        xytext=(xs[i], ys[i]),
                         arrowprops=dict(arrowstyle="->", color=c, lw=1.5),
                     )
 
                 # Mark start, unlock, and end
-                ax_p.scatter([xs[0]], [ys[0]], s=120, c="white",
-                             edgecolors="black", zorder=5, label="Start")
-                ax_p.scatter([xs[-1]], [ys[-1]], s=120, c="yellow",
-                             edgecolors="black", zorder=5, label="End")
+                ax_p.scatter(
+                    [xs[0]], [ys[0]], s=120, c="white", edgecolors="black", zorder=5, label="Start"
+                )
+                ax_p.scatter(
+                    [xs[-1]], [ys[-1]], s=120, c="yellow", edgecolors="black", zorder=5, label="End"
+                )
                 if unlock_idx >= 0 and unlock_idx < len(xs):
-                    ax_p.scatter([xs[unlock_idx]], [ys[unlock_idx]],
-                                 s=160, c="orange", edgecolors="black",
-                                 zorder=6, label=f"Unlock ({type_labels[unlock_idx]})")
+                    ax_p.scatter(
+                        [xs[unlock_idx]],
+                        [ys[unlock_idx]],
+                        s=160,
+                        c="orange",
+                        edgecolors="black",
+                        zorder=6,
+                        label=f"Unlock ({type_labels[unlock_idx]})",
+                    )
 
                 ax_p.legend(loc="upper left", fontsize=8)
                 sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, 1))
                 sm.set_array([])
-                path_fig.colorbar(sm, ax=ax_p, label="Cumulative Danger Score",
-                                  orientation="horizontal", pad=0.04, fraction=0.03)
+                path_fig.colorbar(
+                    sm,
+                    ax=ax_p,
+                    label="Cumulative Danger Score",
+                    orientation="horizontal",
+                    pad=0.04,
+                    fraction=0.03,
+                )
                 st.pyplot(path_fig, use_container_width=True)
                 plt.close(path_fig)
             else:
                 st.info("mplsoccer not available — pitch plot skipped.")
 
         else:
-            st.info("Load a GRU model to compute attribution. Run `python src/models/gru_train_script.py`.")
+            st.info(
+                "Load a GRU model to compute attribution. Run `python src/models/gru_train_script.py`."
+            )
 
         # ── Aggregate player leaderboard ─────────────────────────────
         st.markdown("---")
@@ -923,6 +984,7 @@ on. The predictions you see now use those correct features.
         if gru_model is not None and st.button("Compute Leaderboard", key="poss_leaderboard_btn"):
             with st.spinner("Attributing possessions …"):
                 from src.evaluation.possession_attribution import player_attribution_summary
+
                 sample = poss_df.sample(min(300, len(poss_df)), random_state=42)
                 leaderboard = player_attribution_summary(
                     sample, gru_model, min_touches=5, verbose=False
@@ -931,11 +993,19 @@ on. The predictions you see now use those correct features.
                 st.info("No player_sequence column — showing team-level summary.")
             else:
                 st.dataframe(
-                    leaderboard[[
-                        "player", "team", "n_touches", "n_unlocks",
-                        "unlock_rate", "mean_loo_attr", "p90_loo_attr",
-                        "mean_score_at_touch", "n_possessions"
-                    ]].round(4),
+                    leaderboard[
+                        [
+                            "player",
+                            "team",
+                            "n_touches",
+                            "n_unlocks",
+                            "unlock_rate",
+                            "mean_loo_attr",
+                            "p90_loo_attr",
+                            "mean_score_at_touch",
+                            "n_possessions",
+                        ]
+                    ].round(4),
                     use_container_width=True,
                     hide_index=True,
                 )
@@ -946,8 +1016,7 @@ on. The predictions you see now use those correct features.
     st.markdown("---")
     st.markdown(
         "🔬 **Frame2Threat** | StatsBomb 360 pass danger prediction | "
-        "[GitHub](https://github.com) | Demo mode: "
-        + ("✅ Yes" if demo_mode else "❌ No")
+        "[GitHub](https://github.com) | Demo mode: " + ("✅ Yes" if demo_mode else "❌ No")
     )
 
 
@@ -956,12 +1025,24 @@ def _show_demo_explanation(score: float, event_row: pd.Series) -> None:
     from src.visualization.explanations import generate_explanation_narrative
 
     demo_reasons = [
-        {"feature": "x_gain", "value": float(event_row.get("end_x", 70) - event_row.get("start_x", 60)),
-         "contribution": 0.15 * score, "description": "Horizontal distance gained"},
-        {"feature": "dist_to_goal_end", "value": float(event_row.get("end_x", 70)),
-         "contribution": 0.12 * score, "description": "Receiver distance to goal"},
-        {"feature": "pass_length", "value": float(event_row.get("pass_length", 15)),
-         "contribution": -0.05 * score, "description": "Pass length"},
+        {
+            "feature": "x_gain",
+            "value": float(event_row.get("end_x", 70) - event_row.get("start_x", 60)),
+            "contribution": 0.15 * score,
+            "description": "Horizontal distance gained",
+        },
+        {
+            "feature": "dist_to_goal_end",
+            "value": float(event_row.get("end_x", 70)),
+            "contribution": 0.12 * score,
+            "description": "Receiver distance to goal",
+        },
+        {
+            "feature": "pass_length",
+            "value": float(event_row.get("pass_length", 15)),
+            "contribution": -0.05 * score,
+            "description": "Pass length",
+        },
     ]
     narrative = generate_explanation_narrative(demo_reasons, score, "dangerous_progression")
     st.markdown(f"**Narrative (demo):**\n\n{narrative}")

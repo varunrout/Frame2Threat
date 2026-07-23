@@ -51,18 +51,19 @@ class RuleBasedLineBreak:
             logger.warning("RuleBasedLineBreak.predict: empty input")
             return pd.Series(dtype=bool)
 
-        pass_length = pass_instances_df.get(
-            "pass_length", pd.Series(0.0, index=pass_instances_df.index)
-        ).fillna(0.0).astype(float)
-
-        end_x = pass_instances_df.get(
-            "end_x", pd.Series(0.0, index=pass_instances_df.index)
-        ).fillna(0.0).astype(float)
-
-        prediction = (
-            (pass_length > _LINE_BREAK_MIN_LENGTH)
-            & (end_x > _LINE_BREAK_MIN_END_X)
+        pass_length = (
+            pass_instances_df.get("pass_length", pd.Series(0.0, index=pass_instances_df.index))
+            .fillna(0.0)
+            .astype(float)
         )
+
+        end_x = (
+            pass_instances_df.get("end_x", pd.Series(0.0, index=pass_instances_df.index))
+            .fillna(0.0)
+            .astype(float)
+        )
+
+        prediction = (pass_length > _LINE_BREAK_MIN_LENGTH) & (end_x > _LINE_BREAK_MIN_END_X)
 
         logger.debug(
             "RuleBasedLineBreak: %d / %d predicted positive",
@@ -104,22 +105,25 @@ class RuleBasedDangerousProgression:
         if "x_gain" in pass_instances_df.columns:
             x_gain = pass_instances_df["x_gain"].fillna(0.0).astype(float)
         else:
-            start_x = pass_instances_df.get(
-                "start_x", pd.Series(0.0, index=pass_instances_df.index)
-            ).fillna(0.0).astype(float)
-            end_x_series = pass_instances_df.get(
-                "end_x", pd.Series(0.0, index=pass_instances_df.index)
-            ).fillna(0.0).astype(float)
+            start_x = (
+                pass_instances_df.get("start_x", pd.Series(0.0, index=pass_instances_df.index))
+                .fillna(0.0)
+                .astype(float)
+            )
+            end_x_series = (
+                pass_instances_df.get("end_x", pd.Series(0.0, index=pass_instances_df.index))
+                .fillna(0.0)
+                .astype(float)
+            )
             x_gain = end_x_series - start_x
 
-        end_x = pass_instances_df.get(
-            "end_x", pd.Series(0.0, index=pass_instances_df.index)
-        ).fillna(0.0).astype(float)
-
-        prediction = (
-            (x_gain > _DANGER_PROG_MIN_X_GAIN)
-            & (end_x > _DANGER_PROG_MIN_END_X)
+        end_x = (
+            pass_instances_df.get("end_x", pd.Series(0.0, index=pass_instances_df.index))
+            .fillna(0.0)
+            .astype(float)
         )
+
+        prediction = (x_gain > _DANGER_PROG_MIN_X_GAIN) & (end_x > _DANGER_PROG_MIN_END_X)
 
         logger.debug(
             "RuleBasedDangerousProgression: %d / %d predicted positive",

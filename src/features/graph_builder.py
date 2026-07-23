@@ -22,12 +22,14 @@ if TYPE_CHECKING:
 
 try:
     import torch
+
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
 
 try:
     from torch_geometric.data import Data as PyGData
+
     _PYG_AVAILABLE = True
 except ImportError:
     _PYG_AVAILABLE = False
@@ -114,22 +116,34 @@ def build_graph(
     dist_to_passer = np.sqrt((sx - px) ** 2 + (sy - py) ** 2)
 
     # local density: count of players within radius
-    local_density = np.array([
-        float(((np.sqrt((px - px[i]) ** 2 + (py - py[i]) ** 2)) < _DENSITY_RADIUS).sum() - 1)
-        for i in range(n)
-    ])
+    local_density = np.array(
+        [
+            float(((np.sqrt((px - px[i]) ** 2 + (py - py[i]) ** 2)) < _DENSITY_RADIUS).sum() - 1)
+            for i in range(n)
+        ]
+    )
 
-    node_features = np.stack([
-        px, py, teammate, is_keeper, is_actor, is_receiver,
-        dist_to_goal, dist_to_passer, local_density,
-    ], axis=1).astype(np.float32)  # (N, 9)
+    node_features = np.stack(
+        [
+            px,
+            py,
+            teammate,
+            is_keeper,
+            is_actor,
+            is_receiver,
+            dist_to_goal,
+            dist_to_passer,
+            local_density,
+        ],
+        axis=1,
+    ).astype(
+        np.float32
+    )  # (N, 9)
 
     # ------------------------------------------------------------------ #
     # Edge construction
     # ------------------------------------------------------------------ #
-    edge_index, edge_attr = _build_edges(
-        px, py, teammate, k
-    )
+    edge_index, edge_attr = _build_edges(px, py, teammate, k)
 
     graph: dict = {
         "event_uuid": event_uuid,
@@ -141,9 +155,14 @@ def build_graph(
 
     # Attach label columns when present
     for label_col in (
-        "line_break", "strict_line_break", "loose_line_break",
-        "dangerous_progression_k", "final_third_entry_k",
-        "box_entry_k", "shot_within_k", "threat_gain",
+        "line_break",
+        "strict_line_break",
+        "loose_line_break",
+        "dangerous_progression_k",
+        "final_third_entry_k",
+        "box_entry_k",
+        "shot_within_k",
+        "threat_gain",
     ):
         val = pass_row.get(label_col, None)
         if val is not None and not (isinstance(val, float) and np.isnan(val)):
@@ -178,7 +197,9 @@ def build_graph_dataset(
         return []
 
     subset = pass_instances_df[
-        pass_instances_df.get("has_360", pd.Series(False, index=pass_instances_df.index)).astype(bool)
+        pass_instances_df.get("has_360", pd.Series(False, index=pass_instances_df.index)).astype(
+            bool
+        )
     ]
     logger.info("Building graph dataset for %d events with 360 data", len(subset))
 
@@ -226,9 +247,14 @@ def to_pytorch_geometric(graph_dict: dict) -> "PyGData":
 
     # Attach labels
     _label_keys = [
-        "line_break", "strict_line_break", "loose_line_break",
-        "dangerous_progression_k", "final_third_entry_k",
-        "box_entry_k", "shot_within_k", "threat_gain",
+        "line_break",
+        "strict_line_break",
+        "loose_line_break",
+        "dangerous_progression_k",
+        "final_third_entry_k",
+        "box_entry_k",
+        "shot_within_k",
+        "threat_gain",
     ]
     labels = [graph_dict[k] for k in _label_keys if k in graph_dict]
     if labels:
@@ -240,6 +266,7 @@ def to_pytorch_geometric(graph_dict: dict) -> "PyGData":
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _build_edges(
     px: np.ndarray,
@@ -267,7 +294,7 @@ def _build_edges(
     # Pairwise distances
     coords = np.stack([px, py], axis=1)  # (N, 2)
     diff = coords[:, None, :] - coords[None, :, :]  # (N, N, 2)
-    dist_mat = np.sqrt((diff ** 2).sum(-1))  # (N, N)
+    dist_mat = np.sqrt((diff**2).sum(-1))  # (N, N)
     np.fill_diagonal(dist_mat, np.inf)
 
     src_list: list[int] = []
@@ -306,7 +333,17 @@ def _build_edges(
 
     # Edge attributes
     e = len(src_list)
-    edge_dist = np.array([dist_mat[src_list[i], dst_list[i]] if dist_mat[src_list[i], dst_list[i]] != np.inf else 0.0 for i in range(e)], dtype=np.float32)
+    edge_dist = np.array(
+        [
+            (
+                dist_mat[src_list[i], dst_list[i]]
+                if dist_mat[src_list[i], dst_list[i]] != np.inf
+                else 0.0
+            )
+            for i in range(e)
+        ],
+        dtype=np.float32,
+    )
 
     # angle_from_goal: angle of mid-point between src and dst relative to goal
     mid_x = (px[src_arr] + px[dst_arr]) / 2.0

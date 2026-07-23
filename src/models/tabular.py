@@ -41,9 +41,7 @@ class TabularClassifier:
         config: dict | None = None,
     ) -> None:
         if model_type not in _SUPPORTED_MODELS:
-            raise ValueError(
-                f"model_type must be one of {_SUPPORTED_MODELS}, got '{model_type}'"
-            )
+            raise ValueError(f"model_type must be one of {_SUPPORTED_MODELS}, got '{model_type}'")
         self.model_type = model_type
         self.task = task
         self.config: dict = config or {}
@@ -61,6 +59,7 @@ class TabularClassifier:
 
         if self.model_type == "logistic":
             from sklearn.linear_model import LogisticRegression
+
             self._model = LogisticRegression(
                 C=float(cfg.get("C", 1.0)),
                 max_iter=int(cfg.get("max_iter", 1000)),
@@ -71,6 +70,7 @@ class TabularClassifier:
 
         elif self.model_type == "xgboost":
             from xgboost import XGBClassifier
+
             self._model = XGBClassifier(
                 n_estimators=int(cfg.get("n_estimators", 300)),
                 max_depth=int(cfg.get("max_depth", 6)),
@@ -86,6 +86,7 @@ class TabularClassifier:
 
         elif self.model_type == "lightgbm":
             from lightgbm import LGBMClassifier
+
             self._model = LGBMClassifier(
                 n_estimators=int(cfg.get("n_estimators", 300)),
                 max_depth=int(cfg.get("max_depth", -1)),
@@ -133,7 +134,12 @@ class TabularClassifier:
         spw = neg / max(pos, 1)
         logger.info(
             "[%s/%s] Fitting on %d samples (pos=%d, neg=%d, spw=%.2f)",
-            self.task, self.model_type, len(y_arr), pos, neg, spw,
+            self.task,
+            self.model_type,
+            len(y_arr),
+            pos,
+            neg,
+            spw,
         )
 
         # Set scale_pos_weight for tree models
@@ -328,20 +334,14 @@ class MultitaskTabular:
         dict[str, np.ndarray]
             Mapping of task name → probability array of shape (n_samples, 2).
         """
-        return {
-            task: clf.predict_proba(X)
-            for task, clf in self._classifiers.items()
-        }
+        return {task: clf.predict_proba(X) for task, clf in self._classifiers.items()}
 
     def predict_all(
         self,
         X: pd.DataFrame | np.ndarray,
     ) -> dict[str, np.ndarray]:
         """Return binary predictions for all tasks."""
-        return {
-            task: clf.predict(X)
-            for task, clf in self._classifiers.items()
-        }
+        return {task: clf.predict(X) for task, clf in self._classifiers.items()}
 
     # ------------------------------------------------------------------
     # Persistence
@@ -372,20 +372,19 @@ class MultitaskTabular:
         return list(self._classifiers.keys())
 
     def __repr__(self) -> str:
-        return (
-            f"MultitaskTabular(model_type={self.model_type!r}, "
-            f"tasks={self.tasks!r})"
-        )
+        return f"MultitaskTabular(model_type={self.model_type!r}, " f"tasks={self.tasks!r})"
 
 
 # ---------------------------------------------------------------------------
 # Private utilities
 # ---------------------------------------------------------------------------
 
+
 def _lgbm_early_stop_callback(stopping_rounds: int):  # type: ignore[return]
     """Return a LightGBM early-stopping callback if available."""
     try:
         from lightgbm import early_stopping
+
         return [early_stopping(stopping_rounds=stopping_rounds, verbose=False)]
     except ImportError:
         return []

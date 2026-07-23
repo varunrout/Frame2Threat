@@ -1,7 +1,7 @@
 # Data Dictionary — Frame2Threat
 
-**Project:** Frame2Threat — Predicting and Explaining Dangerous Progression from StatsBomb Event Data and 360 Freeze Frames  
-**Data source:** StatsBomb Open Data (https://github.com/statsbomb/open-data)  
+**Project:** Frame2Threat — Predicting and Explaining Dangerous Progression from StatsBomb Event Data and 360 Freeze Frames
+**Data source:** StatsBomb Open Data (https://github.com/statsbomb/open-data)
 **Pitch coordinate system:** x ∈ [0, 120] (own-goal end → opponent-goal end), y ∈ [0, 80] (left touchline → right touchline). All coordinates are in metres.
 
 ---
@@ -93,9 +93,9 @@ Built by `src/data/parse_360.py :: parse_360_frames()`.  One row per visible pla
 | `x` | float | Player x-coordinate (StatsBomb pitch, metres) |
 | `y` | float | Player y-coordinate (StatsBomb pitch, metres) |
 
-**Limitations:**  
-- Not all players on the pitch are visible in every frame — only those captured by the broadcast cameras.  
-- Coordinates are positional snapshots at the moment of the event, NOT continuous tracking trajectories.  
+**Limitations:**
+- Not all players on the pitch are visible in every frame — only those captured by the broadcast cameras.
+- Coordinates are positional snapshots at the moment of the event, NOT continuous tracking trajectories.
 - Velocities and movement directions are NOT available.
 
 ---

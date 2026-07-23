@@ -68,14 +68,10 @@ def run_ablation_study(
         # Restrict to columns that exist in X_train
         valid_cols = [c for c in feature_cols if c in X_train.columns]
         if not valid_cols:
-            logger.warning(
-                "Ablation '%s': no valid columns found, skipping", ablation_name
-            )
+            logger.warning("Ablation '%s': no valid columns found, skipping", ablation_name)
             continue
 
-        logger.info(
-            "Ablation '%s': training with %d features", ablation_name, len(valid_cols)
-        )
+        logger.info("Ablation '%s': training with %d features", ablation_name, len(valid_cols))
         X_tr = X_train[valid_cols].fillna(0.0)
         X_vl = X_val[valid_cols].fillna(0.0)
 
@@ -92,9 +88,7 @@ def run_ablation_study(
                 model.fit(X_tr.values, y_tr)
                 y_prob = model.predict_proba(X_vl.values)[:, 1]
             except Exception as exc:
-                logger.error(
-                    "Ablation '%s', task '%s' failed: %s", ablation_name, task, exc
-                )
+                logger.error("Ablation '%s', task '%s' failed: %s", ablation_name, task, exc)
                 rows.append(
                     {
                         "model_name": ablation_name,
@@ -125,8 +119,10 @@ def run_ablation_study(
                 metrics["brier_score"],
             )
 
-    return pd.DataFrame(rows) if rows else pd.DataFrame(
-        columns=["model_name", "task", "roc_auc", "pr_auc", "brier_score"]
+    return (
+        pd.DataFrame(rows)
+        if rows
+        else pd.DataFrame(columns=["model_name", "task", "roc_auc", "pr_auc", "brier_score"])
     )
 
 
@@ -231,14 +227,17 @@ def compare_multitask_vs_singletask(
             metrics["pr_auc"],
         )
 
-    return pd.DataFrame(rows) if rows else pd.DataFrame(
-        columns=["approach", "task", "roc_auc", "pr_auc", "brier_score"]
+    return (
+        pd.DataFrame(rows)
+        if rows
+        else pd.DataFrame(columns=["approach", "task", "roc_auc", "pr_auc", "brier_score"])
     )
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _build_ablation_model(config: dict[str, Any]) -> Any:
     """Construct a fast classifier for ablation experiments.

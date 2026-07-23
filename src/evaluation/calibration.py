@@ -181,9 +181,7 @@ def calibrate_model(
     if method not in {"isotonic", "sigmoid"}:
         raise ValueError(f"method must be 'isotonic' or 'sigmoid', got '{method}'")
 
-    logger.info(
-        "Calibrating model with method='%s' on %d samples", method, len(y_cal)
-    )
+    logger.info("Calibrating model with method='%s' on %d samples", method, len(y_cal))
     calibrated = CalibratedClassifierCV(estimator=model, method=method, cv="prefit")
     X_arr = X_cal.values if isinstance(X_cal, pd.DataFrame) else X_cal
     calibrated.fit(X_arr, np.asarray(y_cal))

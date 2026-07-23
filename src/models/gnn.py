@@ -23,6 +23,7 @@ try:
     import torch
     import torch.nn as nn
     import torch.nn.functional as F
+
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
@@ -30,6 +31,7 @@ except ImportError:
 
 try:
     from torch_geometric.nn import SAGEConv, global_mean_pool
+
     _PYG_AVAILABLE = True
 except ImportError:
     _PYG_AVAILABLE = False
@@ -46,6 +48,7 @@ _DEFAULT_TASKS = [
 
 
 if _TORCH_AVAILABLE:
+
     class PassFrameGNN(nn.Module):
         """GNN model that encodes a pass freeze-frame graph.
 
@@ -124,9 +127,7 @@ if _TORCH_AVAILABLE:
                 nn.Dropout(p=dropout),
             )
 
-            self.heads = nn.ModuleList([
-                nn.Linear(hidden_dim, 1) for _ in range(num_tasks)
-            ])
+            self.heads = nn.ModuleList([nn.Linear(hidden_dim, 1) for _ in range(num_tasks)])
 
         def forward(
             self,
@@ -149,8 +150,11 @@ if _TORCH_AVAILABLE:
                 Mapping of task name → logit tensor of shape (B,).
             """
             x, edge_index = data.x, data.edge_index
-            batch = data.batch if hasattr(data, "batch") and data.batch is not None \
+            batch = (
+                data.batch
+                if hasattr(data, "batch") and data.batch is not None
                 else torch.zeros(x.shape[0], dtype=torch.long, device=x.device)
+            )
 
             # Node projection
             h = self.node_proj(x)
@@ -173,7 +177,9 @@ if _TORCH_AVAILABLE:
                 graph_emb = torch.zeros(B, self.hidden_dim, device=h.device)
                 counts = torch.zeros(B, 1, device=h.device)
                 graph_emb.scatter_add_(0, batch.unsqueeze(1).expand_as(h), h)
-                counts.scatter_add_(0, batch.unsqueeze(1), torch.ones(len(batch), 1, device=h.device))
+                counts.scatter_add_(
+                    0, batch.unsqueeze(1), torch.ones(len(batch), 1, device=h.device)
+                )
                 graph_emb = graph_emb / counts.clamp(min=1)
 
             # Event context embedding
@@ -185,8 +191,7 @@ if _TORCH_AVAILABLE:
 
             # Per-task logits
             return {
-                name: self.heads[i](fused).squeeze(-1)
-                for i, name in enumerate(self.task_names)
+                name: self.heads[i](fused).squeeze(-1) for i, name in enumerate(self.task_names)
             }
 
     class GNNTrainer:
@@ -272,7 +277,10 @@ if _TORCH_AVAILABLE:
                     history["val_loss"].append(val_loss)
                     logger.info(
                         "Epoch %d/%d – train_loss=%.4f  val_loss=%.4f",
-                        epoch, epochs, avg_train, val_loss,
+                        epoch,
+                        epochs,
+                        avg_train,
+                        val_loss,
                     )
                 else:
                     logger.info("Epoch %d/%d – train_loss=%.4f", epoch, epochs, avg_train)
@@ -330,9 +338,7 @@ if _TORCH_AVAILABLE:
                 mask = ~torch.isnan(y)
                 if mask.sum() == 0:
                     continue
-                loss = F.binary_cross_entropy_with_logits(
-                    logit[mask], y[mask]
-                )
+                loss = F.binary_cross_entropy_with_logits(logit[mask], y[mask])
                 weight = self.task_weights.get(task, 1.0)
                 total = total + weight * loss
             return total

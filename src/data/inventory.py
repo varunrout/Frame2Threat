@@ -64,9 +64,7 @@ def build_inventory(competitions_config: list[dict] | None = None) -> pd.DataFra
     if competitions_config is None:
         competitions_config = cfg["statsbomb"]["competitions"]
 
-    logger.info(
-        "Building inventory for %d competition entries", len(competitions_config)
-    )
+    logger.info("Building inventory for %d competition entries", len(competitions_config))
 
     sb = _sb()
 
@@ -99,9 +97,7 @@ def build_inventory(competitions_config: list[dict] | None = None) -> pd.DataFra
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
-                    matches_df = sb.matches(
-                        competition_id=comp_id, season_id=season_id
-                    )
+                    matches_df = sb.matches(competition_id=comp_id, season_id=season_id)
             except Exception as exc:
                 logger.warning(
                     "Could not fetch matches for comp=%d season=%d: %s",
@@ -138,9 +134,7 @@ def build_inventory(competitions_config: list[dict] | None = None) -> pd.DataFra
         logger.warning("Inventory is empty – check competition configuration.")
         return df
 
-    df = df.sort_values(["competition_id", "season_id", "match_id"]).reset_index(
-        drop=True
-    )
+    df = df.sort_values(["competition_id", "season_id", "match_id"]).reset_index(drop=True)
     df.to_parquet(cache, index=False)
     logger.info("Inventory saved to %s (%d matches)", cache, len(df))
     return df
@@ -177,12 +171,6 @@ def get_360_match_ids(inventory_df: pd.DataFrame | None = None) -> List[int]:
     if df.empty:
         return []
 
-    match_ids = (
-        df.loc[df["has_360"], "match_id"]
-        .dropna()
-        .astype(int)
-        .sort_values()
-        .tolist()
-    )
+    match_ids = df.loc[df["has_360"], "match_id"].dropna().astype(int).sort_values().tolist()
     logger.info("Found %d matches with 360 data", len(match_ids))
     return match_ids

@@ -18,9 +18,9 @@ _PITCH_X_MAX: float = 120.0
 _PITCH_Y_MAX: float = 80.0
 
 # Zone boundaries (x-axis cuts)
-_THIRD_X1: float = 40.0   # own third / mid third boundary
-_THIRD_X2: float = 80.0   # mid third / final third boundary
-_BOX_X: float = 102.0     # approximate edge of penalty area
+_THIRD_X1: float = 40.0  # own third / mid third boundary
+_THIRD_X2: float = 80.0  # mid third / final third boundary
+_BOX_X: float = 102.0  # approximate edge of penalty area
 _CENTRAL_Y_LO: float = 26.0
 _CENTRAL_Y_HI: float = 54.0
 
@@ -111,23 +111,18 @@ def build_event_features(pass_instances_df: pd.DataFrame) -> pd.DataFrame:
     # ------------------------------------------------------------------
     # 7. Body part (one-hot: foot, head, other)
     # ------------------------------------------------------------------
-    body_part_raw = df.get(
-        "pass_body_part", pd.Series("", index=df.index)
-    ).fillna("").str.lower()
+    body_part_raw = df.get("pass_body_part", pd.Series("", index=df.index)).fillna("").str.lower()
 
     out["body_part_foot"] = body_part_raw.str.contains("foot").astype(float)
     out["body_part_head"] = body_part_raw.str.contains("head").astype(float)
     out["body_part_other"] = (
-        (~body_part_raw.str.contains("foot") & ~body_part_raw.str.contains("head"))
-        .astype(float)
-    )
+        ~body_part_raw.str.contains("foot") & ~body_part_raw.str.contains("head")
+    ).astype(float)
 
     # ------------------------------------------------------------------
     # 8. Pass height (one-hot: ground, low, high)
     # ------------------------------------------------------------------
-    height_raw = df.get(
-        "pass_height", pd.Series("", index=df.index)
-    ).fillna("").str.lower()
+    height_raw = df.get("pass_height", pd.Series("", index=df.index)).fillna("").str.lower()
 
     out["pass_height_ground"] = height_raw.str.contains("ground").astype(float)
     out["pass_height_low"] = height_raw.str.contains("low").astype(float)
@@ -138,13 +133,9 @@ def build_event_features(pass_instances_df: pd.DataFrame) -> pd.DataFrame:
     # ------------------------------------------------------------------
     if "play_pattern_name" in df.columns:
         play_patterns = df["play_pattern_name"].fillna("Unknown")
-        pattern_dummies = pd.get_dummies(
-            play_patterns, prefix="play_pattern", dtype=float
-        )
+        pattern_dummies = pd.get_dummies(play_patterns, prefix="play_pattern", dtype=float)
         # Normalise column names
-        pattern_dummies.columns = [
-            c.lower().replace(" ", "_") for c in pattern_dummies.columns
-        ]
+        pattern_dummies.columns = [c.lower().replace(" ", "_") for c in pattern_dummies.columns]
         pattern_dummies.index = out.index
         out = pd.concat([out, pattern_dummies], axis=1)
 
@@ -164,9 +155,7 @@ def build_event_features(pass_instances_df: pd.DataFrame) -> pd.DataFrame:
     # 12. Possession length (index within possession)
     # ------------------------------------------------------------------
     if "possession_id" in df.columns:
-        out["possession_length"] = (
-            df.groupby("possession_id").cumcount().values.astype(float)
-        )
+        out["possession_length"] = df.groupby("possession_id").cumcount().values.astype(float)
     else:
         out["possession_length"] = 0.0
 
@@ -183,6 +172,7 @@ def build_event_features(pass_instances_df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _to_float_bool(df: pd.DataFrame, col: str) -> pd.Series:
     """Return a float (0/1) Series from a bool column, defaulting to 0."""

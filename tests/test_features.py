@@ -1,4 +1,5 @@
 """Tests for feature engineering modules."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -51,17 +52,15 @@ class TestEventFeatures:
 class TestGeometryFeatures:
     def test_nan_for_missing_360(self, sample_pass_instances_df, sample_frames_df):
         result = build_geometry_features(sample_pass_instances_df, sample_frames_df)
-        no_360 = sample_pass_instances_df.loc[
-            ~sample_pass_instances_df["has_360"], "event_uuid"
-        ]
+        no_360 = sample_pass_instances_df.loc[~sample_pass_instances_df["has_360"], "event_uuid"]
         if len(no_360) > 0 and len(result) > 0:
-            geom_cols = [
-                c
-                for c in result.columns
-                if c not in ("event_uuid",)
-            ]
+            geom_cols = [c for c in result.columns if c not in ("event_uuid",)]
             for uuid in no_360[:3]:
-                row = result[result["event_uuid"] == uuid] if "event_uuid" in result.columns else result.loc[result.index == uuid]
+                row = (
+                    result[result["event_uuid"] == uuid]
+                    if "event_uuid" in result.columns
+                    else result.loc[result.index == uuid]
+                )
                 if len(row) > 0 and geom_cols:
                     assert row[geom_cols[0]].isna().all() or True  # NaN or absent is fine
 
@@ -102,25 +101,29 @@ class TestDistPointToSegment:
 class TestGraphBuilder:
     def _make_frame(self, n_players=10):
         rng = np.random.default_rng(0)
-        return pd.DataFrame({
-            "event_uuid": ["test_evt"] * n_players,
-            "player_id": list(range(n_players)),
-            "player_name": [f"P{i}" for i in range(n_players)],
-            "teammate": [i < n_players // 2 for i in range(n_players)],
-            "actor": [i == 0 for i in range(n_players)],
-            "keeper": [i == n_players - 1 for i in range(n_players)],
-            "x": rng.uniform(0, 120, n_players).tolist(),
-            "y": rng.uniform(0, 80, n_players).tolist(),
-        })
+        return pd.DataFrame(
+            {
+                "event_uuid": ["test_evt"] * n_players,
+                "player_id": list(range(n_players)),
+                "player_name": [f"P{i}" for i in range(n_players)],
+                "teammate": [i < n_players // 2 for i in range(n_players)],
+                "actor": [i == 0 for i in range(n_players)],
+                "keeper": [i == n_players - 1 for i in range(n_players)],
+                "x": rng.uniform(0, 120, n_players).tolist(),
+                "y": rng.uniform(0, 80, n_players).tolist(),
+            }
+        )
 
     def _make_pass_row(self):
-        return pd.Series({
-            "event_uuid": "test_evt",
-            "start_x": 50.0,
-            "start_y": 40.0,
-            "end_x": 70.0,
-            "end_y": 40.0,
-        })
+        return pd.Series(
+            {
+                "event_uuid": "test_evt",
+                "start_x": 50.0,
+                "start_y": 40.0,
+                "end_x": 70.0,
+                "end_y": 40.0,
+            }
+        )
 
     def test_node_count(self):
         frames = self._make_frame(10)

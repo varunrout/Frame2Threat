@@ -147,7 +147,7 @@ threat_gain = zone_value(end_zone) − zone_value(start_zone)
 where:
 - The pitch is divided into a `zone_grid_x × zone_grid_y` grid (default: 12 × 8 = 96 zones).
 - `zone_value(z)` is the empirical proportion of possessions passing through zone z that contain a shot, final-third entry, or box entry, normalised to [0, 1].
-  
+
 Specifically:
 ```
 raw_zone_value(z) = (n_shots_from_z + 0.3×n_box_entries_from_z + 0.1×n_ft_entries_from_z) / n_possessions_through_z

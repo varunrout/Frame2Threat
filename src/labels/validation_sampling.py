@@ -86,7 +86,9 @@ def sample_positives(
     sample["_sample_type"] = "positive"
     logger.debug(
         "sample_positives: sampled %d / %d positives for '%s'",
-        len(sample), n_available, label_col,
+        len(sample),
+        n_available,
+        label_col,
     )
     return sample
 
@@ -132,7 +134,9 @@ def sample_negatives(
     sample["_sample_type"] = "negative"
     logger.debug(
         "sample_negatives: sampled %d / %d negatives for '%s'",
-        len(sample), n_available, label_col,
+        len(sample),
+        n_available,
+        label_col,
     )
     return sample
 
@@ -176,8 +180,13 @@ def label_prevalence_table(
         logger.warning("label_prevalence_table: no label columns found in DataFrame")
         return pd.DataFrame(
             columns=[
-                "label", "n_total", "n_known", "n_positive",
-                "n_negative", "n_nan", "prevalence",
+                "label",
+                "n_total",
+                "n_known",
+                "n_positive",
+                "n_negative",
+                "n_nan",
+                "prevalence",
             ]
         )
 
@@ -252,9 +261,7 @@ def label_by_zone(
 
     if work.empty:
         logger.warning("label_by_zone: no rows with complete data for '%s'", label_col)
-        return pd.DataFrame(
-            columns=["zone_x", "zone_y", "n_passes", "n_positive", "prevalence"]
-        )
+        return pd.DataFrame(columns=["zone_x", "zone_y", "n_passes", "n_positive", "prevalence"])
 
     work["zone_x"] = np.clip(
         (work["start_x"] / _PITCH_X * zone_grid_x).astype(int), 0, zone_grid_x - 1
@@ -298,12 +305,9 @@ def label_by_pass_type(
 
     if "pass_type" not in df.columns:
         logger.warning(
-            "label_by_pass_type: 'pass_type' column not found; "
-            "returning empty DataFrame."
+            "label_by_pass_type: 'pass_type' column not found; " "returning empty DataFrame."
         )
-        return pd.DataFrame(
-            columns=["pass_type", "n_passes", "n_positive", "prevalence"]
-        )
+        return pd.DataFrame(columns=["pass_type", "n_passes", "n_positive", "prevalence"])
 
     work = df[["pass_type", label_col]].copy()
     work = work.dropna(subset=[label_col])
@@ -405,9 +409,7 @@ def label_sanity_checks(df: pd.DataFrame) -> dict[str, object]:
         mismatch = int((dp_recon != dp_actual).sum())
         results["dp_or_condition"] = mismatch == 0
         if mismatch:
-            logger.warning(
-                "label_sanity_checks: dp_or_condition FAILED for %d rows", mismatch
-            )
+            logger.warning("label_sanity_checks: dp_or_condition FAILED for %d rows", mismatch)
     else:
         results["dp_or_condition"] = "skip"
 
@@ -424,7 +426,8 @@ def label_sanity_checks(df: pd.DataFrame) -> dict[str, object]:
                 out_high = int((tg > 1.0).sum())
                 logger.warning(
                     "threat_gain_range FAILED: %d below -1, %d above 1",
-                    out_low, out_high,
+                    out_low,
+                    out_high,
                 )
         else:
             results["threat_gain_range"] = "skip"
@@ -438,12 +441,17 @@ def label_sanity_checks(df: pd.DataFrame) -> dict[str, object]:
         has_360 = df["has_360"].fillna(False).astype(bool)
         if has_360.any():
             nan_strict = int(df.loc[has_360, "strict_line_break"].isna().sum())
-            nan_loose = int(df.loc[has_360, "loose_line_break"].isna().sum()) if "loose_line_break" in df.columns else 0
-            results["no_nan_known_360"] = (nan_strict == 0 and nan_loose == 0)
+            nan_loose = (
+                int(df.loc[has_360, "loose_line_break"].isna().sum())
+                if "loose_line_break" in df.columns
+                else 0
+            )
+            results["no_nan_known_360"] = nan_strict == 0 and nan_loose == 0
             if nan_strict or nan_loose:
                 logger.warning(
                     "no_nan_known_360 FAILED: %d NaN strict, %d NaN loose for has_360 passes",
-                    nan_strict, nan_loose,
+                    nan_strict,
+                    nan_loose,
                 )
         else:
             results["no_nan_known_360"] = "skip"
@@ -470,9 +478,12 @@ def label_sanity_checks(df: pd.DataFrame) -> dict[str, object]:
     # 7. Prevalence-bounds advisory (informational, not pass/fail)
     # ------------------------------------------------------------------
     binary_labels = [
-        "strict_line_break", "loose_line_break",
-        "dangerous_progression_k", "final_third_entry_k",
-        "box_entry_k", "shot_within_k",
+        "strict_line_break",
+        "loose_line_break",
+        "dangerous_progression_k",
+        "final_third_entry_k",
+        "box_entry_k",
+        "shot_within_k",
     ]
     low_prevalence = []
     high_prevalence = []
@@ -502,7 +513,9 @@ def label_sanity_checks(df: pd.DataFrame) -> dict[str, object]:
     n_skipped = sum(1 for v in results.values() if v == "skip")
     logger.info(
         "label_sanity_checks: %d checks, %d failed, %d skipped",
-        len(results), n_failed, n_skipped,
+        len(results),
+        n_failed,
+        n_skipped,
     )
 
     return results

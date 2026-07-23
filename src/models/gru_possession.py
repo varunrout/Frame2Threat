@@ -45,10 +45,10 @@ class PossessionGRU(nn.Module):
         tab_size: int = 0,
     ) -> None:
         super().__init__()
-        self.hidden_size    = hidden_size
-        self.num_layers     = num_layers
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
         self.num_directions = 2 if bidirectional else 1
-        self.tab_size       = tab_size
+        self.tab_size = tab_size
 
         self.gru = nn.GRU(
             input_size=input_size,
@@ -69,15 +69,13 @@ class PossessionGRU(nn.Module):
 
     def forward(
         self,
-        x: torch.Tensor,                    # (B, T, input_size)
-        lengths: torch.Tensor,              # (B,) true sequence lengths (CPU int64)
+        x: torch.Tensor,  # (B, T, input_size)
+        lengths: torch.Tensor,  # (B,) true sequence lengths (CPU int64)
         x_tab: "torch.Tensor | None" = None,  # (B, tab_size) or None
-    ) -> torch.Tensor:                      # (B,) logits
+    ) -> torch.Tensor:  # (B,) logits
         # Pack for efficiency — skip padding
         lengths_cpu = lengths.cpu().clamp(min=1)
-        packed = pack_padded_sequence(
-            x, lengths_cpu, batch_first=True, enforce_sorted=False
-        )
+        packed = pack_padded_sequence(x, lengths_cpu, batch_first=True, enforce_sorted=False)
         _, h_n = self.gru(packed)  # h_n: (num_layers * directions, B, hidden)
 
         # Take the last layer's hidden state
@@ -100,11 +98,12 @@ class PossessionGRU(nn.Module):
 # Training helpers
 # ---------------------------------------------------------------------------
 
+
 def make_dataloader(
-    X_seq: "np.ndarray",                         # (N, T, F)
-    lengths: "np.ndarray",                        # (N,)
-    y: "np.ndarray",                              # (N,)
-    X_tab: "np.ndarray | None" = None,            # (N, tab_size) or None
+    X_seq: "np.ndarray",  # (N, T, F)
+    lengths: "np.ndarray",  # (N,)
+    y: "np.ndarray",  # (N,)
+    X_tab: "np.ndarray | None" = None,  # (N, tab_size) or None
     batch_size: int = 256,
     shuffle: bool = True,
 ) -> "torch.utils.data.DataLoader":
@@ -144,7 +143,7 @@ def train_epoch(
         X_b, L_b, y_b = X_b.to(device), L_b.to(device), y_b.to(device)
         optimiser.zero_grad()
         logits = model(X_b, L_b, T_b)
-        loss   = criterion(logits, y_b)
+        loss = criterion(logits, y_b)
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimiser.step()
@@ -176,9 +175,9 @@ def evaluate(
         all_y.append(y_b)
 
     logits_all = torch.cat(all_logits).numpy()
-    y_all      = torch.cat(all_y).numpy()
-    proba      = torch.sigmoid(torch.tensor(logits_all)).numpy()
-    auc        = roc_auc_score(y_all, proba)
+    y_all = torch.cat(all_y).numpy()
+    proba = torch.sigmoid(torch.tensor(logits_all)).numpy()
+    auc = roc_auc_score(y_all, proba)
     return auc, proba
 
 
@@ -238,27 +237,25 @@ def train_gru(
         tab_size=tab_size,
     ).to(device)
 
-    optimiser = torch.optim.Adam(
-        model.parameters(), lr=lr, weight_decay=weight_decay
-    )
+    optimiser = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimiser, factor=0.5, patience=4, min_lr=1e-5
     )
 
-    train_loader = make_dataloader(X_train, lengths_train, y_train,
-                                   X_tab=X_tab_train,
-                                   batch_size=batch_size, shuffle=True)
-    val_loader   = make_dataloader(X_val,   lengths_val,   y_val,
-                                   X_tab=X_tab_val,
-                                   batch_size=batch_size, shuffle=False)
+    train_loader = make_dataloader(
+        X_train, lengths_train, y_train, X_tab=X_tab_train, batch_size=batch_size, shuffle=True
+    )
+    val_loader = make_dataloader(
+        X_val, lengths_val, y_val, X_tab=X_tab_val, batch_size=batch_size, shuffle=False
+    )
 
-    best_val_auc  = 0.0
-    best_state    = None
-    no_improve    = 0
+    best_val_auc = 0.0
+    best_state = None
+    no_improve = 0
     history: list[dict] = []
 
     for epoch in range(1, n_epochs + 1):
-        train_loss        = train_epoch(model, train_loader, optimiser, criterion, device)
+        train_loss = train_epoch(model, train_loader, optimiser, criterion, device)
         val_auc, val_prob = evaluate(model, val_loader, device)
         scheduler.step(1 - val_auc)
 
@@ -266,14 +263,16 @@ def train_gru(
 
         if val_auc > best_val_auc:
             best_val_auc = val_auc
-            best_state   = {k: v.cpu().clone() for k, v in model.state_dict().items()}
-            no_improve   = 0
+            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            no_improve = 0
         else:
             no_improve += 1
 
         if verbose and (epoch % 5 == 0 or epoch == 1):
-            print(f"  Epoch {epoch:3d} | loss={train_loss:.4f} | val_auc={val_auc:.4f}"
-                  f"  {'*' if no_improve == 0 else ''}")
+            print(
+                f"  Epoch {epoch:3d} | loss={train_loss:.4f} | val_auc={val_auc:.4f}"
+                f"  {'*' if no_improve == 0 else ''}"
+            )
 
         if no_improve >= patience:
             if verbose:

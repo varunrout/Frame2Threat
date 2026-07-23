@@ -26,8 +26,8 @@ Author: <initials or "auto">
 
 ### EXP-001 — Rule-based dangerous-progression benchmark
 
-Date: 2025-06-01  
-Status: complete  
+Date: 2025-06-01
+Status: complete
 
 **Goal:** Establish a deterministic rule-based floor for dangerous_progression_k.
 
@@ -57,8 +57,8 @@ The rule fires on spatially obvious forward passes.  It scores below any trained
 
 ### EXP-002 — Logistic regression, event features only
 
-Date: 2025-06-02  
-Status: complete  
+Date: 2025-06-02
+Status: complete
 
 **Goal:** Establish learnability with a linear model using only event attributes.
 
@@ -87,8 +87,8 @@ Status: complete
 
 ### EXP-003 — XGBoost, event features only
 
-Date: 2025-06-03  
-Status: complete  
+Date: 2025-06-03
+Status: complete
 
 **Goal:** Strong tabular baseline without 360 geometry.
 
@@ -120,8 +120,8 @@ Feature importance top-5: `goal_dist_gain`, `end_x`, `x_gain`, `pass_length`, `d
 
 ### EXP-004 — XGBoost, event + 360 geometry features
 
-Date: 2025-06-04  
-Status: complete  
+Date: 2025-06-04
+Status: complete
 
 **Goal:** Quantify the additive value of 360 freeze-frame context.
 
@@ -158,8 +158,8 @@ Status: complete
 
 ### EXP-005 — GNN frame model (multitask)
 
-Date: 2025-06-05  
-Status: complete  
+Date: 2025-06-05
+Status: complete
 
 **Goal:** Test whether graph-based frame representation outperforms tabular 360 features.
 
@@ -197,8 +197,8 @@ GNN achieves near-parity with XGBoost on a graph-native representation, but does
 
 ### EXP-006 — Hybrid GNN + GRU sequence model
 
-Date: 2025-06-05  
-Status: abandoned (evidence-based)  
+Date: 2025-06-05
+Status: abandoned (evidence-based)
 
 **Goal:** Test whether adding recent possession sequence context improves predictions.
 
@@ -218,12 +218,12 @@ Status: abandoned (evidence-based)
 
 ### EXP-007 — Multitask vs. single-task comparison
 
-Date: 2025-06-06  
-Status: partial (dangerous_progression_k only)  
+Date: 2025-06-06
+Status: partial (dangerous_progression_k only)
 
 **Goal:** Determine whether shared trunk multitask learning outperforms separate models.
 
-**Method:** 
+**Method:**
 - Primary task (dangerous_progression_k) trained as single-task XGBoost in EXP-003
 - GNN trained with 5-head multitask loss in EXP-005
 - Full multitask vs. single-task sweep across all binary labels: not completed within project scope
@@ -238,8 +238,8 @@ GNN multitask training did not hurt dangerous_progression_k performance compared
 
 ### EXP-008 — Ablation study
 
-Date: 2025-06-07  
-Status: complete  
+Date: 2025-06-07
+Status: complete
 
 **Goal:** Quantify the contribution of each feature group.
 
@@ -291,8 +291,8 @@ Status: complete
 
 ### EXP-009 — Possession-level XGBoost baseline (poss_dangerous)
 
-Date: 2025-06-10  
-Status: complete  
+Date: 2025-06-10
+Status: complete
 
 **Goal:** Establish a strong tabular baseline at the possession level using aggregated features.
 
@@ -326,8 +326,8 @@ Feature importance top-5: `max_x_reached`, `territory_gained`, `end_x`, `n_passe
 
 ### EXP-010 — PossessionGRU sequence model (poss_dangerous)
 
-Date: 2025-06-11  
-Status: complete  
+Date: 2025-06-11
+Status: complete
 
 **Goal:** Test whether event-sequence modelling via GRU outperforms aggregated tabular features.
 
@@ -357,8 +357,8 @@ The GRU marginally outperforms XGBoost (+0.002 ROC AUC, +0.033 AP on test).  The
 
 ### EXP-011 — Ensemble (XGBoost + GRU, mean logit fusion)
 
-Date: 2025-06-11  
-Status: complete  
+Date: 2025-06-11
+Status: complete
 
 **Goal:** Combine the tabular and sequence perspectives into a single prediction.
 
@@ -394,8 +394,8 @@ The ensemble gains +1.3 points ROC AUC over the best single model, confirming th
 
 ### EXP-012 — H4 ablation: origin-type features only
 
-Date: 2025-06-12  
-Status: complete  
+Date: 2025-06-12
+Status: complete
 
 **Goal:** Test hypothesis H4 — does possession origin type alone suffice for dangerous-progression prediction?
 
@@ -420,8 +420,8 @@ Status: complete
 
 ### EXP-013 — H2: Attribution concentration (Gini coefficient)
 
-Date: 2025-06-12  
-Status: complete  
+Date: 2025-06-12
+Status: complete
 
 **Goal:** Test hypothesis H2 — is danger concentrated in a few key events within each possession?
 
@@ -451,8 +451,8 @@ Interpretation: Moderate concentration — about half the danger variance is att
 
 ### EXP-014 — H1: Pass-level vs possession-level correlation
 
-Date: 2025-06-12  
-Status: complete  
+Date: 2025-06-12
+Status: complete
 
 **Goal:** Test hypothesis H1 — does possession-level danger signal correlate with pass-level dangerous progression at the team level?
 
@@ -475,8 +475,8 @@ Both v1 (pass-level) and v2 (possession-level) danger metrics rank teams similar
 
 ### EXP-015 — Start-only XGBoost baseline
 
-Date: 2026-03-09  
-Status: complete  
+Date: 2026-03-09
+Status: complete
 
 **Goal:** Test whether dangerous possessions can be forecast from information available at the instant the possession begins.
 
@@ -497,7 +497,7 @@ Top features: `origin_from_throw_in`, `origin_from_free_kick`, `start_x`, `start
 **Decision:** There is genuine pre-possession signal, but it is weak relative to in-possession information.  Start context alone is not sufficient for high-quality forecasting.
 
 ![EXP-015 start-only importances](figures/v3_exp015_start_only_importance.png)
-*Figure: Top feature importances for the start-only XGBoost model (EXP-015).* 
+*Figure: Top feature importances for the start-only XGBoost model (EXP-015).*
 
 **Files:** `notebooks/10_early_prediction.ipynb`, `src/features/early_features.py`
 
@@ -505,8 +505,8 @@ Top features: `origin_from_throw_in`, `origin_from_free_kick`, `start_x`, `start
 
 ### EXP-016 — Prefix GRU evaluation
 
-Date: 2026-03-09  
-Status: complete  
+Date: 2026-03-09
+Status: complete
 
 **Goal:** Evaluate whether the existing possession GRU can recognise danger before the full possession has unfolded.
 
@@ -528,7 +528,7 @@ Status: complete
 **Decision:** Strong evidence that the GRU contains forward-looking signal.  By halfway through a possession, the model already reaches 0.820 ROC-AUC on unseen matches.
 
 ![EXP-016 prefix GRU curve](figures/v3_exp016_prefix_gru_curve.png)
-*Figure: GRU ROC-AUC and PR-AUC as a function of observed possession fraction (EXP-016).* 
+*Figure: GRU ROC-AUC and PR-AUC as a function of observed possession fraction (EXP-016).*
 
 **Files:** `notebooks/10_early_prediction.ipynb`, `src/evaluation/early_evaluation.py`
 
@@ -536,8 +536,8 @@ Status: complete
 
 ### EXP-017 — Cumulative-features XGBoost
 
-Date: 2026-03-09  
-Status: complete  
+Date: 2026-03-09
+Status: complete
 
 **Goal:** Test how much predictive power remains when tabular features are rebuilt from only the early part of each possession.
 
@@ -561,7 +561,7 @@ At every partial prefix, cumulative XGBoost outperforms prefix GRU; the gap is l
 **Decision:** Early aggregated evidence is highly predictive even without completed-possession summaries.  This is the strongest rebuttal to the reviewer critique that v2 performance is purely retrospective.
 
 ![EXP-016 vs EXP-017 comparison](figures/v3_exp016_exp017_auc_comparison.png)
-*Figure: Prefix GRU vs cumulative-feature XGBoost ROC-AUC across observed possession fractions (EXP-016/017).* 
+*Figure: Prefix GRU vs cumulative-feature XGBoost ROC-AUC across observed possession fractions (EXP-016/017).*
 
 **Files:** `notebooks/10_early_prediction.ipynb`, `src/features/early_features.py`
 
@@ -577,8 +577,8 @@ All hyperparameters are loaded from `configs/model_possession.yaml → xgboost_e
 
 ### EXP-019 — GRU tipping-point analysis
 
-Date: 2026-03-09  
-Status: complete  
+Date: 2026-03-09
+Status: complete
 
 **Goal:** Identify when a possession first becomes recognisably dangerous to the GRU.
 
@@ -599,7 +599,7 @@ Status: complete
 Interpretation: the GRU usually commits to a dangerous forecast around the final 40% of the possession, and dribbles are the dominant trigger for the transition into the dangerous regime.
 
 ![EXP-019 tipping events](figures/v3_exp019_tipping_events.png)
-*Figure: Event-type distributions at the tipping point and at the largest single-step GRU danger increase (EXP-019).* 
+*Figure: Event-type distributions at the tipping point and at the largest single-step GRU danger increase (EXP-019).*
 
 **Files:** `notebooks/10_early_prediction.ipynb`, `src/evaluation/early_evaluation.py`
 
@@ -648,44 +648,44 @@ Interpretation: the GRU usually commits to a dangerous forecast around the final
 
 ## V2 research question answers
 
-**RQ3 — How should possession-level danger be defined and predicted?**  
+**RQ3 — How should possession-level danger be defined and predicted?**
 We define `poss_dangerous = poss_has_shot OR poss_entered_box`.  XGBoost on 41 aggregated features achieves 0.950 ROC AUC; PossessionGRU on raw event sequences achieves 0.952.  The ensemble reaches 0.965.  Possession-level prediction is highly effective because the full sequence of events within a possession provides stronger signal than any single pass.
 
-**RQ4 — Which events matter most in generating danger?**  
+**RQ4 — Which events matter most in generating danger?**
 LOO attribution shows moderate concentration (Gini 0.495): typically 2–3 events account for ~50% of a possession's danger score.  The most impactful events are final-third entries, through balls, and pre-shot carries.
 
-**RQ5 — Can player-level attribution identify context-adjusted dangerous contributors?**  
+**RQ5 — Can player-level attribution identify context-adjusted dangerous contributors?**
 Yes.  Using LOO attribution per event combined with the `player_sequence` column, we compute per-player danger contribution.  The leaderboard of 453 players (≥ 20 touches) reveals that goalkeepers and deep defenders consistently rank low, while attacking midfielders and strikers rank highest — consistent with football domain knowledge.
 
 ---
 
 ## Combined research question answers (v1 + v2)
 
-1. **Does 360 positional context improve prediction over event-only baselines?**  
+1. **Does 360 positional context improve prediction over event-only baselines?**
    Marginally.  Event+360 XGBoost improves ROC AUC by +0.0014 over event-only (0.882 vs 0.881).  The 360 freeze-frame geometry features add statistically positive but practically negligible signal.  Event features — particularly `goal_dist_gain`, `end_x`, `x_gain` — already capture most of the predictive information.
 
-2. **Which geometric properties most strongly relate to dangerous progression?**  
+2. **Which geometric properties most strongly relate to dangerous progression?**
    Based on XGBoost feature importance with geometry features added: `n_defenders_goal_side`, `pass_corridor_clear`, `receiver_between_lines`, and `overload_target_zone` rank highest among the 14 geometry columns.  They capture the most structurally meaningful aspects of the defensive shape.
 
-3. **Can graph-based modelling outperform strong tabular baselines?**  
+3. **Can graph-based modelling outperform strong tabular baselines?**
    Near-parity, not outperformance.  PassFrameGNN achieves 0.841 val AUC vs XGBoost 0.845 on the same 360-available subset.  The GNN learns equivalent spatial representations from the graph structure, reaching the same ceiling as tabular geometry features without hand-crafted aggregations.  On this dataset size, the GNN does not pull ahead.
 
-4. **Does multitask learning help?**  
+4. **Does multitask learning help?**
    Inconclusive given project scope.  The GNN trained with 5 multitask heads converged stably and produced reasonable performance on the primary task (0.841 val AUC for dangerous_progression_k).  A head-to-head comparison against single-task GNN requires additional runs and is deferred to future work.
 
-5. **Which players/teams generate the most context-adjusted dangerous progression?**  
+5. **Which players/teams generate the most context-adjusted dangerous progression?**
    Full profiling is available via `src/evaluation/tactical_review.py :: player_progression_profile()`.  In the test-set freeze-frame visualisation (NB06), the model correctly identifies passes where the passer's actual choice was the highest-ranked option among visible teammates, suggesting the system can distinguish context-adjusted dangerous from safe options.
 
-6. **Can the system rank visible passing options tactically?**  
+6. **Can the system rank visible passing options tactically?**
    Yes.  `PassOptionRanker` (NB06, section 8) successfully ranked 8 visible teammates for a sample pass.  The actual choice scored highest at 0.229 predicted probability — the model agreed the chosen pass was the most dangerous option available.  This is the core interactive capability exposed by the Streamlit app.
 
-7. **How should possession-level danger be defined and predicted? (RQ3)**  
+7. **How should possession-level danger be defined and predicted? (RQ3)**
    `poss_dangerous = poss_has_shot OR poss_entered_box`.  Both XGBoost (0.950 AUC) and GRU (0.952 AUC) perform excellently.  The ensemble (0.965 AUC) confirms complementary signal between tabular and sequential perspectives.
 
-8. **Which events matter most within a possession? (RQ4)**  
+8. **Which events matter most within a possession? (RQ4)**
    LOO attribution reveals moderate concentration (Gini 0.495).  On average, 2–3 pivotal events account for ~50% of a possession's danger.  Final-third entries, through balls, and pre-shot carries are the highest-impact actions.
 
-9. **Can player-level attribution identify dangerous contributors? (RQ5)**  
+9. **Can player-level attribution identify dangerous contributors? (RQ5)**
    Yes.  LOO attribution per event, mapped to players via `player_sequence`, produces a 453-player leaderboard.  Rankings are domain-consistent: attacking players rank high, defenders and goalkeepers rank low.
 
 ---
