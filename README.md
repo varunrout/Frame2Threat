@@ -16,7 +16,7 @@ A reproducible football analytics system that predicts whether a pass breaks a d
 git clone https://github.com/varunrout/Frame2Threat.git
 cd Frame2Threat
 pip install -e ".[dev]"
-streamlit run src/app/app.py   # demo app (works without data via demo mode)
+streamlit run src/app/app.py   # app; demo mode labels random placeholder scores
 pytest tests/ -q               # run all tests (74 passing)
 ```
 

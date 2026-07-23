@@ -327,6 +327,7 @@ def main() -> None:
 
     # Compute or simulate scores
     _prediction_error: str | None = None  # carries any scoring error to the UI
+    score_source = "model"
 
     if model is not None and not demo_mode:
         try:
@@ -341,12 +342,20 @@ def main() -> None:
             )
         except Exception as exc:
             _prediction_error = str(exc)
-            st.sidebar.warning(f"⚠️ Prediction failed — using demo scores. See details below.")
+            score_source = "random_placeholder"
+            st.sidebar.warning(
+                "Prediction failed - using random placeholder scores. "
+                "These are not model predictions. See details below."
+            )
             scores = _make_demo_scores(len(pass_df))
             feature_cols = []
     else:
+        score_source = "random_placeholder"
         scores = _make_demo_scores(len(pass_df))
         feature_cols = []
+        st.sidebar.warning(
+            "Scores shown in demo mode are random placeholders, not trained model output."
+        )
         if model is None:
             st.sidebar.info(
                 "ℹ️ No model artifacts found in `models/`. "
@@ -379,6 +388,12 @@ reproduces exactly the 27-column feature matrix the model was trained
 on. The predictions you see now use those correct features.
                 """
             )
+
+    if score_source == "random_placeholder":
+        st.error(
+            "Scores in this view are random placeholders for UI demonstration only. "
+            "They are not representative of Frame2Threat model behaviour."
+        )
 
     # ----------------------------------------------------------------
     # Sidebar – navigation and selectors
@@ -467,7 +482,11 @@ on. The predictions you see now use those correct features.
         col1.metric(
             "🎯 Danger Score",
             f"{event_score:.3f}",
-            help="Predicted dangerous progression probability",
+            help=(
+                "Predicted dangerous progression probability"
+                if score_source == "model"
+                else "Random placeholder score; not a model prediction"
+            ),
         )
         col2.metric("📐 Pass Length", f"{event_row.get('pass_length', 'N/A'):.1f}m")
         col3.metric("⏱ Minute", int(event_row.get("minute", 0)))
@@ -475,7 +494,12 @@ on. The predictions you see now use those correct features.
 
         # Score confidence bar
         st.markdown("#### Confidence Bar")
-        st.progress(float(np.clip(event_score, 0, 1)), text=f"{event_score:.1%} danger score")
+        score_text = (
+            f"{event_score:.1%} model danger score"
+            if score_source == "model"
+            else f"{event_score:.1%} random placeholder score"
+        )
+        st.progress(float(np.clip(event_score, 0, 1)), text=score_text)
 
         # Freeze frame plot
         st.markdown("#### ❄️ Freeze Frame")
@@ -486,6 +510,8 @@ on. The predictions you see now use those correct features.
             sx = float(event_row.get("start_x", 60))
             sy = float(event_row.get("start_y", 40))
             ranked_opts = _make_ranked_options(sx, sy)
+            if score_source == "random_placeholder":
+                st.caption("Ranked pass options are synthetic random placeholders in demo mode.")
 
         event_frames = frames_df[
             frames_df.get("event_uuid", frames_df.get("id", pd.Series())) == selected_uuid
@@ -732,6 +758,11 @@ on. The predictions you see now use those correct features.
                     st.warning(f"SHAP summary unavailable: {exc}")
         else:
             st.info("Load a trained model to view SHAP feature importance.")
+            if score_source == "random_placeholder":
+                st.warning(
+                    "Current diagnostics use random placeholder scores, so calibration "
+                    "and score distributions are UI checks only."
+                )
 
     # ================================================================
     # PAGE 5 – Possession Inspector
@@ -1022,6 +1053,10 @@ on. The predictions you see now use those correct features.
 
 def _show_demo_explanation(score: float, event_row: pd.Series) -> None:
     """Show a placeholder explanation panel when model is unavailable."""
+    st.warning(
+        "This explanation is generated from random placeholder scores and simple "
+        "event attributes. It is not a model explanation."
+    )
     from src.visualization.explanations import generate_explanation_narrative
 
     demo_reasons = [
