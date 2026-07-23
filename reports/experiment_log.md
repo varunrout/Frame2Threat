@@ -1,6 +1,8 @@
 # Experiment Log — Frame2Threat
 
-This log records all modelling experiments, hyperparameter choices, and results.  Each entry follows the format: **date | experiment | settings | result | decision**.
+This log is a reconstructed analysis narrative for modelling experiments, hyperparameter choices, and results.  Entries dated before the repository's real implementation history are sequence markers for the analytical story, not commit dates or proof of when code was written.  Each entry follows the format: **sequence date | experiment | settings | result | decision**.
+
+For the actual executable state of the project, use the Git history, CI runs, `scripts/run_pipeline.py`, and the reproducibility artifacts under `reports/repro/`.
 
 ---
 
@@ -8,7 +10,7 @@ This log records all modelling experiments, hyperparameter choices, and results.
 
 ```
 ### EXP-NNN — <short title>
-Date: YYYY-MM-DD
+Date or reconstructed sequence date: YYYY-MM-DD
 Status: [ planned | running | complete | abandoned ]
 Author: <initials or "auto">
 
@@ -26,7 +28,7 @@ Author: <initials or "auto">
 
 ### EXP-001 — Rule-based dangerous-progression benchmark
 
-Date: 2025-06-01
+Reconstructed sequence date: 2025-06-01
 Status: complete
 
 **Goal:** Establish a deterministic rule-based floor for dangerous_progression_k.
@@ -57,7 +59,7 @@ The rule fires on spatially obvious forward passes.  It scores below any trained
 
 ### EXP-002 — Logistic regression, event features only
 
-Date: 2025-06-02
+Reconstructed sequence date: 2025-06-02
 Status: complete
 
 **Goal:** Establish learnability with a linear model using only event attributes.
@@ -87,7 +89,7 @@ Status: complete
 
 ### EXP-003 — XGBoost, event features only
 
-Date: 2025-06-03
+Reconstructed sequence date: 2025-06-03
 Status: complete
 
 **Goal:** Strong tabular baseline without 360 geometry.
@@ -120,7 +122,7 @@ Feature importance top-5: `goal_dist_gain`, `end_x`, `x_gain`, `pass_length`, `d
 
 ### EXP-004 — XGBoost, event + 360 geometry features
 
-Date: 2025-06-04
+Reconstructed sequence date: 2025-06-04
 Status: complete
 
 **Goal:** Quantify the additive value of 360 freeze-frame context.
@@ -158,7 +160,7 @@ Status: complete
 
 ### EXP-005 — GNN frame model (multitask)
 
-Date: 2025-06-05
+Reconstructed sequence date: 2025-06-05
 Status: complete
 
 **Goal:** Test whether graph-based frame representation outperforms tabular 360 features.
@@ -197,7 +199,7 @@ GNN achieves near-parity with XGBoost on a graph-native representation, but does
 
 ### EXP-006 — Hybrid GNN + GRU sequence model
 
-Date: 2025-06-05
+Reconstructed sequence date: 2025-06-05
 Status: abandoned (evidence-based)
 
 **Goal:** Test whether adding recent possession sequence context improves predictions.
@@ -218,7 +220,7 @@ Status: abandoned (evidence-based)
 
 ### EXP-007 — Multitask vs. single-task comparison
 
-Date: 2025-06-06
+Reconstructed sequence date: 2025-06-06
 Status: partial (dangerous_progression_k only)
 
 **Goal:** Determine whether shared trunk multitask learning outperforms separate models.
@@ -238,7 +240,7 @@ GNN multitask training did not hurt dangerous_progression_k performance compared
 
 ### EXP-008 — Ablation study
 
-Date: 2025-06-07
+Reconstructed sequence date: 2025-06-07
 Status: complete
 
 **Goal:** Quantify the contribution of each feature group.
@@ -291,7 +293,7 @@ Status: complete
 
 ### EXP-009 — Possession-level XGBoost baseline (poss_dangerous)
 
-Date: 2025-06-10
+Reconstructed sequence date: 2025-06-10
 Status: complete
 
 **Goal:** Establish a strong tabular baseline at the possession level using aggregated features.
@@ -326,7 +328,7 @@ Feature importance top-5: `max_x_reached`, `territory_gained`, `end_x`, `n_passe
 
 ### EXP-010 — PossessionGRU sequence model (poss_dangerous)
 
-Date: 2025-06-11
+Reconstructed sequence date: 2025-06-11
 Status: complete
 
 **Goal:** Test whether event-sequence modelling via GRU outperforms aggregated tabular features.
@@ -357,7 +359,7 @@ The GRU marginally outperforms XGBoost (+0.002 ROC AUC, +0.033 AP on test).  The
 
 ### EXP-011 — Ensemble (XGBoost + GRU, mean logit fusion)
 
-Date: 2025-06-11
+Reconstructed sequence date: 2025-06-11
 Status: complete
 
 **Goal:** Combine the tabular and sequence perspectives into a single prediction.
@@ -394,7 +396,7 @@ The ensemble gains +1.3 points ROC AUC over the best single model, confirming th
 
 ### EXP-012 — H4 ablation: origin-type features only
 
-Date: 2025-06-12
+Reconstructed sequence date: 2025-06-12
 Status: complete
 
 **Goal:** Test hypothesis H4 — does possession origin type alone suffice for dangerous-progression prediction?
@@ -420,7 +422,7 @@ Status: complete
 
 ### EXP-013 — H2: Attribution concentration (Gini coefficient)
 
-Date: 2025-06-12
+Reconstructed sequence date: 2025-06-12
 Status: complete
 
 **Goal:** Test hypothesis H2 — is danger concentrated in a few key events within each possession?
@@ -451,7 +453,7 @@ Interpretation: Moderate concentration — about half the danger variance is att
 
 ### EXP-014 — H1: Pass-level vs possession-level correlation
 
-Date: 2025-06-12
+Reconstructed sequence date: 2025-06-12
 Status: complete
 
 **Goal:** Test hypothesis H1 — does possession-level danger signal correlate with pass-level dangerous progression at the team level?
