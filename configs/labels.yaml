@@ -23,3 +23,10 @@ shot_within:
 threat_gain:
   zone_grid_x: 12
   zone_grid_y: 8
+
+# Non-tautological pass label (src/labels/progression_beyond_pass.py): ignores the receipt of the
+# pass itself and the opponent's events; needs a shot, a *new* box entry, or >= min_gain_m upfield
+# into a more advanced zone.
+progression_beyond_pass:
+  k: 5
+  min_gain_m: 10.0

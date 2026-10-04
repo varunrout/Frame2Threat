@@ -310,3 +310,131 @@ class TestLabelPrevalence:
         )
         checks = label_sanity_checks(df)
         assert isinstance(checks, dict)
+
+
+# ---------------------------------------------------------------------------
+# progression_beyond_pass_k  (non-tautological pass label)
+# ---------------------------------------------------------------------------
+
+from src.labels.progression_beyond_pass import (  # noqa: E402
+    compute_progression_beyond_pass,
+    label_window,
+    zone_index,
+)
+
+_NAN = float("nan")
+
+
+def _ev(type_, team="A", x=_NAN, y=40.0, end_x=_NAN, end_y=_NAN):
+    return {"type": type_, "team": team, "x": x, "y": y, "end_x": end_x, "end_y": end_y}
+
+
+def test_zone_index_ordering():
+    assert [zone_index(10, 40), zone_index(50, 40), zone_index(90, 40), zone_index(110, 40)] == [
+        0,
+        1,
+        2,
+        3,
+    ]
+    assert zone_index(110, 5) == 2  # wide of the box is still final third
+
+
+def test_receipt_of_the_pass_alone_never_makes_a_positive():
+    # pass ends at x=95; the only follow-up is its receipt at the end location
+    win = [_ev("ball receipt*", x=95.0), _ev("pressure", team="B", x=20.0)]
+    assert label_window("A", (95.0, 40.0), win) == 0
+
+
+def test_label_depends_on_events_after_the_receipt():
+    win = [_ev("ball receipt*", x=60.0), _ev("carry", x=60.0), _ev("shot", x=60.0)]
+    assert label_window("A", (60.0, 40.0), win) == 1
+
+
+def test_opponent_events_are_ignored_even_in_the_box_zone():
+    win = [_ev("ball receipt*", x=60.0), _ev("pressure", team="B", x=110.0), _ev("shot", team="B")]
+    assert label_window("A", (60.0, 40.0), win) == 0
+
+
+def test_box_entry_only_counts_if_pass_did_not_already_end_in_the_box():
+    win = [_ev("ball receipt*", x=105.0), _ev("pass", x=105.0, end_x=108.0, end_y=40.0)]
+    assert label_window("A", (105.0, 40.0), win) == 0  # already in the box at the pass end
+    win2 = [_ev("ball receipt*", x=95.0), _ev("pass", x=95.0, end_x=106.0, end_y=40.0)]
+    assert label_window("A", (95.0, 40.0), win2) == 1  # enters the box beyond the pass end
+
+
+def test_progression_needs_ten_metres_and_a_more_advanced_zone():
+    base = [_ev("ball receipt*", x=50.0)]
+    assert label_window("A", (50.0, 40.0), base + [_ev("pass", x=50, end_x=62.0, end_y=40.0)]) == 0
+    assert label_window("A", (50.0, 40.0), base + [_ev("pass", x=50, end_x=79.0, end_y=40.0)]) == 0
+    assert label_window("A", (50.0, 40.0), base + [_ev("pass", x=50, end_x=82.0, end_y=40.0)]) == 1
+    # +12 m but still in the same zone (final third) -> negative
+    base2 = [_ev("ball receipt*", x=82.0)]
+    assert label_window("A", (82.0, 40.0), base2 + [_ev("pass", x=82, end_x=94.0, end_y=40.0)]) == 0
+
+
+def test_a_second_receipt_is_not_dropped_and_missing_receipt_is_fine():
+    # receipt is only dropped before any own ball action; a later receipt keeps its position
+    win = [_ev("pass", x=50.0, end_x=50.0, end_y=40.0), _ev("ball receipt*", x=105.0, y=40.0)]
+    assert label_window("A", (50.0, 40.0), win) == 1
+    assert label_window("A", (50.0, 40.0), []) == 0
+
+
+def _toy_events():
+    rows = []
+    spec = [
+        ("Pass", "A", 50.0, 95.0),  # idx 0: target pass, ends x=95
+        ("Ball Receipt*", "A", 95.0, _NAN),
+        ("Carry", "A", 95.0, _NAN),
+        ("Pass", "A", 95.0, 96.0),
+        ("Ball Receipt*", "A", 96.0, _NAN),
+        ("Carry", "A", 96.0, _NAN),
+        ("Shot", "A", 100.0, _NAN),  # idx 6: beyond k=5 slots after the pass
+    ]
+    for i, (t, team, x, ex) in enumerate(spec):
+        rows.append(
+            {
+                "event_uuid": f"u{i}",
+                "match_id": 1,
+                "possession_id": 1,
+                "index": i + 1,
+                "type_name": t,
+                "team_name": team,
+                "location_x": x,
+                "location_y": 40.0,
+                "pass_end_x": ex,
+                "pass_end_y": 40.0 if ex == ex else _NAN,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def test_window_is_exactly_k_events_and_ignores_the_past():
+    ev = _toy_events()
+    passes = pd.DataFrame({"event_uuid": ["u0"], "match_id": [1], "possession_id": [1]})
+    out = compute_progression_beyond_pass(ev, passes, {"k": 5})
+    assert not out["progression_beyond_pass_k"].iloc[0]  # the shot is the 6th event after
+    out6 = compute_progression_beyond_pass(ev, passes, {"k": 6})
+    assert out6["progression_beyond_pass_k"].iloc[0]
+    # events before the pass and after the window never change the label
+    ev2 = pd.concat([ev.assign(index=ev["index"] + 10), ev.iloc[:0]], ignore_index=True)
+    shot_before = ev2.iloc[[6]].assign(event_uuid="b0", index=1)
+    ev3 = pd.concat([shot_before, ev2], ignore_index=True)
+    out3 = compute_progression_beyond_pass(ev3, passes, {"k": 5})
+    assert not out3["progression_beyond_pass_k"].iloc[0]
+
+
+def test_old_label_would_have_been_positive_for_the_same_pass():
+    # sanity of the motivation: the old definition fires on the receipt at the pass end
+    from src.labels.dangerous_progression import compute_downstream_labels
+
+    ev = _toy_events()
+    passes = pd.DataFrame({"event_uuid": ["u0"], "match_id": [1], "possession_id": [1]})
+    old = compute_downstream_labels(ev, passes, {"k": 5})
+    assert bool(old["dangerous_progression_k"].iloc[0])  # receipt at x=95 is a final-third entry
+
+
+def test_last_pass_of_possession_is_negative():
+    ev = _toy_events()
+    passes = pd.DataFrame({"event_uuid": ["u3"], "match_id": [1], "possession_id": [1]})
+    out = compute_progression_beyond_pass(ev.iloc[:4], passes, {"k": 5})
+    assert not out["progression_beyond_pass_k"].iloc[0]

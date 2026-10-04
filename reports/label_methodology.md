@@ -85,6 +85,9 @@ Default k = 5 (configurable in `configs/labels.yaml`).
 ### Why k=5?
 A window of 5 events captures roughly 1–3 passes and carry actions — enough to see the immediate downstream consequence of a pass without attributing outcomes from much later in the possession to the original pass.  This is a design choice; sensitivity to k should be evaluated in ablations.
 
+### Known defect (found in the external review; label kept unchanged for comparability)
+The look-ahead includes **the receipt of this very pass** (a `Ball Receipt*` recorded at the pass end location), so any pass with `end_x >= 80` is positive almost by definition: P(label | end_x >= 80) = 0.943, P(label | end_x < 80) = 0.248, and `end_x` alone gives ROC AUC 0.786 (reports/audit/defect_audit_before.md, section 4).  The look-ahead also reads defending-team events (pressure, duel, clearance, ...) using their own-frame coordinates, which are not flipped.  Results on this label are therefore **superseded as evidence about 360 context or event features**; use Label G for that question.  The reported "expected prevalence" of 15-30% in the table below does not describe this label: the measured prevalence is 43%.
+
 ---
 
 ## Label C — `final_third_entry_k`
@@ -168,6 +171,66 @@ zone_value(z) = raw_zone_value(z) / max(raw_zone_value)
 
 ---
 
+## Label G — `progression_beyond_pass_k` (non-tautological pass label)
+
+### Question
+Does the passing team make *further* dangerous progress in the next *k* events, once the destination the pass itself reached has been taken out of the picture?
+
+### Definition
+Binary, k = 5 (`configs/labels.yaml -> progression_beyond_pass`).  Take the next *k* events of the same possession (the same window as Label B), then:
+
+1. **Drop events by the other team.**  Their coordinates are in the opposite frame and they are not ball progression.
+2. **Drop the receipt of this pass**: the first `Ball Receipt*` by the passing team in the window, provided no passing-team Pass / Carry / Dribble / Shot comes before it.  The receipt still uses up one of the *k* slots, so the window is exactly the one used by Label B.
+3. Positive if any remaining event satisfies one of:
+   - **shot** - the event is a Shot;
+   - **new box entry** - its ball position is in the box (x >= 102, 18 <= y <= 62) **and the pass end was not in the box**;
+   - **further upfield** - its ball position is >= 10 m beyond `end_x` **and** in a more advanced zone than the pass end.  Zones, in order: own third (x < 40), middle third (40 <= x < 80), final third outside the box, penalty box.
+
+Ball position of an event is `(pass_end_x, pass_end_y)` for a Pass and `(location_x, location_y)` otherwise (carries contribute their start point only, as in Label B).  A pass with no events after it in its possession is negative.
+
+### Invariants (enforced in `tests/test_labels.py`)
+- The receipt of the pass alone never makes the label positive, wherever the pass ends.
+- Opponent events never change the label.
+- A box entry does not count when the pass already ended in the box.
+- A +10 m gain inside the same zone does not count; it must also reach a more advanced zone.
+- Only the *k* events after the pass matter: events before the pass or beyond the window never change the label.
+- A pass at the end of a possession is negative.
+
+### Worked examples
+All from the cached data; `ball` is the position the definition uses.
+
+**1. Old positive, new negative (the receipt does the work).**  Belgium pass from (87, 16) ending at (97, 2).
+
+| step | event | team | ball |
+|---|---|---|---|
+| +0 | Pass (the pass being labelled) | Belgium | (97, 2) |
+| +1 | Ball Receipt* | Belgium | (97, 2) - **dropped: receipt of this pass** |
+| +2 | Carry | Belgium | (97, 2) - same zone, no gain |
+| +3 | Pass | Belgium | (80, 4) - backwards, no gain |
+| +4 | Ball Receipt* | Belgium | (80, 4) - no gain |
+| +5 | Carry | Belgium | (80, 4) - no gain |
+
+`dangerous_progression_k` = 1 (receipt at x = 97 >= 80).  `progression_beyond_pass_k` = 0.
+
+**2. New positive: further upfield.**  Barcelona pass from (45, 53) ending at (57, 35) (middle third).  Event +3 is a Barcelona pass ending at (86, 14): +29 m beyond `end_x` and in the final third (zone 2 > zone 1), so the label is 1.  (Event +1, the receipt at (57, 35), is dropped.)
+
+**3. Synthetic: opponent event ignored.**  Pass ending at (60, 40); +1 receipt (dropped); +2 opponent `Pressure` recorded at (110, 40) in the *opponent's* frame (really near the passing team's own goal).  Label 0; the old definition would see x = 110 inside the box.
+
+**4. Synthetic: pass already in the box.**  Pass ending at (105, 40); +1 receipt (dropped); +2 own pass ending at (108, 40).  Label 0 (no *new* entry); a shot at +2 would make it 1.
+
+### Behaviour on the data
+Prevalence 21.6% (old label: 43.3%).  Of passes ending at x >= 80, 17.4% are positive (old: 94.3%); of passes ending at x < 80, 23.1% (old: 24.8%).  `end_x` alone now gives ROC AUC 0.447, i.e. below chance: a pass that already ends far upfield leaves less room for further progress.  The destination no longer buys a positive label.
+
+### Implementation
+`src/labels/progression_beyond_pass.py :: compute_progression_beyond_pass()` (pure per-pass rule in `label_window()`); also called from `scripts/reproduce_v1.py`.
+
+### Limitations
+- Carries contribute only their start point (the events table has no carry end), so progress made while carrying appears only through the next event.
+- The 10 m / zone thresholds are design choices, not tuned.
+- It is a different question from Label B: it asks about *later* progress, so it can be lower for passes that are already deep.
+
+---
+
 ## Label prevalence (expected ranges)
 
 Based on typical StatsBomb open data (World Cup / La Liga):
@@ -176,7 +239,8 @@ Based on typical StatsBomb open data (World Cup / La Liga):
 |-------|----------------------|-------|
 | `strict_line_break` | ~10–20% | Higher in possession-dominant teams |
 | `loose_line_break` | ~25–40% | By construction ≥ strict |
-| `dangerous_progression_k` (k=5) | ~15–30% | Varies by pitch zone |
+| `dangerous_progression_k` (k=5) | ~15–30% (measured 43%) | Varies by pitch zone; see the known-defect note in Label B |
+| `progression_beyond_pass_k` (k=5) | measured 22% | Label G |
 | `final_third_entry_k` | ~10–25% | Higher from mid-third |
 | `box_entry_k` | ~5–12% | Lower; only deep entries count |
 | `shot_within_k` | ~3–8% | Relatively rare |

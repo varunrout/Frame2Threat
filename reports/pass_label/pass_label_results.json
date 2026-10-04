@@ -1,0 +1,604 @@
+{
+ "n": {
+  "train": 36037,
+  "val": 7307,
+  "test": 7344
+ },
+ "test_matches": 15,
+ "dangerous_progression_k": {
+  "point": [
+   {
+    "model": "LR_event",
+    "roc_auc": 0.8025748122032903,
+    "avg_precision": 0.8079405630320714,
+    "brier": 0.17311906633907442,
+    "log_loss": 0.5381006773395529
+   },
+   {
+    "model": "XGB_event",
+    "roc_auc": 0.8807371955766317,
+    "avg_precision": 0.891055597503142,
+    "brier": 0.12986693190439824,
+    "log_loss": 0.40648065528407945
+   },
+   {
+    "model": "XGB_event360",
+    "roc_auc": 0.8821740742504158,
+    "avg_precision": 0.8924656850583974,
+    "brier": 0.12879055135796047,
+    "log_loss": 0.4005768040504667
+   },
+   {
+    "model": "LR_end_x",
+    "roc_auc": 0.8003446079466023,
+    "avg_precision": 0.8058874723041914,
+    "brier": 0.17610854491431627,
+    "log_loss": 0.549649996578685
+   },
+   {
+    "model": "XGB_end_xy",
+    "roc_auc": 0.8565429209722353,
+    "avg_precision": 0.8649016917397377,
+    "brier": 0.1399890453221553,
+    "log_loss": 0.4350406296401483
+   }
+  ],
+  "point_360_subset": [
+   {
+    "model": "XGB_event",
+    "roc_auc": 0.8663111581205056,
+    "avg_precision": 0.8684506181868149,
+    "brier": 0.13536753288351933,
+    "log_loss": 0.4278293960479479
+   },
+   {
+    "model": "XGB_event360",
+    "roc_auc": 0.8699352886303373,
+    "avg_precision": 0.8709442665234561,
+    "brier": 0.1338393868862333,
+    "log_loss": 0.41750307539754
+   }
+  ],
+  "bootstrap": [
+   {
+    "model": "LR_event",
+    "stat": "roc_auc",
+    "estimate": 0.8025748122032903,
+    "ci_low": 0.7853105556766996,
+    "ci_high": 0.8194796732403238
+   },
+   {
+    "model": "LR_event",
+    "stat": "avg_precision",
+    "estimate": 0.8079405630320714,
+    "ci_low": 0.7843367261829912,
+    "ci_high": 0.8323995995880268
+   },
+   {
+    "model": "LR_event",
+    "stat": "brier",
+    "estimate": 0.17311906633907442,
+    "ci_low": 0.16611702673763418,
+    "ci_high": 0.18116250527588865
+   },
+   {
+    "model": "XGB_event",
+    "stat": "roc_auc",
+    "estimate": 0.8807371955766317,
+    "ci_low": 0.8665157109567451,
+    "ci_high": 0.8930232801463168
+   },
+   {
+    "model": "XGB_event",
+    "stat": "avg_precision",
+    "estimate": 0.891055597503142,
+    "ci_low": 0.8715036917420158,
+    "ci_high": 0.907321901073075
+   },
+   {
+    "model": "XGB_event",
+    "stat": "brier",
+    "estimate": 0.12986693190439824,
+    "ci_low": 0.12254860829001751,
+    "ci_high": 0.1381693104600002
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "roc_auc",
+    "estimate": 0.8821740742504158,
+    "ci_low": 0.8674973083999471,
+    "ci_high": 0.8945380410086422
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "avg_precision",
+    "estimate": 0.8924656850583974,
+    "ci_low": 0.873137220977001,
+    "ci_high": 0.908374006294809
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "brier",
+    "estimate": 0.12879055135796047,
+    "ci_low": 0.12113305396368786,
+    "ci_high": 0.13718833321327553
+   },
+   {
+    "model": "LR_end_x",
+    "stat": "roc_auc",
+    "estimate": 0.8003446079466023,
+    "ci_low": 0.7831701474767481,
+    "ci_high": 0.8178843501422074
+   },
+   {
+    "model": "LR_end_x",
+    "stat": "avg_precision",
+    "estimate": 0.8058874723041914,
+    "ci_low": 0.780911813931394,
+    "ci_high": 0.8327139384668126
+   },
+   {
+    "model": "LR_end_x",
+    "stat": "brier",
+    "estimate": 0.17610854491431627,
+    "ci_low": 0.16863600015276314,
+    "ci_high": 0.1846892005850309
+   },
+   {
+    "model": "XGB_end_xy",
+    "stat": "roc_auc",
+    "estimate": 0.8565429209722353,
+    "ci_low": 0.8416023733449427,
+    "ci_high": 0.8696393556038157
+   },
+   {
+    "model": "XGB_end_xy",
+    "stat": "avg_precision",
+    "estimate": 0.8649016917397377,
+    "ci_low": 0.8415214668171739,
+    "ci_high": 0.884506294581846
+   },
+   {
+    "model": "XGB_end_xy",
+    "stat": "brier",
+    "estimate": 0.1399890453221553,
+    "ci_low": 0.13345889769428212,
+    "ci_high": 0.1478349874682071
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "roc_auc",
+    "estimate": 0.0014368786737841699,
+    "ci_low": -0.0011489219167582832,
+    "ci_high": 0.0038288490934294535
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "avg_precision",
+    "estimate": 0.0014100875552554015,
+    "ci_low": -0.0005443136530092124,
+    "ci_high": 0.003253619475460001
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "brier",
+    "estimate": -0.0010763805464377718,
+    "ci_low": -0.002608247943607913,
+    "ci_high": 0.0003872900884823066
+   },
+   {
+    "model": "XGB_event - LR_end_x",
+    "stat": "roc_auc",
+    "estimate": 0.08039258763002932,
+    "ci_low": 0.0654963822855581,
+    "ci_high": 0.0964702756554507
+   },
+   {
+    "model": "XGB_event - LR_end_x",
+    "stat": "avg_precision",
+    "estimate": 0.08516812519895056,
+    "ci_low": 0.070036480136147,
+    "ci_high": 0.10042602194045294
+   },
+   {
+    "model": "XGB_event - LR_end_x",
+    "stat": "brier",
+    "estimate": -0.046241613009918026,
+    "ci_low": -0.05430156447651623,
+    "ci_high": -0.03900634939716745
+   },
+   {
+    "model": "XGB_event - XGB_end_xy",
+    "stat": "roc_auc",
+    "estimate": 0.024194274604396382,
+    "ci_low": 0.019074154770569247,
+    "ci_high": 0.02988901404418002
+   },
+   {
+    "model": "XGB_event - XGB_end_xy",
+    "stat": "avg_precision",
+    "estimate": 0.02615390576340426,
+    "ci_low": 0.019312443182104292,
+    "ci_high": 0.0335641298588462
+   },
+   {
+    "model": "XGB_event - XGB_end_xy",
+    "stat": "brier",
+    "estimate": -0.010122113417757067,
+    "ci_low": -0.012914317309644506,
+    "ci_high": -0.0074533176994643745
+   }
+  ],
+  "bootstrap_360_subset": [
+   {
+    "model": "XGB_event",
+    "stat": "roc_auc",
+    "estimate": 0.8663111581205056,
+    "ci_low": 0.8469642546827683,
+    "ci_high": 0.8842004303787618
+   },
+   {
+    "model": "XGB_event",
+    "stat": "avg_precision",
+    "estimate": 0.8684506181868149,
+    "ci_low": 0.8513105178532127,
+    "ci_high": 0.8839072602935555
+   },
+   {
+    "model": "XGB_event",
+    "stat": "brier",
+    "estimate": 0.13536753288351933,
+    "ci_low": 0.12437281229130016,
+    "ci_high": 0.1484780664572693
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "roc_auc",
+    "estimate": 0.8699352886303373,
+    "ci_low": 0.8523084129828389,
+    "ci_high": 0.8857402983783418
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "avg_precision",
+    "estimate": 0.8709442665234561,
+    "ci_low": 0.8533243377752784,
+    "ci_high": 0.8856543577605865
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "brier",
+    "estimate": 0.1338393868862333,
+    "ci_low": 0.12292771588760924,
+    "ci_high": 0.1468424849280588
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "roc_auc",
+    "estimate": 0.00362413050983168,
+    "ci_low": -0.0012238862938272754,
+    "ci_high": 0.008293890709331064
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "avg_precision",
+    "estimate": 0.00249364833664123,
+    "ci_low": -0.002168520247328154,
+    "ci_high": 0.006709734305874762
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "brier",
+    "estimate": -0.0015281459972860123,
+    "ci_low": -0.0041284992666850515,
+    "ci_high": 0.001403161617403539
+   }
+  ],
+  "self_determination": {
+   "prevalence_test": 0.44784858387799564,
+   "P(label | end_x >= 80)": 0.9481517042726836,
+   "P(label | end_x < 80)": 0.24976240258505988,
+   "share of positives with end_x >= 80": 0.6004864700516874,
+   "ROC AUC of end_x alone": 0.8003446079466023
+  },
+  "n_test_360": 3736
+ },
+ "progression_beyond_pass_k": {
+  "point": [
+   {
+    "model": "LR_event",
+    "roc_auc": 0.6110665089765392,
+    "avg_precision": 0.29605073575035656,
+    "brier": 0.16988291357836938,
+    "log_loss": 0.5208040884193633
+   },
+   {
+    "model": "XGB_event",
+    "roc_auc": 0.7179933323805423,
+    "avg_precision": 0.4110333913777289,
+    "brier": 0.18890954023826925,
+    "log_loss": 0.5545715051308722
+   },
+   {
+    "model": "XGB_event360",
+    "roc_auc": 0.7229481659250562,
+    "avg_precision": 0.4238852709357228,
+    "brier": 0.1837711097903665,
+    "log_loss": 0.5434702353793123
+   },
+   {
+    "model": "LR_end_x",
+    "roc_auc": 0.5427957214776278,
+    "avg_precision": 0.2656442066417092,
+    "brier": 0.17334573792365562,
+    "log_loss": 0.5309245098872893
+   },
+   {
+    "model": "XGB_end_xy",
+    "roc_auc": 0.6874380992179546,
+    "avg_precision": 0.3585929801507381,
+    "brier": 0.22468497205510887,
+    "log_loss": 0.6371225803825815
+   }
+  ],
+  "point_360_subset": [
+   {
+    "model": "XGB_event",
+    "roc_auc": 0.7060638810456019,
+    "avg_precision": 0.39019849103559695,
+    "brier": 0.19809987262147577,
+    "log_loss": 0.5762644114254668
+   },
+   {
+    "model": "XGB_event360",
+    "roc_auc": 0.7090070791748937,
+    "avg_precision": 0.40396181011307647,
+    "brier": 0.18494364798065724,
+    "log_loss": 0.5468274918423124
+   }
+  ],
+  "bootstrap": [
+   {
+    "model": "LR_event",
+    "stat": "roc_auc",
+    "estimate": 0.6110665089765392,
+    "ci_low": 0.5959858934972886,
+    "ci_high": 0.6281522947259666
+   },
+   {
+    "model": "LR_event",
+    "stat": "avg_precision",
+    "estimate": 0.29605073575035656,
+    "ci_low": 0.2722086028048217,
+    "ci_high": 0.3241167807346416
+   },
+   {
+    "model": "LR_event",
+    "stat": "brier",
+    "estimate": 0.16988291357836938,
+    "ci_low": 0.16373681097474885,
+    "ci_high": 0.17549267303891722
+   },
+   {
+    "model": "XGB_event",
+    "stat": "roc_auc",
+    "estimate": 0.7179933323805423,
+    "ci_low": 0.703020577954848,
+    "ci_high": 0.733283743061316
+   },
+   {
+    "model": "XGB_event",
+    "stat": "avg_precision",
+    "estimate": 0.4110333913777289,
+    "ci_low": 0.39228653941255887,
+    "ci_high": 0.43508562851373345
+   },
+   {
+    "model": "XGB_event",
+    "stat": "brier",
+    "estimate": 0.18890954023826925,
+    "ci_low": 0.18217301012608408,
+    "ci_high": 0.19572331680593605
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "roc_auc",
+    "estimate": 0.7229481659250562,
+    "ci_low": 0.7077568313261811,
+    "ci_high": 0.7385265127760783
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "avg_precision",
+    "estimate": 0.4238852709357228,
+    "ci_low": 0.4087664606484045,
+    "ci_high": 0.44483999334092345
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "brier",
+    "estimate": 0.1837711097903665,
+    "ci_low": 0.17699467120114037,
+    "ci_high": 0.189818814632047
+   },
+   {
+    "model": "LR_end_x",
+    "stat": "roc_auc",
+    "estimate": 0.5427957214776278,
+    "ci_low": 0.5269947036103755,
+    "ci_high": 0.5571323393900369
+   },
+   {
+    "model": "LR_end_x",
+    "stat": "avg_precision",
+    "estimate": 0.2656442066417092,
+    "ci_low": 0.24823369148821076,
+    "ci_high": 0.2888197581004753
+   },
+   {
+    "model": "LR_end_x",
+    "stat": "brier",
+    "estimate": 0.17334573792365562,
+    "ci_low": 0.1665411802413816,
+    "ci_high": 0.1798175156469051
+   },
+   {
+    "model": "XGB_end_xy",
+    "stat": "roc_auc",
+    "estimate": 0.6874380992179546,
+    "ci_low": 0.6704135987974894,
+    "ci_high": 0.7031449833404964
+   },
+   {
+    "model": "XGB_end_xy",
+    "stat": "avg_precision",
+    "estimate": 0.3585929801507381,
+    "ci_low": 0.3377044610711811,
+    "ci_high": 0.37983356061875806
+   },
+   {
+    "model": "XGB_end_xy",
+    "stat": "brier",
+    "estimate": 0.22468497205510887,
+    "ci_low": 0.2209968262230632,
+    "ci_high": 0.22908829061582073
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "roc_auc",
+    "estimate": 0.00495483354451387,
+    "ci_low": -0.0010670722565949613,
+    "ci_high": 0.010638796646569583
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "avg_precision",
+    "estimate": 0.01285187955799394,
+    "ci_low": 0.0015236727316930668,
+    "ci_high": 0.024993589619669125
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "brier",
+    "estimate": -0.005138430447902742,
+    "ci_low": -0.010044051613189709,
+    "ci_high": -0.0006257514703989256
+   },
+   {
+    "model": "XGB_event - LR_end_x",
+    "stat": "roc_auc",
+    "estimate": 0.17519761090291452,
+    "ci_low": 0.16089190769969747,
+    "ci_high": 0.18806972327183502
+   },
+   {
+    "model": "XGB_event - LR_end_x",
+    "stat": "avg_precision",
+    "estimate": 0.1453891847360197,
+    "ci_low": 0.1245040052374764,
+    "ci_high": 0.1662683854739612
+   },
+   {
+    "model": "XGB_event - LR_end_x",
+    "stat": "brier",
+    "estimate": 0.015563802314613628,
+    "ci_low": 0.005716869543833206,
+    "ci_high": 0.024633094273899713
+   },
+   {
+    "model": "XGB_event - XGB_end_xy",
+    "stat": "roc_auc",
+    "estimate": 0.03055523316258768,
+    "ci_low": 0.01757983188852806,
+    "ci_high": 0.045189448198368454
+   },
+   {
+    "model": "XGB_event - XGB_end_xy",
+    "stat": "avg_precision",
+    "estimate": 0.05244041122699078,
+    "ci_low": 0.029993190356906587,
+    "ci_high": 0.07557454099938614
+   },
+   {
+    "model": "XGB_event - XGB_end_xy",
+    "stat": "brier",
+    "estimate": -0.03577543181683962,
+    "ci_low": -0.0411160328793081,
+    "ci_high": -0.030934873296077508
+   }
+  ],
+  "bootstrap_360_subset": [
+   {
+    "model": "XGB_event",
+    "stat": "roc_auc",
+    "estimate": 0.7060638810456019,
+    "ci_low": 0.6847510747581735,
+    "ci_high": 0.7280838078171923
+   },
+   {
+    "model": "XGB_event",
+    "stat": "avg_precision",
+    "estimate": 0.39019849103559695,
+    "ci_low": 0.36145397362559023,
+    "ci_high": 0.4263122763387873
+   },
+   {
+    "model": "XGB_event",
+    "stat": "brier",
+    "estimate": 0.19809987262147577,
+    "ci_low": 0.19213296181348133,
+    "ci_high": 0.20562652930501354
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "roc_auc",
+    "estimate": 0.7090070791748937,
+    "ci_low": 0.6907536813944126,
+    "ci_high": 0.7305790014994058
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "avg_precision",
+    "estimate": 0.40396181011307647,
+    "ci_low": 0.38737368451264154,
+    "ci_high": 0.4290806123259572
+   },
+   {
+    "model": "XGB_event360",
+    "stat": "brier",
+    "estimate": 0.18494364798065724,
+    "ci_low": 0.1750697079998465,
+    "ci_high": 0.1958349063435124
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "roc_auc",
+    "estimate": 0.0029431981292917797,
+    "ci_low": -0.0057241078144652565,
+    "ci_high": 0.011089699240042288
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "avg_precision",
+    "estimate": 0.013763319077479519,
+    "ci_low": -0.0037196686415259207,
+    "ci_high": 0.032331509103157824
+   },
+   {
+    "model": "XGB_event360 - XGB_event",
+    "stat": "brier",
+    "estimate": -0.013156224640818531,
+    "ci_low": -0.018431247094023568,
+    "ci_high": -0.007981944133912133
+   }
+  ],
+  "self_determination": {
+   "prevalence_test": 0.22426470588235295,
+   "P(label | end_x >= 80)": 0.1872299567930869,
+   "P(label | end_x < 80)": 0.23892796046379017,
+   "share of positives with end_x >= 80": 0.23679417122040072,
+   "ROC AUC of end_x alone": 0.45720427852237233
+  },
+  "n_test_360": 3736
+ }
+}

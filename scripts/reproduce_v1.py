@@ -34,6 +34,7 @@ from src.data.splits import create_match_level_splits, materialise_split_parquet
 from src.evaluation.metrics import classification_metrics
 from src.features.event_features import build_event_features
 from src.labels.dangerous_progression import compute_downstream_labels
+from src.labels.progression_beyond_pass import compute_progression_beyond_pass
 from src.models.tabular import TabularClassifier
 
 LOGGER = logging.getLogger("frame2threat.reproduce_v1")
@@ -108,6 +109,9 @@ def _build_from_matches(
             season_id=season_id,
         )
         passes = compute_downstream_labels(events, passes, labels_cfg)
+        passes = compute_progression_beyond_pass(
+            events, passes, labels_cfg.get("progression_beyond_pass", {})
+        )
         if not passes.empty:
             parts.append(passes)
 
