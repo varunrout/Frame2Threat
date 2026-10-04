@@ -68,7 +68,7 @@ To make a full-possession model headline-safe, one of these paths is required:
 
 ---
 
-## Addendum: defects found in the external review (EXP-020 onwards)
+## Addendum: defects found in the self-audit (EXP-020 onwards)
 
 Measured by `scripts/audit_defects.py` (`reports/audit/defect_audit_before.md`, `defect_audit_after.md`).
 
@@ -96,9 +96,9 @@ box entry (event location, the label's own definition; pre-fix data):
 | f | 0.25 | 0.5 | 0.75 |
 |---|---:|---:|---:|
 | event location | 20.8% | 36.9% | 58.7% |
-| incl. pass/carry end locations (the review's definition) | 27.4% | 42.0% | 64.0% |
+| incl. pass/carry end locations (the initial audit's definition) | 27.4% | 42.0% | 64.0% |
 
-(Under the review's definition about 3% of *safe* possessions also reach the box through a
+(Under the initial audit's definition about 3% of *safe* possessions also reach the box through a
 pass/carry end that the label ignores.)  A model scored on those prefixes is partly reading the answer.
 The v3 numbers (GRU 0.820, XGBoost 0.847 at 50%) are withdrawn.  The event-time formulation only
 creates a row when no shot or box entry has occurred at or before `t`, so this share is 0% by construction.

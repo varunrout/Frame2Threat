@@ -33,7 +33,7 @@ Total events: 373,103. Id 3 (ball receipt) = 102,912; id 4 (dribble) = 2,999.
 
 ## 3. Already-realised outcome in the prefix
 
-Two box definitions: *event location* (what `poss_dangerous` uses; safe = 0% by construction) and *+ pass/carry end location* (the review's figures; the label ignores ends, so some 'safe' possessions already put the ball in the box via a pass/carry end).
+Two box definitions: *event location* (what `poss_dangerous` uses; safe = 0% by construction) and *+ pass/carry end location* (the initial audit's figures; the label ignores ends, so some 'safe' possessions already put the ball in the box via a pass/carry end).
 
 | definition | f | dangerous already realised | safe already realised |
 |---|---:|---:|---:|

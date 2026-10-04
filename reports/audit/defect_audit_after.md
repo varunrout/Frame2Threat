@@ -55,7 +55,7 @@ id 3 is Ball Receipt and id 4 is Dribble in every module (tests/test_event_types
 - AUC of prefix length ceil(n*0.75): 0.676
 
 
-Two box definitions: *event location* (what `poss_dangerous` uses; safe = 0% by construction) and *+ pass/carry end location* (the review's figures; the label ignores ends, so some 'safe' possessions already put the ball in the box via a pass/carry end).
+Two box definitions: *event location* (what `poss_dangerous` uses; safe = 0% by construction) and *+ pass/carry end location* (the initial audit's figures; the label ignores ends, so some 'safe' possessions already put the ball in the box via a pass/carry end).
 
 | definition | f | dangerous already realised | safe already realised |
 |---|---:|---:|---:|

@@ -1,4 +1,4 @@
-"""Reproduce the four defects found in the external review (Phase 0 audit).
+"""Reproduce the four defects found in the self-audit (Phase 0 audit).
 
 Usage:  python scripts/audit_defects.py [--out reports/audit/defect_audit_before.md]
 
@@ -88,7 +88,7 @@ def audit_realised(poss: pd.DataFrame) -> list[str]:
     out = ["## 3. Already-realised outcome in the prefix", ""]
     out += [
         "Two box definitions: *event location* (what `poss_dangerous` uses; safe = 0% by "
-        "construction) and *+ pass/carry end location* (the review's figures; the label ignores "
+        "construction) and *+ pass/carry end location* (the initial audit's figures; the label ignores "
         "ends, so some 'safe' possessions already put the ball in the box via a pass/carry end).",
         "",
         "| definition | f | dangerous already realised | safe already realised |",

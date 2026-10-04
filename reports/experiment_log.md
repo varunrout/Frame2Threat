@@ -621,9 +621,9 @@ Interpretation: ~~the GRU usually commits to a dangerous forecast around the fin
 
 ---
 
-## Corrections after the external review (EXP-020 to EXP-025)
+## Corrections after the self-audit (EXP-020 to EXP-025)
 
-These entries are dated by the repository history, not reconstructed.  They follow an external review whose four defects were reproduced by `scripts/audit_defects.py` (`reports/audit/defect_audit_before.md`) before any fix.  Notes on the reproduction: items 1, 2 and 4 matched the review exactly; for item 3 the review counted pass/carry *end* locations in the box test (27% / 42% / 64%), whereas the stored label uses event location only (20.8% / 36.9% / 58.7%); both are recorded.
+These entries are dated by the repository history, not reconstructed.  They follow a self-audit whose four defects were reproduced by `scripts/audit_defects.py` (`reports/audit/defect_audit_before.md`) before any fix.  Notes on the reproduction: items 1, 2 and 4 matched the initial audit exactly; for item 3 the initial audit counted pass/carry *end* locations in the box test (27% / 42% / 64%), whereas the stored label uses event location only (20.8% / 36.9% / 58.7%); both are recorded.
 
 ### EXP-020 — Event-type vocabulary fix; tipping points and LOO re-run
 

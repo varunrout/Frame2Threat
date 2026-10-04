@@ -6,7 +6,7 @@
 
 > ## Corrections (October 2026): read this first
 >
-> An external review found four defects.  Each was reproduced (`reports/audit/defect_audit_before.md`), fixed, and every affected result re-run on the **unchanged** match-level split.  Superseded numbers are kept below, marked *superseded*, with the reason and the corrected figure beside them.  Corrected-state audit: `reports/audit/defect_audit_after.md`.
+> A self-audit found four defects.  Each was reproduced (`reports/audit/defect_audit_before.md`), fixed, and every affected result re-run on the **unchanged** match-level split.  Superseded numbers are kept below, marked *superseded*, with the reason and the corrected figure beside them.  Corrected-state audit: `reports/audit/defect_audit_after.md`.
 >
 > | Claim | Old | Corrected | Status |
 > |---|---|---|---|

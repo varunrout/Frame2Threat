@@ -85,7 +85,7 @@ Default k = 5 (configurable in `configs/labels.yaml`).
 ### Why k=5?
 A window of 5 events captures roughly 1–3 passes and carry actions — enough to see the immediate downstream consequence of a pass without attributing outcomes from much later in the possession to the original pass.  This is a design choice; sensitivity to k should be evaluated in ablations.
 
-### Known defect (found in the external review; label kept unchanged for comparability)
+### Known defect (found in the self-audit; label kept unchanged for comparability)
 The look-ahead includes **the receipt of this very pass** (a `Ball Receipt*` recorded at the pass end location), so any pass with `end_x >= 80` is positive almost by definition: P(label | end_x >= 80) = 0.943, P(label | end_x < 80) = 0.248, and `end_x` alone gives ROC AUC 0.786 (reports/audit/defect_audit_before.md, section 4).  The look-ahead also reads defending-team events (pressure, duel, clearance, ...) using their own-frame coordinates, which are not flipped.  Results on this label are therefore **superseded as evidence about 360 context or event features**; use Label G for that question.  The reported "expected prevalence" of 15-30% in the table below does not describe this label: the measured prevalence is 43%.
 
 ---
