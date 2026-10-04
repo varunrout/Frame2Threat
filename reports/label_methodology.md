@@ -418,7 +418,7 @@ Implementation: `_assign_phase()` in `possession_labels.py`.
 | `poss_outcome_tier` | Mode = 0 | ~55–70% of possessions reach nothing |
 | `poss_tempo` | Mean ≈ 0.8–1.2 | Counter-attacks may exceed 2.0 |
 | `poss_verticality` | Mean ≈ 0.3–0.6 | Varies widely by team style |
-| `poss_recycled` | ~5–15% | More common in slow build-up play |
+| `poss_recycled` | ~5–15% (measured 30.6% after the coordinate-frame fix; 52.0% before it) | Much longer possessions by construction; **not** more dangerous once length is controlled (`notebooks/09_possession_eda.ipynb` section 5b) |
 | `poss_phase` | Mode = `progression` | Build-up and counter phases each ~15–25% |
 | `poss_broke_pressure` | ~10–20% | Higher for press-resistant teams |
 | `poss_bypassed_lines` | ~5–10% | More common in counter-pressing styles |

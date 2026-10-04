@@ -23,7 +23,9 @@ Artefacts: `models/eventtime_xgboost.joblib`, `models/eventtime_gru.pt`,
 ## Timing Contract
 
 - One snapshot row per event index `t < n-1` with **no shot or box entry by the possessing team at
-  or before `t`**. Label: a shot or box entry by the possessing team occurs in events `t+1..n-1`.
+  or before `t`**.  A possessing-team pass whose end location is in the box counts as the box entry itself
+  (second self-audit round; before this, `max_x_so_far` and the GRU's end-x/end-y inputs already contained
+  the entry that the next event records). Label: a shot or box entry by the possessing team occurs in events `t+1..n-1`.
 - Features use events `0..t` only: current ball x/y (last possessing-team event), maximum x so
   far, events / passes / carries / pressures so far, elapsed **seconds** since the first event
   (real timestamps), the current event's type (one-hot), whether it was the possessing team's,
@@ -41,7 +43,7 @@ Artefacts: `models/eventtime_xgboost.joblib`, `models/eventtime_gru.pt`,
 | Baseline A | Logistic regression on current ball x/y |
 | Baseline B | Logistic regression on events-so-far (how much length alone explains) |
 | Reference | XGBoost on start context only |
-| XGBoost | Full snapshot feature set (59 trees, depth 5, chosen on validation log loss) |
+| XGBoost | Full snapshot feature set (52 trees, depth 5, min child weight 20, chosen on validation log loss) |
 | GRU | Causal, 1 layer, hidden 64, learned 8-dim event-type embedding (replaces the raw numeric `type_id` of v2); chosen on validation log loss |
 
 Training: train matches only; every hyper-parameter chosen on validation. Split unchanged
@@ -49,34 +51,38 @@ Training: train matches only; every hyper-parameter chosen on validation. Split 
 
 ## Results (test split, 15 matches; match-level bootstrap 95% intervals)
 
-| Model | ROC AUC, all eligible snapshots (44,914 rows) | ROC AUC, one random snapshot per possession (2,452) |
-|---|---:|---:|
-| Baseline A: ball x/y | 0.648 [0.630, 0.664] | 0.713 [0.688, 0.735] |
-| Baseline B: events so far | 0.564 [0.529, 0.601] | 0.530 [0.496, 0.567] |
-| Start context only | 0.586 [0.563, 0.610] | 0.643 [0.612, 0.668] |
-| XGBoost | 0.668 [0.653, 0.681] | 0.749 [0.727, 0.772] |
-| GRU | 0.670 [0.650, 0.689] | 0.756 [0.739, 0.777] |
+| Model | ROC AUC, all eligible snapshots (43,541 rows) | ROC AUC, one random snapshot per possession (2,286) | 20-draw mean (sd) |
+|---|---:|---:|---:|
+| Baseline A: ball x/y | 0.642 [0.622, 0.661] | 0.695 [0.674, 0.717] | 0.692 (0.006) |
+| Baseline B: events so far | 0.561 [0.523, 0.603] | 0.608 [0.579, 0.638] | 0.612 (0.008) |
+| Start context only | 0.592 [0.570, 0.617] | 0.599 [0.572, 0.626] | 0.599 (0.000) |
+| XGBoost | 0.665 [0.647, 0.681] | 0.736 [0.714, 0.759] | 0.729 (0.006) |
+| GRU | 0.664 [0.642, 0.687] | 0.739 [0.710, 0.767] | 0.744 (0.007) |
 
-- XGBoost and the GRU are statistically indistinguishable (GRU - XGB, all rows: +0.007
-  [-0.005, +0.022]).
-- Both beat the ball-position baseline by only +0.02 (all rows) to +0.04 (one per possession).
+*Superseded first version (same-moment leak, 44,914 rows):* all snapshots 0.648 / 0.564 / 0.586 / 0.668 / 0.670; one per possession 0.713 / 0.530 / 0.643 / 0.749 / 0.756 (same model order).  Before/after tables: `reports/event_time/same_moment_fix_before_after.md`.
+
+- XGBoost and the GRU are statistically indistinguishable (GRU - XGB, all rows: -0.001
+  [-0.021, +0.022]).
+- Both beat the ball-position baseline by only +0.02 (all rows) to +0.04 (one per possession); GRU - ball x/y is +0.021 [-0.000, +0.040] over all rows.
   Most of the signal is where the ball currently is.
-- Length alone is close to uninformative once the length leak is removed (0.53-0.56).
+- Length so far is weak (0.56 over all rows, 0.61 with one snapshot per possession, where dangerous possessions have shorter pre-danger histories by construction).
 - Replacing the old fraction headline (GRU 0.820, XGBoost 0.847 at 50% of events) with this
-  formulation lowers the headline to roughly 0.67-0.76 depending on how snapshots are weighted.
+  formulation lowers the headline to roughly 0.66-0.74 depending on how snapshots are weighted.
 
 ## Known Limitations
 
-- **Calibration is imperfect.** Both models under-predict across the range on the test split
-  (e.g. GRU bin 0.3-0.4: mean prediction 0.35, observed 0.41). The test split has 15 matches and a
-  higher row prevalence (0.371) than train (0.325) and validation (0.280); there is no recalibration.
+- **Calibration is imperfect.** XGBoost under-predicts between 0.3 and 0.6 (bin 0.5-0.6: mean 0.54,
+  observed 0.63); the GRU is close in the 0.3-0.7 bins but under-predicts below 0.3 (bin 0.0-0.1: mean
+  0.08, observed 0.19). The test split has 15 matches and a higher row prevalence (0.404) than train
+  (0.362) and validation (0.329); there is no recalibration.
 - Snapshots exist only where the possession continues (`t < n-1`), so the final event of a
   non-dangerous possession is not scored. A sensitivity run that adds those terminal snapshots
-  (label 0) changes ROC AUC by under 0.01 (XGBoost 0.664, GRU 0.670).
+  (label 0) changes ROC AUC by under 0.01 (XGBoost 0.661, GRU 0.667).
 - Long possessions contribute many rows; the one-per-possession numbers are reported for that reason.
 - Tipping-point alerts (threshold = validation score quantile with predicted-positive rate equal to
-  validation prevalence) fire on 94% of dangerous possessions but also on about 41% of non-dangerous
-  ones: the threshold trades a high detection rate for many false alarms.
+  validation prevalence) fire on 90.6% (XGBoost) / 89.6% (GRU) of dangerous possessions with a median lead of 9 / 10 events
+  (8.4 / 8.9 s), but also on 47.7% / 39.4% of non-dangerous ones: the threshold trades a high detection
+  rate for many false alarms.  (Superseded first version: 94% / 93.5%, 41.9% / 40.6%, lead 6 / 7 events.)
 - StatsBomb Open Data only; labels and features come from events, not tracking.
 - `score-live` needs per-event `elapsed_seconds`; without it, events are assumed to be spaced by
   the training median and the CLI prints a warning.

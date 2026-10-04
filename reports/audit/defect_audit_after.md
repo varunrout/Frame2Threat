@@ -25,9 +25,9 @@ id 3 is Ball Receipt and id 4 is Dribble in every module (tests/test_event_types
 
 ## 2-3. Event-time (in-play) formulation
 
-- Eligible snapshot rows: 305,399 from 16,881 possessions; prevalence 0.325
+- Eligible snapshot rows: 293,639 from 15,839 possessions; prevalence 0.363
 - Share of snapshots whose prefix 0..t already contains a shot or box entry: **0.0%** (0% by construction)
-- ROC AUC of events-so-far alone (the only length information a snapshot has), all rows: **0.557**; one random snapshot per possession: **0.544**
+- ROC AUC of events-so-far alone (the only length information a snapshot has), all rows: **0.558**; one random snapshot per possession: **0.606**
 - The total possession length n is not available to any feature or model (tests/test_event_time.py appends future events and checks the row for t is unchanged).
 
 ## 4. Pass labels: original vs `progression_beyond_pass_k`

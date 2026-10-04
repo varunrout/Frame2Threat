@@ -11,13 +11,15 @@
 > | Claim | Old | Corrected | Status |
 > |---|---|---|---|
 > | Dribbles trigger 64.4% of tipping points | Dribble 64.4% | The id was **Ball Receipt** (id 3 decoded as "Dribble"); 64.4% is the ball-receipt share, a rate of 2.3x its base frequency; dribbles are 1.2% | **Corrected** |
-> | v3 early forecasting at 50% of events | GRU 0.820, XGBoost 0.847 | In-play (event-time) ROC AUC 0.668-0.670 over all snapshots; 0.749-0.756 with one snapshot per possession; ball position alone 0.648 / 0.713 | **Withdrawn / replaced** |
-> | 360 lift at pass level | +0.0014 ROC AUC ("statistically positive") | +0.0014 [-0.0011, +0.0038] on the original label; +0.0050 [-0.0011, +0.0106] on the corrected label | **Holds (marginal); "statistically positive" withdrawn** |
-> | Pass-level headline | 0.881 | 0.881 on a label that `end_x` alone predicts at 0.800; 0.718 on `progression_beyond_pass_k` (`end_x` alone 0.543) | **Corrected** |
+> | v3 early forecasting at 50% of events | GRU 0.820, XGBoost 0.847 | In-play (event-time) ROC AUC 0.664-0.665 over all snapshots; 0.736-0.739 with one snapshot per possession (20-draw mean 0.729-0.744); ball position alone 0.642 / 0.695.  First event-time version (0.668-0.670 / 0.749-0.756) superseded by the same-moment-leak fix | **Withdrawn / replaced** |
+> | 360 lift at pass level | +0.0014 ROC AUC ("statistically positive") | +0.0021 [-0.0010, +0.0055] on the original label; +0.0015 [-0.0036, +0.0070] on the corrected label (first correction said +0.0050; superseded, it used the broken `possession_length`) | **Holds (marginal); "statistically positive" withdrawn** |
+> | Pass-level headline | 0.881 | 0.881 on a label that `end_x` alone predicts at 0.800; 0.728 on `progression_beyond_pass_k` (`end_x` alone 0.543; first correction said 0.718, before the `possession_length` fix) | **Corrected** |
 > | Possession retrospective | XGB 0.9505, GRU 0.9524, ensemble 0.9650 | Like-for-like retrain on corrected labels: XGB 0.957, GRU 0.957, logit-mean ensemble 0.977 | **Holds** |
 > | GNN vs tabular near-parity | 0.841 vs 0.845 (360 subset) | Not re-runnable here (no `torch_geometric`, no checkpoint); used the self-determining label | **Unverified** |
 >
 > The four defects: (1) `parse_possessions.py`, `possession_attribution.py` and `early_features.py` each defined a different event-type mapping (now one enum, `src/data/event_types.py`); (2) "first f% of events" needs the possession length, which alone gives AUC 0.683, and 21-59% of dangerous prefixes already contained the outcome; (3) the defending team's events were used in the wrong coordinate frame, so 765 of 5,589 `poss_dangerous` positives (13.7%) were spurious; (4) the pass label counted the receipt of the pass itself.
+>
+> **Second self-audit round (October 2026).**  Five further items, each fixed and re-run (`reports/audit/`, EXP-026 to EXP-028): (a) *same-moment leak*: `max_x_so_far` and the GRU's end-x/end-y inputs contained the end of the current pass, which was the box entry the next event would record (1.3% of snapshots, label rate 80.4% vs 31.9%); a possessing-team pass ending in the box is now the danger event, and event-time ROC AUC fell by 0.003-0.006 (all snapshots) and 0.013-0.017 (one per possession); (b) *`possession_length`* in the v1 pass features mixed matches (mean 145 vs a true 6.6, correlation 0.06) and is fixed; the 360 delta on the corrected label becomes +0.0015 [-0.0036, +0.0070], not +0.0050; (c) *shot xG and goals were never parsed*: `poss_xg_generated`, `poss_has_goal` and tier 4 were constant, and now total 295 xG and 305 goal possessions (2.83 goals per match excluding shootouts); no v2 model used them; (d) *recycling*: the headline 42% vs 23% compared possessions averaging 31 vs 11.5 events and came from the pre-fix table; stratified by length, recycled possessions are *less* dangerous in every bin up to 40 events (length-adjusted -2.6 pp); (e) *data description*: 99 matches (64 World Cup 2022 with 360, 35 La Liga 2020/21 without), no Premier League, 360 on 52.3% of passes (not ~65% / ~33,000).  `poss_dangerous` and the other possession labels were **not** changed by (a): the event-time danger definition now disagrees with the stored label on 925 possessions (passes ending in the box with no receipt in the box; all 925 are incomplete or out-of-play passes, i.e. failed deliveries).
 
 ---
 
@@ -282,9 +284,9 @@ Full details in `reports/experiment_log.md`.
 > | XGBoost start-only (v3) | possession | 0% observed | 0.624 | 0.535 |
 > | ~~GRU prefix (v3)~~ *superseded: length leak, outcome already in prefix* | possession | 50% observed | 0.820 | 0.773 |
 > | ~~XGBoost cumulative (v3)~~ *superseded* | possession | 50% observed | 0.847 | 0.762 |
-> | GRU event-time (corrected formulation) | possession | in play, all snapshots | 0.670 | 0.542 |
-> | XGBoost event-time (corrected formulation) | possession | in play, all snapshots | 0.668 | 0.539 |
-> | GRU event-time, one snapshot per possession | possession | in play | 0.756 | 0.597 |
+> | GRU event-time (corrected formulation) | possession | in play, all snapshots | 0.664 | 0.572 |
+> | XGBoost event-time (corrected formulation) | possession | in play, all snapshots | 0.665 | 0.567 |
+> | GRU event-time, one snapshot per possession | possession | in play | 0.739 | 0.581 |
 >
 > *Note: v1, v2, and v3 are not directly comparable — they operate at different units and observation horizons. v2 full-possession metrics are retrospective upper bounds because they use completed-possession information.*
 > *v1 `dangerous_progression_k` positive rate: 43.3% (`progression_beyond_pass_k`: 21.6%) | possession `poss_dangerous` rate: 28.3% after the coordinate-frame fix (32.8% before; the earlier "~37% / ~36%" figures were approximate and are superseded)*
@@ -325,7 +327,7 @@ Label prevalence (`poss_dangerous`): ~25%.
 
 **Key findings:**
 - XGBoost (event-only): 0.881 AUC with excellent calibration (ECE 0.024)
-- 360 geometry: +0.001 AUC — practically negligible (*on the self-determining label; +0.005 [-0.001, +0.011] on the corrected label, see the correction above*)
+- 360 geometry: +0.001 AUC — practically negligible (*on the self-determining label; +0.0021 [-0.0010, +0.0055] after the `possession_length` fix, and +0.0015 [-0.0036, +0.0070] on the corrected label, see the correction above*)
 - GNN: near-parity (0.841) with XGBoost on same 360 subset (*unverified: used the self-determining label and could not be re-run*)
 - Linear→non-linear gap: +9 AUC points (LogReg → XGBoost)
 
@@ -335,13 +337,13 @@ Label prevalence (`poss_dangerous`): ~25%.
 >
 > | Model | `dangerous_progression_k` ROC AUC / AP | `progression_beyond_pass_k` ROC AUC / AP |
 > |---|---|---|
-> | Logistic regression, 27 event features | 0.803 / 0.808 | 0.611 / 0.296 |
-> | XGBoost, 27 event features | 0.881 / 0.891 | **0.718** [0.703, 0.733] / 0.411 |
-> | XGBoost, 41 event+360 features | 0.882 / 0.892 | 0.723 [0.708, 0.739] / 0.424 |
+> | Logistic regression, 27 event features | 0.803 / 0.808 | 0.612 / 0.296 |
+> | XGBoost, 27 event features | 0.881 / 0.892 | **0.728** [0.713, 0.743] / 0.422 |
+> | XGBoost, 41 event+360 features | 0.883 / 0.894 | 0.729 [0.715, 0.745] / 0.426 |
 > | `end_x` only (logistic regression) | 0.800 / 0.806 | 0.543 / 0.266 |
 > | `(end_x, end_y)` only (XGBoost) | 0.857 / 0.865 | 0.687 / 0.359 |
 >
-> 360 delta (event+360 minus event-only, 1000 match-level bootstrap resamples): ROC AUC +0.0014 [-0.0011, +0.0038] on the original label, **+0.0050 [-0.0011, +0.0106]** on the corrected one (average precision +0.0129 [+0.0015, +0.0250], Brier -0.0051 [-0.0100, -0.0006]).  On passes with 360 only: +0.0029 [-0.0057, +0.0111] ROC AUC.  Answer to "does 360 geometry matter more once the label stops rewarding the destination?": the point estimate is about 3.5x larger (+0.005 vs +0.001) and average precision / Brier gains exclude zero, but the ROC AUC interval still includes zero; the effect is small.  (Brier values of the XGBoost models are inflated by `scale_pos_weight` and are not comparable with the unweighted logistic baselines.)
+> 360 delta (event+360 minus event-only, 1000 match-level bootstrap resamples): ROC AUC +0.0021 [-0.0010, +0.0055] on the original label and **+0.0015 [-0.0036, +0.0070]** on the corrected one (corrected label: average precision +0.0041 [-0.0053, +0.0134], Brier -0.0038 [-0.0067, -0.0015]).  On passes with 360 only: +0.0030 [-0.0024, +0.0083] (original) and -0.0015 [-0.0106, +0.0069] (corrected).  Answer to "does 360 geometry matter more once the label stops rewarding the destination?": **no**: the ROC AUC and AP gains are about +0.002 / +0.004 with intervals that include zero, and only the Brier improvement excludes it.  (An earlier version of this box said +0.0050, "about 3.5x larger"; that came from the broken `possession_length` feature, which mixed matches, and is superseded; before/after in `reports/pass_label/possession_length_fix_before_after.md`.  The event-only XGBoost on the corrected label also moved from 0.718 to 0.728 with the fix.)  Brier values of the XGBoost models are inflated by `scale_pos_weight` and are not comparable with the unweighted logistic baselines.
 
 ![v1 model comparison](figures/v1_baseline_comparison.png)
 *Figure 9-1: ROC/PR curves across all v1 model variants.*
@@ -365,7 +367,7 @@ Label prevalence (`poss_dangerous`): ~25%.
 
 | H# | Statement | Verdict | Key evidence |
 |----|-----------|---------|---------------|
-| H1 | 360 geometry improves prediction | **Rejected (marginal)** | +0.001 AUC (0.881 → 0.882) on the original label, +0.005 [-0.001, +0.011] on the corrected label; small, ROC AUC interval includes zero |
+| H1 | 360 geometry improves prediction | **Rejected (marginal)** | +0.002 [-0.001, +0.006] on the original label (0.881 → 0.883), +0.0015 [-0.004, +0.007] on the corrected label; small, ROC AUC intervals include zero |
 | H2 | Non-linear > linear | **Supported** | +9 AUC points (LogReg 0.768 → XGBoost 0.881) |
 | H3 | GNN outperforms tabular | **Not supported (unverified)** | GNN 0.841 vs XGBoost 0.845 on same 360 subset, using the self-determining label; not re-run |
 | H4 | Multitask > single-task | **Inconclusive** | EXP-007 partial; controlled comparison not completed |
@@ -494,21 +496,22 @@ The reviewer critique of v2 was valid: many possession-level aggregates summaris
 
 ### 9.5b Event-time (in-play) formulation (current)
 
-At every event `t` of a possession with no shot or box entry yet, estimate the probability that the possessing team produces one in a later event, from events `0..t` only (`src/features/event_time.py`; a test appends arbitrary future events and asserts the row for `t` is unchanged).  Features: current ball x/y, max x so far, events / passes / carries / pressures so far, **elapsed seconds** from timestamps, the current event type (one-hot) and start context.  Models: logistic regression on ball x/y (Baseline A) and on events-so-far (Baseline B), XGBoost, a start-context-only XGBoost, and a causal GRU (1 layer, hidden 64) with a learned event-type embedding in place of the raw numeric `type_id`.  All hyper-parameters were chosen on validation.  Test split: 44,914 eligible snapshots from 2,452 possessions in 15 matches; match-level bootstrap (500 resamples) 95% intervals.
+At every event `t` of a possession with no shot or box entry yet, estimate the probability that the possessing team produces one in a later event, from events `0..t` only (`src/features/event_time.py`; a test appends arbitrary future events and asserts the row for `t` is unchanged).  A possessing-team **pass whose end location is in the box counts as the entry itself** (second self-audit round: before this, `max_x_so_far` and the GRU's end-x/end-y inputs already contained the box entry that the next event, the receipt, would record).  Features: current ball x/y, max x so far, events / passes / carries / pressures so far, **elapsed seconds** from timestamps, the current event type (one-hot) and start context.  Models: logistic regression on ball x/y (Baseline A) and on events-so-far (Baseline B), XGBoost, a start-context-only XGBoost, and a causal GRU (1 layer, hidden 64) with a learned event-type embedding in place of the raw numeric `type_id`.  All hyper-parameters were chosen on validation.  Test split: 43,541 eligible snapshots from 2,286 possessions in 15 matches; match-level bootstrap (500 resamples) 95% intervals.
 
-| Model | ROC AUC, all snapshots | AP | Brier | ROC AUC, one snapshot per possession |
-|---|---|---|---|---|
-| Baseline A: ball x/y | 0.648 [0.630, 0.664] | 0.497 | 0.221 | 0.713 [0.688, 0.735] |
-| Baseline B: events so far | 0.564 [0.529, 0.601] | 0.428 | 0.233 | 0.530 [0.496, 0.567] |
-| Start context only | 0.586 [0.563, 0.610] | 0.433 | 0.234 | 0.643 [0.612, 0.668] |
-| XGBoost | 0.668 [0.653, 0.681] | 0.539 | 0.216 | 0.749 [0.727, 0.772] |
-| GRU | 0.670 [0.650, 0.689] | 0.542 | 0.221 | 0.756 [0.739, 0.777] |
+| Model | ROC AUC, all snapshots | AP | Brier | ROC AUC, one snapshot per possession | 20-draw mean (sd) |
+|---|---|---|---|---|---|
+| Baseline A: ball x/y | 0.642 [0.622, 0.661] | 0.527 | 0.229 | 0.695 [0.674, 0.717] | 0.692 (0.006) |
+| Baseline B: events so far | 0.561 [0.523, 0.603] | 0.452 | 0.240 | 0.608 [0.579, 0.638] | 0.612 (0.008) |
+| Start context only | 0.592 [0.570, 0.617] | 0.482 | 0.240 | 0.599 [0.572, 0.626] | 0.599 (0.000) |
+| XGBoost | 0.665 [0.647, 0.681] | 0.567 | 0.223 | 0.736 [0.714, 0.759] | 0.729 (0.006) |
+| GRU | 0.664 [0.642, 0.687] | 0.572 | 0.224 | 0.739 [0.710, 0.767] | 0.744 (0.007) |
 
-- Paired differences (all snapshots): XGBoost - ball x/y +0.021 [+0.008, +0.034]; XGBoost - events-so-far +0.104 [+0.066, +0.136]; GRU - XGBoost +0.001 [-0.014, +0.018].  One snapshot per possession: XGBoost - ball x/y +0.036 [+0.023, +0.052]; GRU - ball x/y +0.043 [+0.023, +0.066].
-- The in-play signal is **modest** and most of it is where the ball is.  Length so far explains little (0.53-0.56).  XGBoost and the GRU are indistinguishable.
-- By events-so-far bucket (1-3 / 4-6 / 7-10 / 11+) XGBoost ROC AUC is 0.641 / 0.641 / 0.662 / 0.667; by elapsed seconds (0-5 / 5-10 / 10-20 / 20+) 0.641 / 0.660 / 0.667 / 0.667.  Full tables, reliability tables and all intervals: `reports/event_time/event_time_results.md`.
-- Calibration: both models under-predict on the test split (e.g. GRU bin 0.3-0.4: mean 0.35, observed 0.41); the test row prevalence (0.371) is above train (0.325) and validation (0.280).
-- Tipping points (threshold = score quantile on validation whose predicted-positive rate equals validation prevalence 0.280; XGBoost 0.372, GRU 0.353): 94% of dangerous possessions are alerted (median lead 6-7 events, about 6-7 s before the shot / box entry) but so are 41-42% of non-dangerous ones.  First alerts fall on passes (XGBoost 60.5%, rate 1.9x base; GRU 40.7%, 1.3x), ball receipts (27.3% / 22.5%, about 1x or below) and carries (6.3% / 34.0%): **there is no dominant tipping event type**.
+- *Superseded first version (same-moment leak, 44,914 test rows):* all snapshots XGBoost 0.668, GRU 0.670, ball x/y 0.648, events-so-far 0.564; one per possession XGBoost 0.749, GRU 0.756, ball x/y 0.713, events-so-far 0.530.  Full before/after, including buckets, alerts and bootstrap intervals: `reports/event_time/same_moment_fix_before_after.md`.
+- Paired differences (all snapshots): XGBoost - ball x/y +0.022 [+0.009, +0.034]; XGBoost - events-so-far +0.104 [+0.060, +0.143]; GRU - XGBoost -0.001 [-0.021, +0.022].  One snapshot per possession: XGBoost - ball x/y +0.041 [+0.029, +0.052]; GRU - ball x/y +0.044 [+0.022, +0.063].
+- The in-play signal is **modest** and most of it is where the ball is.  Events-so-far explains little over all snapshots (0.56) but somewhat more in the one-per-possession view (0.61): once a dangerous possession must still be pre-danger, its eligible history is shorter than a safe possession's, which is hazard behaviour rather than a leak of the possession length.  XGBoost and the GRU are indistinguishable.
+- By events-so-far bucket (1-3 / 4-6 / 7-10 / 11+) XGBoost ROC AUC is 0.632 / 0.651 / 0.672 / 0.657; by elapsed seconds (0-5 / 5-10 / 10-20 / 20+) 0.644 / 0.669 / 0.673 / 0.643.  Full tables, reliability tables and all intervals: `reports/event_time/event_time_results.md`.
+- Calibration: the test row prevalence (0.404) is above train (0.362) and validation (0.329).  XGBoost under-predicts between 0.3 and 0.6 (bin 0.5-0.6: mean 0.54, observed 0.63); the GRU is close in the 0.3-0.7 bins but under-predicts below 0.3 (bin 0.0-0.1: mean 0.08, observed 0.19).
+- Tipping points (threshold = score quantile on validation whose predicted-positive rate equals validation prevalence 0.329; XGBoost 0.390, GRU 0.422): **90.6% (XGBoost) / 89.6% (GRU) of dangerous possessions are alerted** with a median lead of **9 / 10 events (8.4 / 8.9 s)** before the shot or box entry, and **47.7% / 39.4% of non-dangerous possessions are alerted too**.  (Superseded: 93.9% / 93.5% alerted, 41.9% / 40.6% false alarms, lead 6 / 7 events.)  First alerts fall on passes (XGBoost 50.4%, rate 1.65x base; GRU 20.3%, 0.66x), carries (12.1% / 44.3%, 0.47x / 1.74x) and ball receipts (30.8% / 34.4%, 1.07x / 1.19x): **there is no dominant tipping event type**.
 
 ![EXP-016 prefix GRU curve](figures/v3_exp016_prefix_gru_curve.png)
 *Figure 9-15 (superseded): GRU ROC-AUC and PR-AUC as a function of observed possession fraction.*
@@ -547,13 +550,13 @@ Leave-one-out (LOO) attribution decomposes each possession's predicted danger in
 ## 10. Research Question Answers
 
 ### RQ1 — Does 360 context improve prediction?
-**Marginally (+0.001 AUC on the original label; +0.005 [-0.001, +0.011] on the corrected `progression_beyond_pass_k`).**  Event features already encode most available spatial information.  The dominant features (goal_dist_gain, end_x, x_gain) capture forward progression without requiring freeze-frame data.
+**Marginally (+0.002 AUC on the original label; +0.0015 [-0.004, +0.007] on the corrected `progression_beyond_pass_k`).**  Event features already encode most available spatial information.  The dominant features (goal_dist_gain, end_x, x_gain) capture forward progression without requiring freeze-frame data.
 
 ### RQ2 — Which geometry properties matter?
 `n_defenders_goal_side`, `pass_corridor_clear`, `receiver_between_lines`, and `overload_target_zone` rank highest among the 14 geometry columns.
 
 ### RQ3 — How to predict possession-level danger?
-`poss_dangerous = poss_has_shot OR poss_entered_box`.  The full-possession XGBoost (0.950), GRU (0.952), and ensemble (0.965) should be treated as retrospective upper-bound scores because they observe the completed possession. After the corrections, retrospective scores are XGBoost 0.957, GRU 0.957 and logit-mean ensemble 0.977 (corrected labels).  ~~Under leakage-free early-information constraints ... 0.820 / 0.847 by halfway~~ *(withdrawn: length leak)*: in play (event-time), danger is only modestly forecastable, ROC AUC 0.67 over all snapshots and 0.75-0.76 with one snapshot per possession, about +0.02 to +0.04 over a ball-position baseline.
+`poss_dangerous = poss_has_shot OR poss_entered_box`.  The full-possession XGBoost (0.950), GRU (0.952), and ensemble (0.965) should be treated as retrospective upper-bound scores because they observe the completed possession. After the corrections, retrospective scores are XGBoost 0.957, GRU 0.957 and logit-mean ensemble 0.977 (corrected labels).  ~~Under leakage-free early-information constraints ... 0.820 / 0.847 by halfway~~ *(withdrawn: length leak)*: in play (event-time), danger is only modestly forecastable, ROC AUC 0.66 over all snapshots and 0.74 with one snapshot per possession, about +0.02 to +0.04 over a ball-position baseline.
 
 ### RQ4 — Which events matter most?
 LOO attribution: median Gini 0.495 (moderate concentration).  2–3 pivotal events account for ~50% of danger.  The event types that carry the attribution are Shot, Goalkeeper, Clearance, Foul Committed and Block by mean attribution (Ball Receipt is the most frequent 'unlock' event); the earlier "dribbles dominate tipping points" statement was a decoding error.
@@ -711,6 +714,7 @@ All figures saved in `reports/figures/`, referenced from notebooks NB01–NB10.
 | `poss_eda_pitch_starts.png` | Pitch-level possession start locations |
 | `poss_eda_pressure_labels.png` | Pressure-related label distributions |
 | `poss_eda_recycled.png` | Recycled possession frequency |
+| `poss_eda_recycled_by_length.png` | Danger rate by recycled status within possession-length bins (recycling is not more dangerous once length is controlled) |
 | `poss_eda_seq_lengths.png` | Sequence length distribution |
 | `poss_eda_seq_type_by_step.png` | Event type composition by sequence step |
 | `poss_eda_spatial_hists.png` | Spatial feature histograms |
@@ -757,9 +761,9 @@ All figures saved in `reports/figures/`, referenced from notebooks NB01–NB10.
 
 Frame2Threat demonstrates that dangerous football progression can be accurately predicted from publicly available event data, with limited additional benefit from 360 spatial context in its current snapshot form.
 
-**Pass level (v1):** XGBoost on 27 event features achieves 0.881 ROC AUC on the original label, but that label is largely decided by where the pass ends (`end_x` alone: 0.800); on the corrected `progression_beyond_pass_k` it reaches 0.718 (`end_x` alone: 0.543).  360 geometry adds +0.001 (original label) to +0.005 [-0.001, +0.011] (corrected label) ROC AUC.  The GNN comparison (0.841 val) could not be reproduced and is unverified.
+**Pass level (v1):** XGBoost on 27 event features achieves 0.881 ROC AUC on the original label, but that label is largely decided by where the pass ends (`end_x` alone: 0.800); on the corrected `progression_beyond_pass_k` it reaches 0.728 (`end_x` alone: 0.543).  360 geometry adds +0.002 (original label) and +0.0015 [-0.004, +0.007] (corrected label) ROC AUC.  The GNN comparison (0.841 val) could not be reproduced and is unverified.
 
-**Possession level (v2/v3):** Full-possession v2 models reach 0.950+ AUC, with the XGBoost+GRU ensemble reaching 0.965 AUC, but those scores are retrospective upper bounds because the models observe completed-possession information. The earlier v3 claim (0.820-0.847 AUC by 50% of a possession) is withdrawn because the fraction-based prefix leaks the possession length and often already contains the outcome.  In play (event-time), models reach ROC AUC 0.67 over all snapshots and 0.75-0.76 with one snapshot per possession, only +0.02 to +0.04 above a ball-position baseline; first alerts are not concentrated on any event type.
+**Possession level (v2/v3):** Full-possession v2 models reach 0.950+ AUC, with the XGBoost+GRU ensemble reaching 0.965 AUC, but those scores are retrospective upper bounds because the models observe completed-possession information. The earlier v3 claim (0.820-0.847 AUC by 50% of a possession) is withdrawn because the fraction-based prefix leaks the possession length and often already contains the outcome.  In play (event-time), models reach ROC AUC 0.66 over all snapshots and 0.74 with one snapshot per possession, only +0.02 to +0.04 above a ball-position baseline; first alerts are not concentrated on any event type.
 
 **Early-warning pipeline:** `frame2threat score-live` scores a possession event by event with the event-time model; the fraction-based batch commands are retained but superseded.
 
@@ -784,6 +788,6 @@ The system bridges the gap between raw event data and tactical decision-making �
 - [x] v2/v3 XGBoost hyperparameters centralised in `configs/model_possession.yaml`
 - [x] CLI pipeline (`frame2threat`) registered in `pyproject.toml`
 - [x] Training scripts for GRU and v3 XGBoost models (`src/models/`)
-- [x] 123/123 tests passing (CI coverage floor 33%)
+- [x] 130/130 tests passing (CI coverage floor 33%)
 - [x] All notebooks executed end-to-end (NB01–NB10)
 - [x] 49 figures saved in `reports/figures/`

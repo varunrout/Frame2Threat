@@ -86,7 +86,7 @@ Measured by `scripts/audit_defects.py` (`reports/audit/defect_audit_before.md`, 
 
 Length alone beats the start-context model, so the v3 gain over start-only was partly length.
 In the event-time formulation, events-so-far (the only length information a snapshot has)
-gives ROC AUC 0.557 over all eligible rows and 0.544 with one snapshot per possession.
+gives ROC AUC 0.558 over all eligible rows and 0.606 with one snapshot per possession (0.557 / 0.544 before the same-moment fix in addendum 2 changed which snapshots are eligible; the one-per-possession value is higher because dangerous possessions now have shorter pre-danger histories, which is hazard behaviour, not a leak of the possession length).
 
 ### 2. The outcome is often already inside the prefix
 
@@ -133,4 +133,30 @@ also averages over all events and has not been corrected (see "Not fixed" in the
 |---|---|
 | Full-possession (retrospective) scores | Hold as retrospective diagnostics; numbers above |
 | v3 early forecasting 0.82-0.85 at 50% | Withdrawn (length leak + realised outcome) |
-| Early forecasting in event time | ROC AUC 0.67 (all snapshots) to 0.75-0.76 (one per possession); mostly ball position (`reports/event_time/event_time_results.md`) |
+| Early forecasting in event time | ROC AUC 0.66 (all snapshots) to 0.74 (one per possession) after the same-moment fix (first version 0.67 / 0.75-0.76); mostly ball position (`reports/event_time/event_time_results.md`) |
+
+---
+
+## Addendum 2: second self-audit round
+
+### 4. Same-moment leak (event-time model)
+
+`max_x_so_far` and the GRU's end-x / end-y inputs include the end location of the *current* pass, while danger was judged on event location only.  At a possessing-team pass that ends in the box the snapshot therefore already contained the box entry that the next event (the receipt, at the pass end) records.  Measured before the fix (`reports/audit/same_moment_before.md`): 1.30% of snapshots (3,973 of 305,399), label rate 80.4% there vs 31.9% elsewhere, and 56.6% of dangerous possessions (2,628 of 4,640) had such a pass as their last eligible snapshot.  Fix: a possessing-team pass ending in the box is itself a danger event (`possession_frame.is_danger_event`), so snapshots at or after it are not eligible (`reports/audit/same_moment_after.md`: 0 such snapshots, 293,639 eligible rows).  Effect on the event-time results (`reports/event_time/same_moment_fix_before_after.md`): ROC AUC 0.668 -> 0.665 (XGBoost) and 0.670 -> 0.664 (GRU) over all snapshots; 0.749 -> 0.736 and 0.756 -> 0.739 with one snapshot per possession.  The possession labels (`poss_dangerous`, ...) were **not** changed; they judge danger on event location, and the event-time definition now differs on 925 possessions (all incomplete or out-of-play passes ending in the box).
+
+Updated causality rule for any snapshot feature: nothing computed from events `0..t` may reveal a danger event, so end locations of events at `t` are subject to the same definition of danger as the label.  (A carry's end is not stored, so carries cannot leak this way.)
+
+### 5. `possession_length` in the v1 pass features
+
+The v1 feature grouped by `possession_id` alone; `possession_id` restarts every match, so the value mixed matches and depended on row order and split.  It was a running match-level counter (mean 145, maximum 836) rather than a possession length, was correlated 0.06 with the correct count, and is fixed (`reports/pass_label/possession_length_fix_before_after.md`).  It is a causal feature (earlier passes only), so this was a correctness problem, not a future leak.
+
+### 6. Shot xG and goals
+
+`poss_xg_generated`, `poss_has_goal` and the tier-4 outcome were constant because the shot columns were never parsed; they are not features of any v2 model (excluded in `possession_features.py`), so no timing or leakage consequence for v2.  They are now populated (`reports/audit/shot_columns_after.md`) and, being outcomes, must stay out of any feature set.
+
+### Current claim status (second round)
+
+| Claim | Status |
+|---|---|
+| Event-time ROC AUC 0.668 / 0.670 (all), 0.749 / 0.756 (one per possession) | Superseded: 0.665 / 0.664 and 0.736 / 0.739 |
+| 360 delta on the corrected label +0.0050, "about 3.5x larger" | Superseded: +0.0015 [-0.0036, +0.0070]; no more than on the original label |
+| Recycled possessions 42% vs 23% dangerous | Superseded: confounded by length; -2.6 pp once controlled |

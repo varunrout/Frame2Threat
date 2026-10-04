@@ -637,6 +637,8 @@ Status: complete.  Code: `src/data/event_types.py` (one `IntEnum`, `encode`, `de
 
 ### EXP-021 — Event-time (in-play) formulation replaces fraction-based forecasting
 
+> **Numbers below superseded by EXP-026 (same-moment leak fix).**  The formulation stands; the values changed slightly: all snapshots XGBoost 0.668 -> 0.665, GRU 0.670 -> 0.664, ball x/y 0.648 -> 0.642; one per possession XGBoost 0.749 -> 0.736, GRU 0.756 -> 0.739, ball x/y 0.713 -> 0.695.  Current values: `reports/event_time/event_time_results.md`.
+
 Status: complete.  Code: `src/features/event_time.py`, `src/models/event_time.py`, `src/evaluation/event_time_eval.py`, `scripts/run_event_time.py`; tests `tests/test_event_time.py`.  Output: `reports/event_time/`.
 
 **Why.**  Length of the possession alone gives ROC AUC 0.683; the prefix length `ceil(n*f)` gives 0.682-0.683; many prefixes already contain the outcome (above).  The v3 numbers (GRU 0.820, XGBoost 0.847 at 50%) are withdrawn.
@@ -658,6 +660,8 @@ XGBoost minus ball-position baseline: +0.021 [+0.008, +0.034] (all), +0.036 [+0.
 **Decision.**  Report early forecasting as modest; the dominant signal is ball position.  `score-live` uses the event-time model.  The old v3 code, models and notebook remain runnable and are labelled superseded.
 
 ### EXP-022 — Tipping points in event time
+
+> **Numbers below superseded by EXP-026.**  After the fix: threshold XGBoost 0.390 / GRU 0.422; dangerous alerted 90.6% / 89.6% (was 94% / 93.5%); non-dangerous alerted 47.7% / 39.4% (was 41.9% / 40.6%); median lead 9 / 10 events, 8.4 / 8.9 s (was 6 / 7 events, 6.2 / 7.3 s).  First alerts: XGBoost pass 50.4% (rate 1.65), ball receipt 30.8% (1.07), carry 12.1% (0.47); GRU carry 44.3% (1.74), ball receipt 34.4% (1.19), pass 20.3% (0.66).  Still no dominant event type.
 
 Status: complete.  Threshold chosen on **validation** only: the score quantile whose predicted-positive rate equals validation prevalence (0.280): XGBoost 0.372, GRU 0.353.
 
@@ -691,6 +695,8 @@ Status: complete.  Code: `src/labels/progression_beyond_pass.py`; definition and
 
 ### EXP-025 — v1 models and the 360 ablation on both labels
 
+> **Numbers below superseded by EXP-027 (`possession_length` fix).**  The "about 3.5x larger" 360 delta (+0.0050) and the 0.718 event-only AUC on the corrected label came from a feature that mixed matches.  Current: event-only 0.728, event+360 0.729, 360 delta +0.0015 [-0.0036, +0.0070] on the corrected label and +0.0021 [-0.0010, +0.0055] on the original; the answer to the key question becomes **no**.  The original entry is kept below unchanged.
+
 Status: complete.  Script: `scripts/run_pass_label_ablation.py`; output `reports/pass_label/pass_label_results.md`.  Same split (36,037 / 7,307 / 7,344 passes; 15 test matches), configuration from `configs/model_baseline.yaml`, 1000 match-level bootstrap resamples.
 
 | Model | `dangerous_progression_k` ROC AUC / AP / Brier | `progression_beyond_pass_k` ROC AUC / AP / Brier |
@@ -704,6 +710,74 @@ Status: complete.  Script: `scripts/run_pass_label_ablation.py`; output `reports
 360 delta (event+360 minus event-only XGBoost): original label ROC AUC +0.0014 [-0.0011, +0.0038], AP +0.0014 [-0.0005, +0.0033], Brier -0.0011 [-0.0026, +0.0004]; corrected label ROC AUC +0.0050 [-0.0011, +0.0106], AP +0.0129 [+0.0015, +0.0250], Brier -0.0051 [-0.0100, -0.0006].  On the 360-covered passes only: +0.0036 [-0.0012, +0.0083] and +0.0029 [-0.0057, +0.0111].
 
 **Answer.**  Does 360 geometry matter more once the label stops rewarding the pass's own destination?  Slightly: the ROC AUC point estimate is about 3.5x larger and the AP and Brier gains exclude zero, but the ROC AUC interval still includes zero and the absolute gain is +0.005.  The event model's lead over destination-only baselines is large on the corrected label (+0.175 over `end_x`; +0.031 over (`end_x`, `end_y`)).  Brier values of XGBoost are inflated by `scale_pos_weight` and not comparable with the unweighted logistic baselines.  The PassFrameGNN could not be re-run (no `torch_geometric`, no checkpoint).
+
+### EXP-026 — Same-moment leak in the event-time model (self-audit, second round)
+
+Status: complete.  Code: `src/data/possession_frame.py::is_danger_event` (single definition), `src/features/event_time.py`; tests `tests/test_event_time.py`; audit `scripts/audit_same_moment_leak.py`; before/after `reports/event_time/same_moment_fix_before_after.md`; superseded outputs `reports/event_time/superseded_pre_same_moment_fix/`, `models/superseded/`.
+
+**Defect.**  `max_x_so_far` and the GRU's end-x/end-y inputs include the current pass's END location, but danger was judged on event location only.  At a possessing-team pass ending in the box the snapshot therefore already contained the entry that the next event (the receipt) records.  Measured before the fix: 3,973 of 305,399 snapshots (1.30%) were at such a pass; label rate 80.4% there vs 31.9% elsewhere; 2,628 of 4,640 dangerous possessions (56.6%) had such a pass as their last eligible snapshot.
+
+**Fix.**  A possessing-team pass whose end is in the box (x >= 102, 18 <= y <= 62) is itself a danger event; snapshots at or after it are not eligible.  After the fix: 0 snapshots at such a pass; eligible rows 305,399 -> 293,639.  `poss_dangerous` and the other possession labels were **not** changed (the label uses event location, and the receipt normally records the same entry); the event-time definition now disagrees with the stored label on 925 possessions, all of them incomplete or out-of-play passes ending in the box.
+
+**Re-run (EXP-021/022, all five models, both views, buckets, alerts, bootstrap; test, 15 matches).**
+
+| Model | all snapshots AUC before -> after | one per possession AUC before -> after | 20-draw mean before -> after |
+|---|---|---|---|
+| Ball x/y (LR) | 0.648 -> 0.642 | 0.713 -> 0.695 | 0.724 -> 0.692 |
+| Events so far (LR) | 0.564 -> 0.561 | 0.530 -> 0.608 | 0.539 -> 0.612 |
+| Start context (XGB) | 0.586 -> 0.592 | 0.643 -> 0.599 | 0.643 -> 0.599 |
+| XGBoost | 0.668 -> 0.665 | 0.749 -> 0.736 | 0.756 -> 0.729 |
+| GRU | 0.670 -> 0.664 | 0.756 -> 0.739 | 0.768 -> 0.744 |
+
+XGBoost - ball x/y: +0.021 -> +0.022 (all), +0.036 -> +0.041 (one per possession); GRU - XGBoost stays indistinguishable from zero.  Alerts (validation-chosen threshold): dangerous 93.9% / 93.5% -> 90.6% / 89.6% (XGB / GRU), non-dangerous 41.9% / 40.6% -> 47.7% / 39.4%, median lead 6 / 7 -> 9 / 10 events.
+
+**Reading.**  The leak was real but mild for ROC AUC (-0.003 to -0.006 over all snapshots; -0.013 to -0.017 with one snapshot per possession, where the removed rows are the high-label ones).  The events-so-far baseline rises in the one-per-possession view (0.530 -> 0.608) because eligibility now ends at the first pass into the box, so dangerous possessions have shorter pre-danger histories than safe ones; this is hazard behaviour, not a leak of the possession length.  The headline stays modest.
+
+### EXP-027 — `possession_length` in the v1 pass features (self-audit, second round)
+
+Status: complete.  Code: `src/features/event_features.py`; tests `tests/test_features.py`; before/after `reports/pass_label/possession_length_fix_before_after.md`; superseded outputs `reports/pass_label/superseded_pre_possession_length_fix/`.
+
+**Defect.**  `possession_length` used `groupby("possession_id").cumcount()`; `possession_id` restarts every match, so different matches' possessions were mixed and the value depended on row order and on which split was being built (mean 145.4, maximum 836, correlation 0.06 with the correct count; changed for 49,216 of 50,688 passes).  **Fix.**  Count earlier passes of the same `(match_id, possession_id)` in event order (period, minute, second); mean 6.6, maximum 82.
+
+**Re-run of EXP-025 (test, 15 matches, 1000 match-level bootstrap resamples).**
+
+| Model | `dangerous_progression_k` AUC before -> after | `progression_beyond_pass_k` AUC before -> after |
+|---|---|---|
+| LR, 27 event features | 0.8026 -> 0.8026 | 0.6111 -> 0.6122 |
+| XGBoost, event-only | 0.8807 -> 0.8810 | 0.7180 -> 0.7279 |
+| XGBoost, event+360 | 0.8822 -> 0.8832 | 0.7229 -> 0.7294 |
+| `end_x` only (LR) | 0.8003 -> 0.8003 | 0.5428 -> 0.5428 |
+| `(end_x, end_y)` only (XGB) | 0.8565 -> 0.8565 | 0.6874 -> 0.6874 |
+
+360 delta, all test passes: original label ROC AUC +0.0014 [-0.0011, +0.0038] -> +0.0021 [-0.0010, +0.0055], AP +0.0014 -> +0.0018 [-0.0006, +0.0043], Brier -0.0011 -> -0.0008 [-0.0025, +0.0008]; corrected label ROC AUC +0.0050 [-0.0011, +0.0106] -> **+0.0015 [-0.0036, +0.0070]**, AP +0.0129 [+0.0015, +0.0250] -> +0.0041 [-0.0053, +0.0134], Brier -0.0051 [-0.0100, -0.0006] -> -0.0038 [-0.0067, -0.0015].  On passes with 360 only (corrected label): +0.0029 -> -0.0015 [-0.0106, +0.0069].  Event-only XGBoost on the corrected label improves by 0.010 once the feature is correct; its lead over `end_x` alone is now +0.185 and over `(end_x, end_y)` +0.040.
+
+**Answer to the key question (replaces EXP-025's).**  Does 360 geometry matter more once the label stops rewarding the pass's own destination?  **No.**  The 360 delta is about +0.002 ROC AUC on either label with intervals that include zero; only the Brier improvement on the corrected label excludes zero.  The first-round answer ("slightly, about 3.5x larger") is superseded.
+
+### EXP-028 — Shot xG and goals parsed; possession table rebuilt (self-audit, second round)
+
+Status: complete.  Code: `src/data/parse_events.py` (keeps `shot_statsbomb_xg`, `shot_outcome_name`), `scripts/reparse_events_cache.py` (re-parse from the cached raw files, no network; every existing column verified identical), `scripts/audit_shot_columns.py`; tests `tests/test_shot_columns.py`; output `reports/audit/shot_columns_after.md`.
+
+**Defect.**  `parse_events` dropped the shot columns, so in `possession_sequences.parquet` `poss_xg_generated` was 0 for all 17,065 possessions, `poss_has_goal` was false for all, and `poss_outcome_tier` never reached 4.  `_build_xg_goal_maps` already read the right column names.
+
+**After.**  2,333 shots, 306 goals (26 in penalty shootouts), total xG 295.4 (ratio 0.97 to goals; possession-table sum 295.1, the rest sits in a dropped one-event possession).  Goals per match 2.83 excluding shootouts (3.09 including): World Cup 2022 2.64 (xG 2.94), La Liga 2020/21 Barcelona 3.17 (xG 3.07).  305 possessions (1.79%) contain a goal; outcome tiers 0: 6,562, 1: 5,674, 2: 2,743, 3: 1,781, 4: 305.  The only columns that changed in the possession table are `poss_xg_generated`, `poss_has_goal` and `poss_outcome_tier`.  **No v2 model used them as features** (`src/features/possession_features.py` excludes them), so no v2 model needed re-running; the possession EDA notebook now shows them.
+
+### EXP-029 — Possession EDA re-run; recycling controlled for length (self-audit, second round)
+
+Status: complete.  `notebooks/09_possession_eda.ipynb` re-executed on the corrected, xG-populated table (28.3% dangerous, 61.5% final third, 30.6% recycled; the pre-fix printout said 32.8%, 75.4%, 52.0%) and no longer re-attaches labels over the stored xG/goal columns.  New section 5b stratifies recycled vs non-recycled by length.
+
+| Events | n not recycled / recycled | danger, not recycled | danger, recycled | difference |
+|---|---|---|---|---|
+| 2-5 | 3,333 / 29 | 14.7% | 3.4% | -11.3 pp |
+| 6-10 | 2,853 / 227 | 19.8% | 9.7% | -10.1 pp |
+| 11-20 | 3,331 / 1,016 | 26.2% | 17.1% | -9.1 pp |
+| 21-40 | 1,755 / 2,025 | 39.3% | 34.1% | -5.2 pp |
+| 41+ | 570 / 1,926 | 49.3% | 53.9% | +4.6 pp |
+
+Raw: recycled 36.9% vs 24.5% dangerous (+12.4 pp), mean 39.6 vs 14.0 events.  Length-adjusted (bins weighted by recycled count): **-2.6 pp**.  **Superseded claim:** "recycled 42% vs 23% dangerous" (31 vs 11.5 events), computed before the coordinate-frame fix and confounded by length.  Corrected reading: recycling does not raise danger once length is controlled; recycled possessions are less dangerous in every bin up to 40 events and only more dangerous at 41+.  The shortest bins hold few recycled possessions; descriptive, not causal.
+
+### EXP-030 — Data description (self-audit, second round)
+
+The processed data is 99 matches: 64 FIFA World Cup 2022 (all with 360; 30,349 passes, 26,515 with a frame) and 35 La Liga 2020/21 Barcelona (no 360 frames; 20,339 passes); no Premier League matches.  360 covers 26,515 of 50,688 passes (52.3%; train 18,234, val 4,545, test 3,736) and 64 of 99 matches (65%).  Superseded wording: "~65% of passes", "~33,000 360-available passes", "~37%" label prevalence (actual 43.3% for `dangerous_progression_k`).  The inventory marks all 35 La Liga matches `has_360 = true` although no frame files exist.  `configs/data.yaml` keeps competition 2 (removing it would change the inventory table) and now carries comments.
 
 ---
 

@@ -4,9 +4,9 @@
 
 **Breaking the Block: Predicting and Explaining Dangerous Progression from StatsBomb Event Data**
 
-A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots using StatsBomb Open Data.  The project evaluates 360 freeze-frame spatial context directly and finds that, in this dataset, event attributes carry most of the pass-level predictive signal: adding 360 geometry improves ROC AUC by +0.001 on the original label and +0.005 (95% CI -0.001 to +0.011) on a corrected label that no longer rewards a pass for where it ends.  Extended with possession-level sequential modelling and player-level attribution.
+A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots using StatsBomb Open Data.  The project evaluates 360 freeze-frame spatial context directly and finds that, in this dataset, event attributes carry most of the pass-level predictive signal: adding 360 geometry improves ROC AUC by +0.002 (95% CI -0.001 to +0.006) on the original label and +0.0015 (-0.004 to +0.007) on a corrected label that no longer rewards a pass for where it ends.  Extended with possession-level sequential modelling and player-level attribution.
 
-> **Upfront caveats:** This is a StatsBomb Open Data project with partial 360 coverage, not a production tracking-data model.  The reported 360 lift is marginal (+0.001 to +0.005 ROC AUC, intervals include zero), so the strongest result is the event/possession modelling rather than a claim that freeze frames transform performance.  **Corrections (October 2026):** a self-audit of the project found four defects (event-type decoding, a possession-length leak in the early-forecasting design, opponent coordinates in the wrong frame, and a self-determining pass label).  They are fixed, every affected result was re-run, and the superseded numbers are kept and marked in `reports/`; see `reports/audit/`.  Several higher-level workflows were assembled with agent assistance and then grounded with tests, CI, reproducibility scripts, and explicit limitations.
+> **Upfront caveats:** This is a StatsBomb Open Data project with partial 360 coverage, not a production tracking-data model.  The reported 360 lift is marginal (about +0.002 ROC AUC on either label, intervals include zero), so the strongest result is the event/possession modelling rather than a claim that freeze frames transform performance.  **Corrections (October 2026):** a self-audit of the project found four defects (event-type decoding, a possession-length leak in the early-forecasting design, opponent coordinates in the wrong frame, and a self-determining pass label).  They are fixed, every affected result was re-run, and the superseded numbers are kept and marked in `reports/`; see `reports/audit/`.  **A second self-audit round** then fixed five further items: a same-moment leak in the event-time model (a pass ending in the box now counts as the danger event), the v1 `possession_length` feature (it mixed matches), shot xG / goal columns that were never parsed, the possession EDA notebook (re-run on corrected data; the recycling claim reversed once length is controlled) and the data description (99 matches; 360 covers 52.3% of passes).  Several higher-level workflows were assembled with agent assistance and then grounded with tests, CI, reproducibility scripts, and explicit limitations.
 
 ---
 
@@ -24,7 +24,7 @@ pytest tests/ -q               # run all tests (123 passing)
 
 ## Project overview
 
-Frame2Threat models attacking danger from StatsBomb event data, then tests whether 360 freeze-frame geometry adds meaningful signal beyond those event attributes.  The central finding is deliberately modest: 360 context is useful for interpretability and geometry-dependent labels such as line breaks, but it does not materially improve the pass-level danger model here (+0.001 ROC AUC on the original label, +0.005 on the corrected one; both within noise for ROC AUC).
+Frame2Threat models attacking danger from StatsBomb event data, then tests whether 360 freeze-frame geometry adds meaningful signal beyond those event attributes.  The central finding is deliberately modest: 360 context is useful for interpretability and geometry-dependent labels such as line breaks, but it does not materially improve the pass-level danger model here (about +0.002 ROC AUC on either label; both within noise).
 
 The system operates at **two complementary granularities**:
 
@@ -62,13 +62,15 @@ Test split (15 matches, unchanged split), match-level bootstrap 95% intervals:
 
 | Model | ROC AUC, all snapshots | ROC AUC, one random snapshot per possession |
 |-------|-----------------------|--------------------------------------------|
-| Ball x/y only (logistic regression) | 0.648 [0.630, 0.664] | 0.713 [0.688, 0.735] |
-| Events so far only (logistic regression) | 0.564 [0.529, 0.601] | 0.530 [0.496, 0.567] |
-| Start context only (XGBoost) | 0.586 [0.563, 0.610] | 0.643 [0.612, 0.668] |
-| XGBoost, snapshot features | 0.668 [0.653, 0.681] | 0.749 [0.727, 0.772] |
-| GRU (1 layer, hidden 64, learned event-type embedding) | 0.670 [0.650, 0.689] | 0.756 [0.739, 0.777] |
+| Ball x/y only (logistic regression) | 0.642 [0.622, 0.661] | 0.695 [0.674, 0.717] |
+| Events so far only (logistic regression) | 0.561 [0.523, 0.603] | 0.608 [0.579, 0.638] |
+| Start context only (XGBoost) | 0.592 [0.570, 0.617] | 0.599 [0.572, 0.626] |
+| XGBoost, snapshot features | 0.665 [0.647, 0.681] | 0.736 [0.714, 0.759] |
+| GRU (1 layer, hidden 64, learned event-type embedding) | 0.664 [0.642, 0.687] | 0.739 [0.710, 0.767] |
 
-Key finding: danger is only **modestly** forecastable in play.  The models beat a ball-position-only baseline by +0.02 (all snapshots) to +0.04 (one per possession) ROC AUC, and XGBoost and the GRU are indistinguishable.  Most of the signal is where the ball currently is.  Calibration is imperfect (both models under-predict on the test split; see `reports/event_time/event_time_results.md`).  There is no dominant "tipping" event type: passes, carries and ball receipts trigger first alerts roughly in proportion to how often they occur, and the earlier "dribbles are the dominant trigger (64.4%)" was an artefact of a decoding bug (id 3 is Ball Receipt, not Dribble).
+Mean ROC AUC over 20 independent one-per-possession draws: ball x/y 0.692, events so far 0.612, start context 0.599, XGBoost 0.729, GRU 0.744.  *Superseded first version of this table (same-moment leak: a pass ending in the box was visible in its own snapshot):* all snapshots XGBoost 0.668, GRU 0.670, ball x/y 0.648; one per possession XGBoost 0.749, GRU 0.756, ball x/y 0.713.
+
+Key finding: danger is only **modestly** forecastable in play.  The models beat a ball-position-only baseline by +0.02 (all snapshots) to +0.04 (one per possession) ROC AUC, and XGBoost and the GRU are indistinguishable (GRU - XGBoost: -0.001 [-0.021, +0.022]).  Most of the signal is where the ball currently is.  Calibration is imperfect (test row prevalence 0.404 vs 0.362 in train; XGBoost under-predicts between 0.3 and 0.6, the GRU below 0.3; see `reports/event_time/event_time_results.md`).  A threshold chosen on validation (predicted-positive rate = validation prevalence) alerts 90-91% of dangerous possessions with a median lead of 9-10 events (about 8-9 s), but also 39% (GRU) to 48% (XGBoost) of non-dangerous ones.  There is no dominant "tipping" event type: passes, carries and ball receipts trigger first alerts roughly in proportion to how often they occur, and the earlier "dribbles are the dominant trigger (64.4%)" was an artefact of a decoding bug (id 3 is Ball Receipt, not Dribble).
 
 Timing audit: the full-possession v2 scores are retrospective upper bounds, not leakage-free early predictions.  The tabular model uses completed-possession summaries such as `max_x_reached` and `territory_gained`, while `poss_dangerous` includes box entry.  See `reports/feature_timing_audit.md` for the feature-level audit and the addendum on the length leak.
 
@@ -78,27 +80,27 @@ Superseded values are kept in `reports/` with the reason; this table shows curre
 
 | Model | Level | Task | Test ROC AUC |
 |-------|-------|------|-------------|
-| XGBoost (event-only, 27 features) | Pass | `dangerous_progression_k` (self-determining label) | 0.881 [0.867, 0.893] |
-| XGBoost (event+360, 41 features) | Pass | `dangerous_progression_k` | 0.882 [0.867, 0.895] |
+| XGBoost (event-only, 27 features) | Pass | `dangerous_progression_k` (self-determining label) | 0.881 [0.868, 0.893] |
+| XGBoost (event+360, 41 features) | Pass | `dangerous_progression_k` | 0.883 [0.870, 0.895] |
 | `end_x` alone (logistic regression) | Pass | `dangerous_progression_k` | 0.800 |
-| XGBoost (event-only, 27 features) | Pass | `progression_beyond_pass_k` | **0.718** [0.703, 0.733] |
-| XGBoost (event+360, 41 features) | Pass | `progression_beyond_pass_k` | 0.723 [0.708, 0.739] |
+| XGBoost (event-only, 27 features) | Pass | `progression_beyond_pass_k` | **0.728** [0.713, 0.743] |
+| XGBoost (event+360, 41 features) | Pass | `progression_beyond_pass_k` | 0.729 [0.715, 0.745] |
 | `end_x` alone (logistic regression) | Pass | `progression_beyond_pass_k` | 0.543 |
 | XGBoost (41 possession features, retrospective) | Possession | `poss_dangerous` (corrected labels) | 0.957 |
 | PossessionGRU (full event sequence, retrospective) | Possession | `poss_dangerous` (corrected labels) | 0.957 |
 | Logit-mean XGB + GRU ensemble (retrospective upper bound) | Possession | `poss_dangerous` (corrected labels) | 0.977 |
-| XGBoost, event-time snapshots | Possession (in play) | `danger_after_t`, all snapshots | 0.668 |
-| GRU, event-time snapshots | Possession (in play) | `danger_after_t`, all snapshots | 0.670 |
-| GRU, event-time snapshots | Possession (in play) | one random snapshot per possession | 0.756 |
+| XGBoost, event-time snapshots | Possession (in play) | `danger_after_t`, all snapshots | 0.665 |
+| GRU, event-time snapshots | Possession (in play) | `danger_after_t`, all snapshots | 0.664 |
+| GRU, event-time snapshots | Possession (in play) | one random snapshot per possession | 0.739 |
 
-At pass level the 360 geometry lift is +0.0014 [-0.0011, +0.0038] ROC AUC on the original label and +0.0050 [-0.0011, +0.0106] on the corrected label (average precision +0.013 [+0.002, +0.025] and Brier -0.005 [-0.010, -0.001] do exclude zero).  Event attributes carry most of the signal; 360 geometry adds a small, not clearly significant amount.  On the corrected label the event model beats the destination-only baselines (`end_x`: +0.175; `(end_x, end_y)`: +0.031 ROC AUC), so the earlier headline 0.881 mostly reflected a label that rewards the pass's own destination.  The PassFrameGNN comparison (0.841 on the 360 subset) could not be re-run in this environment (see Limitations).  The possession retrospective rows come from a like-for-like retrain after the coordinate-frame fix (`reports/audit/exp023_v2_corrected_labels.md`).
+At pass level the 360 geometry lift is +0.0021 [-0.0010, +0.0055] ROC AUC on the original label and +0.0015 [-0.0036, +0.0070] on the corrected label (on the corrected label average precision +0.0041 [-0.0053, +0.0134] includes zero and only the Brier improvement, -0.0038 [-0.0067, -0.0015], excludes it).  Event attributes carry most of the signal; 360 geometry adds a very small amount that is not clearly distinguishable from zero.  On the corrected label the event model beats the destination-only baselines (`end_x`: +0.185; `(end_x, end_y)`: +0.040 ROC AUC), so the earlier headline 0.881 mostly reflected a label that rewards the pass's own destination.  *Superseded:* the first correction reported +0.0050 on the corrected label ("about 3.5x larger"); that used the broken `possession_length` feature (it mixed matches), see `reports/pass_label/possession_length_fix_before_after.md`.  The PassFrameGNN comparison (0.841 on the 360 subset) could not be re-run in this environment (see Limitations).  The possession retrospective rows come from a like-for-like retrain after the coordinate-frame fix (`reports/audit/exp023_v2_corrected_labels.md`); the shot-column fix does not affect them (no v2 model uses xG or goals as a feature).
 
 ### Hard constraints
 
 - Uses **StatsBomb Open Data** only — 99 matches: 64 FIFA World Cup 2022 matches (all with 360 freeze frames) and 35 La Liga 2020/21 Barcelona matches (no 360 frames).  There are no Premier League matches.  360 freeze frames cover **52.3% of passes (26,515 of 50,688)** and 65% of matches.
 - **Not** a full tracking-data system. No continuous trajectories, velocities, or pitch control.
 - 360 features and geometry-dependent labels are **NaN** for events without freeze-frame coverage.
-- 360 geometry adds only **+0.001 to +0.005 ROC AUC** to the pass-level danger model (intervals include zero for ROC AUC).
+- 360 geometry adds only about **+0.002 ROC AUC** to the pass-level danger model (intervals include zero on both labels).
 - Pass option ranking is restricted to **visible teammates** in the freeze frame.
 
 ---
@@ -402,9 +404,9 @@ pytest tests/ -v    # 123 tests, all passing
 
 | RQ | Question | Answer |
 |----|----------|--------|
-| RQ1 | Does 360 context improve prediction? | Barely: +0.0014 [-0.0011, +0.0038] ROC AUC on the original (self-determining) label and +0.0050 [-0.0011, +0.0106] on the corrected `progression_beyond_pass_k`; average precision and Brier gains on the corrected label exclude zero but are small.  Event attributes carry most of the measured signal |
+| RQ1 | Does 360 context improve prediction? | Barely: +0.0021 [-0.0010, +0.0055] ROC AUC on the original (self-determining) label and +0.0015 [-0.0036, +0.0070] on the corrected `progression_beyond_pass_k`; only the Brier improvement on the corrected label (-0.0038 [-0.0067, -0.0015]) excludes zero.  Event attributes carry most of the measured signal |
 | RQ2 | Which geometry features matter? | n_defenders_goal_side, pass_corridor_clear, receiver_between_lines (importance from the original-label model; not re-ranked on the corrected label) |
-| RQ3 | How to predict possession danger? | In play, only modestly: ROC AUC 0.67 (all snapshots) to 0.76 (one random snapshot per possession), about +0.02 to +0.04 over a ball-position baseline; XGBoost and GRU are indistinguishable.  Full-possession models are retrospective upper bounds: XGB 0.957, GRU 0.957, logit-mean ensemble 0.977 (corrected labels) |
+| RQ3 | How to predict possession danger? | In play, only modestly: ROC AUC 0.66 (all snapshots) to 0.74 (one random snapshot per possession), about +0.02 to +0.04 over a ball-position baseline; XGBoost and GRU are indistinguishable.  Full-possession models are retrospective upper bounds: XGB 0.957, GRU 0.957, logit-mean ensemble 0.977 (corrected labels) |
 | RQ4 | Which events matter most? | Moderate concentration (Gini 0.495, from the unchanged v2 GRU; the per-type breakdown is corrected in `reports/audit/exp020_vocab_fix.md`).  There is no dominant tipping event type; the "dribble 64.4%" figure was ball receipts |
 | RQ5 | Player-level attribution? | Yes - 453-player leaderboard, domain-consistent (not recomputed after the corrections; 86 possessions changed team attribution) |
 | RQ6 | GNN vs. tabular? | Unverified: the 0.841 vs 0.845 near-parity used the self-determining label, and the GNN could not be re-run here (no `torch_geometric`, no saved checkpoint) |
@@ -419,7 +421,7 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 
 ## Limitations
 
-1. 360 coverage is partial — 64 of 99 matches (65%) and 52.3% of passes have freeze frames (the La Liga matches have none), and the measured pass-level lift from 360 geometry is only +0.001 to +0.005 ROC AUC.
+1. 360 coverage is partial — 64 of 99 matches (65%) and 52.3% of passes have freeze frames (the La Liga matches have none), and the measured pass-level lift from 360 geometry is only about +0.002 ROC AUC.
 2. Positional snapshots, not tracking — no velocity or trajectory.
 3. Partial pitch visibility — not all 22 players are always visible.
 4. Open-play only — set-piece passes excluded from v1 modelling.
