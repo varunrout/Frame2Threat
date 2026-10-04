@@ -23,6 +23,9 @@ import pandas as pd
 import torch
 from sklearn.metrics import roc_auc_score, average_precision_score
 
+from src.data.event_types import EventType
+from src.data.event_types import label as type_label
+
 if TYPE_CHECKING:
     from src.models.gru_possession import PossessionGRU
 
@@ -155,7 +158,6 @@ def tipping_point_analysis(
     from src.evaluation.possession_attribution import (
         cumulative_danger_scores,
         _parse_event_seq,
-        EVENT_TYPE_LABELS,
     )
 
     gru_model.eval()
@@ -178,7 +180,7 @@ def tipping_point_analysis(
         for t in range(T):
             if cum[t] >= threshold:
                 tipping_step = t
-                tipping_type = EVENT_TYPE_LABELS.get(int(events[t].get("type_id", 9)), "Other")
+                tipping_type = type_label(int(events[t].get("type_id", EventType.UNKNOWN)))
                 break
 
         # Largest single-step delta
@@ -186,8 +188,8 @@ def tipping_point_analysis(
             deltas = np.diff(cum)
             max_delta_idx = int(np.argmax(deltas))
             max_delta_val = float(deltas[max_delta_idx])
-            max_delta_type = EVENT_TYPE_LABELS.get(
-                int(events[max_delta_idx + 1].get("type_id", 9)), "Other"
+            max_delta_type = type_label(
+                int(events[max_delta_idx + 1].get("type_id", EventType.UNKNOWN))
             )
         else:
             max_delta_idx = 0

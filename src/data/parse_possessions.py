@@ -29,6 +29,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from src.data.event_types import encode
 from src.labels.possession_labels import attach_possession_labels
 
 # ---------------------------------------------------------------------------
@@ -285,30 +286,9 @@ def attach_player_sequences(
     return out
 
 
-# Event types to include in the sequence representation
-_SEQUENCE_TYPES = frozenset(
-    {
-        "pass",
-        "carry",
-        "ball receipt*",
-        "ball receipt",
-        "dribble",
-        "shot",
-        "pressure",
-        "duel",
-        "clearance",
-        "interception",
-        "block",
-        "foul committed",
-        "foul won",
-        "goalkeeper",
-        "goal keeper",
-    }
-)
-
 # Numeric features per event step
 _SEQ_FIELDS = [
-    "type_id",  # int-encoded event type (see TYPE_VOCAB below)
+    "type_id",  # int-encoded event type (see src/data/event_types.py)
     "loc_x_norm",  # location_x / 120
     "loc_y_norm",  # location_y / 80
     "end_x_norm",  # pass_end_x / 120  (0 if not a pass / carry)
@@ -318,26 +298,6 @@ _SEQ_FIELDS = [
     "minute_norm",  # minute / 90
 ]
 
-# Compact vocabulary for event types in sequences
-TYPE_VOCAB: dict[str, int] = {
-    "pass": 1,
-    "carry": 2,
-    "ball receipt*": 3,
-    "ball receipt": 3,
-    "dribble": 4,
-    "shot": 5,
-    "pressure": 6,
-    "duel": 7,
-    "clearance": 8,
-    "interception": 9,
-    "block": 10,
-    "foul committed": 11,
-    "foul won": 12,
-    "goalkeeper": 13,
-    "goal keeper": 13,
-}
-
-
 def _build_event_sequence(grp: pd.DataFrame) -> list[dict]:
     """
     Return a list of compact per-event dicts for GRU/sequence model input.
@@ -346,7 +306,7 @@ def _build_event_sequence(grp: pd.DataFrame) -> list[dict]:
     records = []
     for _, row in grp.iterrows():
         t = str(row["type_name"]).lower() if pd.notna(row["type_name"]) else ""
-        type_id = TYPE_VOCAB.get(t, 0)
+        type_id = encode(t)
 
         lx = float(row["location_x"]) / PITCH_LENGTH if pd.notna(row["location_x"]) else 0.0
         ly = float(row["location_y"]) / PITCH_WIDTH if pd.notna(row["location_y"]) else 0.0

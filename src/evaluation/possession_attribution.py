@@ -39,6 +39,9 @@ import numpy as np
 import pandas as pd
 import torch
 
+from src.data.event_types import EventType
+from src.data.event_types import label as type_label
+
 # ---------------------------------------------------------------------------
 # Constants (must match parse_possessions / possession_features)
 # ---------------------------------------------------------------------------
@@ -47,19 +50,6 @@ PITCH_WIDTH = 80.0
 MAX_SEQ_LEN = 40
 N_SEQ_FEAT = 8  # [type_id, loc_x_norm, loc_y_norm, end_x_norm, end_y_norm,
 #  under_pressure, pass_length_norm, minute_norm]
-
-EVENT_TYPE_LABELS: dict[int, str] = {
-    0: "Pass",
-    1: "Carry",
-    2: "Shot",
-    3: "Dribble",
-    4: "Pressure",
-    5: "Ball Receipt",
-    6: "Duel",
-    7: "Clearance",
-    8: "Interception",
-    9: "Other",
-}
 
 
 # ---------------------------------------------------------------------------
@@ -265,7 +255,7 @@ def attribute_possession(
             {
                 **ev,
                 "step": t,
-                "type_label": EVENT_TYPE_LABELS.get(int(ev.get("type_id", 9)), "Other"),
+                "type_label": type_label(int(ev.get("type_id", EventType.UNKNOWN))),
                 "cum_score": float(cum[t]),
                 "loo_attr": float(loo[t]),
                 "is_unlock": (t == unlock),

@@ -61,6 +61,8 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from src.data.event_types import EventType
+
 # ---------------------------------------------------------------------------
 # Pitch constants (must match parse_possessions.py)
 # ---------------------------------------------------------------------------
@@ -78,9 +80,6 @@ _BOX_X_NORM = BOX_X / PITCH_LENGTH  # 0.850
 _BOX_YLO_NORM = BOX_Y_LO / PITCH_WIDTH  # 0.225
 _BOX_YHI_NORM = BOX_Y_HI / PITCH_WIDTH  # 0.775
 
-# TYPE_VOCAB IDs (matching parse_possessions.py)
-_SHOT_TYPE_ID = 5
-_PRESSURE_TYPE_ID = 6
 
 # Tempo / phase thresholds
 _COUNTER_TEMPO_THRESHOLD = 2.0  # events per second
@@ -200,7 +199,7 @@ def _parse_sequence(seq: list[dict]) -> dict:
 
     # --- shot / box entry ---
     for s in seq:
-        if s.get("type_id") == _SHOT_TYPE_ID:
+        if s.get("type_id") == EventType.SHOT:
             has_shot = True
         lx = s.get("loc_x_norm", 0.0)
         ly = s.get("loc_y_norm", 0.0)

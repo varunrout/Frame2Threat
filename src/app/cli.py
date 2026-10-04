@@ -271,8 +271,8 @@ def cmd_score_live(args: argparse.Namespace) -> None:
 
     from src.evaluation.possession_attribution import (
         cumulative_danger_scores,
-        EVENT_TYPE_LABELS,
     )
+    from src.data.event_types import EventType, label as type_label
 
     # Load events
     with open(args.json_file) as f:
@@ -305,8 +305,7 @@ def cmd_score_live(args: argparse.Namespace) -> None:
     alerted = False
     for t in range(len(cum_scores)):
         ev = events[t] if t < len(events) else {}
-        type_id = int(ev.get("type_id", 9))
-        type_name = EVENT_TYPE_LABELS.get(type_id, "Other")
+        type_name = type_label(int(ev.get("type_id", EventType.UNKNOWN)))
         prob = cum_scores[t]
         is_alert = prob >= threshold
 

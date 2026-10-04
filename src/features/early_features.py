@@ -21,12 +21,16 @@ import json
 import numpy as np
 import pandas as pd
 
+from src.data.event_types import EventType
 from src.features.possession_features import (
     build_tabular_features,
     PITCH_LENGTH,
     PITCH_WIDTH,
 )
 
+
+#: parse_possessions stores pass_length / 60 in ``pass_length_norm``.
+PASS_LENGTH_NORM = 60.0
 
 # ---------------------------------------------------------------------------
 # Feature classification
@@ -119,10 +123,6 @@ def build_start_features(poss_df: pd.DataFrame) -> pd.DataFrame:
 # 2. Cumulative features  (EXP-017)
 # ---------------------------------------------------------------------------
 
-_EVENT_TYPE_PASS = 0
-_EVENT_TYPE_CARRY = 1
-
-
 def _recompute_aggregates_from_prefix(
     poss_df: pd.DataFrame,
     frac: float,
@@ -156,8 +156,8 @@ def _recompute_aggregates_from_prefix(
         prefix = events[:t] if events else []
 
         # Counts
-        np_ = sum(1 for e in prefix if int(e.get("type_id", 9)) == _EVENT_TYPE_PASS)
-        nc = sum(1 for e in prefix if int(e.get("type_id", 9)) == _EVENT_TYPE_CARRY)
+        np_ = sum(1 for e in prefix if int(e.get("type_id", EventType.UNKNOWN)) == EventType.PASS)
+        nc = sum(1 for e in prefix if int(e.get("type_id", EventType.UNKNOWN)) == EventType.CARRY)
         nprs = sum(int(e.get("under_pressure", 0)) for e in prefix)
 
         new_n_events.append(len(prefix))
@@ -184,9 +184,9 @@ def _recompute_aggregates_from_prefix(
 
         # Mean pass length
         pass_lens = [
-            float(e.get("pass_length_norm", 0))
+            float(e.get("pass_length_norm", 0)) * PASS_LENGTH_NORM  # back to metres
             for e in prefix
-            if int(e.get("type_id", 9)) == _EVENT_TYPE_PASS
+            if int(e.get("type_id", EventType.UNKNOWN)) == EventType.PASS
         ]
         new_mean_pass_len.append(float(np.mean(pass_lens)) if pass_lens else 0.0)
 
