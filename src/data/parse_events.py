@@ -166,6 +166,10 @@ def parse_events(raw_events_df: pd.DataFrame) -> pd.DataFrame:
     ]:
         out[dst_col] = df.get(src_col, pd.Series(dtype=object)).astype(object)
 
+    # Shot columns (NaN for non-shot events): used for possession xG / goal labels
+    out["shot_statsbomb_xg"] = pd.to_numeric(df.get("shot_statsbomb_xg"), errors="coerce")
+    out["shot_outcome_name"] = df.get("shot_outcome", pd.Series(dtype=object)).astype(object)
+
     # Boolean pass flags
     for flag_col in (
         "under_pressure",
@@ -220,6 +224,9 @@ def parse_events(raw_events_df: pd.DataFrame) -> pd.DataFrame:
         "pass_corner",
         "pass_free_kick",
     ]
+    is_not_shot = result["type_name"] != "Shot"
+    result.loc[is_not_shot, "shot_statsbomb_xg"] = np.nan
+    result.loc[is_not_shot, "shot_outcome_name"] = np.nan
     is_not_pass = result["type_name"] != "Pass"
     for col in _PASS_ONLY_COLS:
         if col in result.columns:
