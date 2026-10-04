@@ -311,3 +311,37 @@ def test_live_events_to_arrays_defaults_and_timestamps():
         e["elapsed_seconds"] = 5.0
     arr2, warns2 = events_to_arrays(ev)
     assert not warns2 and arr2.abs_s.tolist() == [5.0, 5.0]
+
+
+# ---------------------------------------------------------------- same-moment leak (pass ending in the box)
+
+
+def test_pass_ending_in_box_is_a_danger_event_and_ends_eligibility():
+    # the only danger is a pass that ends in the box; no event LOCATION is ever in the box
+    p = make_arrays(
+        [P, P, P],
+        [30.0, 50.0, 60.0],
+        [40.0, 40.0, 40.0],
+        end_xs=[50.0, 106.0, 70.0],
+    )
+    elig, lab, term = snapshot_labels(p)
+    assert elig.tolist() == [True, False, False]  # nothing at or after the pass is eligible
+    assert lab[0] == 1 and not term.any()
+
+
+def test_pass_ending_in_box_without_receipt_and_with_receipt_behave_the_same():
+    no_receipt = make_arrays([P, C, P], [30, 40, 50], [40] * 3, end_xs=[40, np.nan, 105])
+    with_receipt = make_arrays(
+        [P, C, P, R], [30, 40, 50, 105], [40] * 4, end_xs=[40, np.nan, 105, np.nan]
+    )
+    assert snapshot_labels(no_receipt)[0].tolist() == [True, True, False]
+    assert snapshot_labels(with_receipt)[0].tolist() == [True, True, False, False]
+
+
+def test_opponent_pass_or_pass_ending_outside_box_is_not_danger():
+    opp = make_arrays([P, P, P], [30, 50, 60], [40] * 3, own=[1, 0, 1], end_xs=[40, 106, 70])
+    assert snapshot_labels(opp)[1].max() == 0
+    outside = make_arrays([P, P, P], [30, 50, 60], [40] * 3, end_xs=[40, 101, 70])
+    assert snapshot_labels(outside)[1].max() == 0
+    assert is_danger_event(P, 50.0, 40.0, True, 106.0, 40.0)
+    assert not is_danger_event(P, 50.0, 40.0, True)  # no end location: location-only rule

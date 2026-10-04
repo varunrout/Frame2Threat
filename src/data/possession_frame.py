@@ -68,7 +68,19 @@ def in_box(x, y):
     return (x >= BOX_X) & (y >= BOX_Y_LO) & (y <= BOX_Y_HI)
 
 
-def is_danger_event(type_id, x, y, own):
-    """Shot or box entry by the possessing team (``own`` False -> never a danger event)."""
+def is_danger_event(type_id, x, y, own, end_x=None, end_y=None):
+    """Shot or box entry by the possessing team (``own`` False -> never a danger event).
+
+    A possessing-team **pass whose end location is in the box** is itself a danger event: the
+    ball has entered the box at that pass, and the receipt that follows only records it.
+    Judging danger on the event location alone would let a snapshot at such a pass see the
+    entry in its own features (``max_x_so_far``, the GRU's end-x/end-y) before the label
+    registers it.  Pass ``end_x``/``end_y`` to apply this rule; without them only event
+    locations count (the possession-label definition, which is unchanged).
+    """
     type_id = np.asarray(type_id)
-    return np.asarray(own, dtype=bool) & ((type_id == int(EventType.SHOT)) | in_box(x, y))
+    own = np.asarray(own, dtype=bool)
+    hit = (type_id == int(EventType.SHOT)) | in_box(x, y)
+    if end_x is not None and end_y is not None:
+        hit = hit | ((type_id == int(EventType.PASS)) & in_box(end_x, end_y))
+    return own & hit

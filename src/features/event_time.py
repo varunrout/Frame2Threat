@@ -168,10 +168,14 @@ def build_possession_arrays(
 
 
 def danger_flags(p: PossessionArrays) -> np.ndarray:
-    """Per-event bool: shot or box entry by the possessing team (event location)."""
+    """Per-event bool: shot or box entry by the possessing team.
+
+    Event location, plus the end location of possessing-team passes (see
+    ``possession_frame.is_danger_event``): a pass ending in the box is the entry.
+    """
     x = np.nan_to_num(p.x, nan=0.0)
     y = np.nan_to_num(p.y, nan=0.0)
-    return is_danger_event(p.type_id, x, y, p.own)
+    return is_danger_event(p.type_id, x, y, p.own, p.end_x, p.end_y)
 
 
 def snapshot_labels(p: PossessionArrays) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
