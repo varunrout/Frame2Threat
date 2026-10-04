@@ -29,8 +29,8 @@ How much does the pass's own destination decide the label (test split)?
 | model | roc_auc | avg_precision | brier | log_loss |
 |---|---|---|---|---|
 | LR_event | 0.803 | 0.808 | 0.173 | 0.538 |
-| XGB_event | 0.881 | 0.891 | 0.130 | 0.406 |
-| XGB_event360 | 0.882 | 0.892 | 0.129 | 0.401 |
+| XGB_event | 0.881 | 0.892 | 0.130 | 0.404 |
+| XGB_event360 | 0.883 | 0.893 | 0.129 | 0.400 |
 | LR_end_x | 0.800 | 0.806 | 0.176 | 0.550 |
 | XGB_end_xy | 0.857 | 0.865 | 0.140 | 0.435 |
 
@@ -39,37 +39,37 @@ How much does the pass's own destination decide the label (test split)?
 
 | subset | ROC AUC | average precision | Brier |
 |---|---|---|---|
-| all test passes | +0.0014 [-0.0011, +0.0038] | +0.0014 [-0.0005, +0.0033] | -0.0011 [-0.0026, +0.0004] |
-| passes with 360 only | +0.0036 [-0.0012, +0.0083] | +0.0025 [-0.0022, +0.0067] | -0.0015 [-0.0041, +0.0014] |
+| all test passes | +0.0021 [-0.0010, +0.0055] | +0.0018 [-0.0006, +0.0043] | -0.0008 [-0.0025, +0.0008] |
+| passes with 360 only | +0.0030 [-0.0024, +0.0083] | +0.0024 [-0.0021, +0.0063] | -0.0005 [-0.0029, +0.0021] |
 
 ### Test metrics (passes with 360 only)
 
 | model | roc_auc | avg_precision | brier | log_loss |
 |---|---|---|---|---|
-| XGB_event | 0.866 | 0.868 | 0.135 | 0.428 |
-| XGB_event360 | 0.870 | 0.871 | 0.134 | 0.418 |
+| XGB_event | 0.869 | 0.871 | 0.135 | 0.421 |
+| XGB_event360 | 0.872 | 0.873 | 0.134 | 0.417 |
 
 
 ### Event model vs destination-only baselines (paired bootstrap, 95% CI)
 
 | comparison | ROC AUC | average precision | Brier |
 |---|---|---|---|
-| XGB_event - LR_end_x | +0.0804 [+0.0655, +0.0965] | +0.0852 [+0.0700, +0.1004] | -0.0462 [-0.0543, -0.0390] |
-| XGB_event - XGB_end_xy | +0.0242 [+0.0191, +0.0299] | +0.0262 [+0.0193, +0.0336] | -0.0101 [-0.0129, -0.0075] |
+| XGB_event - LR_end_x | +0.0807 [+0.0652, +0.0966] | +0.0858 [+0.0697, +0.1014] | -0.0463 [-0.0537, -0.0393] |
+| XGB_event - XGB_end_xy | +0.0245 [+0.0177, +0.0305] | +0.0267 [+0.0184, +0.0352] | -0.0102 [-0.0130, -0.0072] |
 
 ### 95% intervals per model
 
 | model | stat | estimate | 95% CI |
 |---|---|---|---|
-| LR_event | roc_auc | 0.803 | [0.785, 0.819] |
-| LR_event | avg_precision | 0.808 | [0.784, 0.832] |
+| LR_event | roc_auc | 0.803 | [0.785, 0.820] |
+| LR_event | avg_precision | 0.808 | [0.784, 0.833] |
 | LR_event | brier | 0.173 | [0.166, 0.181] |
-| XGB_event | roc_auc | 0.881 | [0.867, 0.893] |
-| XGB_event | avg_precision | 0.891 | [0.872, 0.907] |
-| XGB_event | brier | 0.130 | [0.123, 0.138] |
-| XGB_event360 | roc_auc | 0.882 | [0.867, 0.895] |
-| XGB_event360 | avg_precision | 0.892 | [0.873, 0.908] |
-| XGB_event360 | brier | 0.129 | [0.121, 0.137] |
+| XGB_event | roc_auc | 0.881 | [0.868, 0.893] |
+| XGB_event | avg_precision | 0.892 | [0.872, 0.908] |
+| XGB_event | brier | 0.130 | [0.123, 0.137] |
+| XGB_event360 | roc_auc | 0.883 | [0.870, 0.895] |
+| XGB_event360 | avg_precision | 0.893 | [0.875, 0.909] |
+| XGB_event360 | brier | 0.129 | [0.122, 0.137] |
 | LR_end_x | roc_auc | 0.800 | [0.783, 0.818] |
 | LR_end_x | avg_precision | 0.806 | [0.781, 0.833] |
 | LR_end_x | brier | 0.176 | [0.169, 0.185] |
@@ -94,9 +94,9 @@ How much does the pass's own destination decide the label (test split)?
 
 | model | roc_auc | avg_precision | brier | log_loss |
 |---|---|---|---|---|
-| LR_event | 0.611 | 0.296 | 0.170 | 0.521 |
-| XGB_event | 0.718 | 0.411 | 0.189 | 0.555 |
-| XGB_event360 | 0.723 | 0.424 | 0.184 | 0.543 |
+| LR_event | 0.612 | 0.296 | 0.170 | 0.520 |
+| XGB_event | 0.728 | 0.422 | 0.195 | 0.569 |
+| XGB_event360 | 0.729 | 0.426 | 0.191 | 0.560 |
 | LR_end_x | 0.543 | 0.266 | 0.173 | 0.531 |
 | XGB_end_xy | 0.687 | 0.359 | 0.225 | 0.637 |
 
@@ -105,37 +105,37 @@ How much does the pass's own destination decide the label (test split)?
 
 | subset | ROC AUC | average precision | Brier |
 |---|---|---|---|
-| all test passes | +0.0050 [-0.0011, +0.0106] | +0.0129 [+0.0015, +0.0250] | -0.0051 [-0.0100, -0.0006] |
-| passes with 360 only | +0.0029 [-0.0057, +0.0111] | +0.0138 [-0.0037, +0.0323] | -0.0132 [-0.0184, -0.0080] |
+| all test passes | +0.0015 [-0.0036, +0.0070] | +0.0041 [-0.0053, +0.0134] | -0.0038 [-0.0067, -0.0015] |
+| passes with 360 only | -0.0015 [-0.0106, +0.0069] | +0.0027 [-0.0111, +0.0114] | -0.0061 [-0.0107, -0.0007] |
 
 ### Test metrics (passes with 360 only)
 
 | model | roc_auc | avg_precision | brier | log_loss |
 |---|---|---|---|---|
-| XGB_event | 0.706 | 0.390 | 0.198 | 0.576 |
-| XGB_event360 | 0.709 | 0.404 | 0.185 | 0.547 |
+| XGB_event | 0.717 | 0.400 | 0.199 | 0.579 |
+| XGB_event360 | 0.715 | 0.403 | 0.193 | 0.566 |
 
 
 ### Event model vs destination-only baselines (paired bootstrap, 95% CI)
 
 | comparison | ROC AUC | average precision | Brier |
 |---|---|---|---|
-| XGB_event - LR_end_x | +0.1752 [+0.1609, +0.1881] | +0.1454 [+0.1245, +0.1663] | +0.0156 [+0.0057, +0.0246] |
-| XGB_event - XGB_end_xy | +0.0306 [+0.0176, +0.0452] | +0.0524 [+0.0300, +0.0756] | -0.0358 [-0.0411, -0.0309] |
+| XGB_event - LR_end_x | +0.1851 [+0.1684, +0.1983] | +0.1565 [+0.1332, +0.1786] | +0.0214 [+0.0132, +0.0291] |
+| XGB_event - XGB_end_xy | +0.0404 [+0.0286, +0.0537] | +0.0636 [+0.0437, +0.0834] | -0.0299 [-0.0334, -0.0264] |
 
 ### 95% intervals per model
 
 | model | stat | estimate | 95% CI |
 |---|---|---|---|
-| LR_event | roc_auc | 0.611 | [0.596, 0.628] |
-| LR_event | avg_precision | 0.296 | [0.272, 0.324] |
+| LR_event | roc_auc | 0.612 | [0.597, 0.629] |
+| LR_event | avg_precision | 0.296 | [0.273, 0.324] |
 | LR_event | brier | 0.170 | [0.164, 0.175] |
-| XGB_event | roc_auc | 0.718 | [0.703, 0.733] |
-| XGB_event | avg_precision | 0.411 | [0.392, 0.435] |
-| XGB_event | brier | 0.189 | [0.182, 0.196] |
-| XGB_event360 | roc_auc | 0.723 | [0.708, 0.739] |
-| XGB_event360 | avg_precision | 0.424 | [0.409, 0.445] |
-| XGB_event360 | brier | 0.184 | [0.177, 0.190] |
+| XGB_event | roc_auc | 0.728 | [0.713, 0.743] |
+| XGB_event | avg_precision | 0.422 | [0.402, 0.445] |
+| XGB_event | brier | 0.195 | [0.190, 0.200] |
+| XGB_event360 | roc_auc | 0.729 | [0.715, 0.745] |
+| XGB_event360 | avg_precision | 0.426 | [0.411, 0.446] |
+| XGB_event360 | brier | 0.191 | [0.186, 0.196] |
 | LR_end_x | roc_auc | 0.543 | [0.527, 0.557] |
 | LR_end_x | avg_precision | 0.266 | [0.248, 0.289] |
 | LR_end_x | brier | 0.173 | [0.167, 0.180] |

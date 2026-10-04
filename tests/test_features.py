@@ -151,3 +151,33 @@ class TestGraphBuilder:
         nf = g["node_features"]
         assert nf.shape[0] == 10
         assert nf.ndim == 2
+
+
+class TestPossessionLength:
+    """possession_id restarts every match: counts must be per (match_id, possession_id)."""
+
+    @staticmethod
+    def _frame(sample):
+        df = sample.iloc[:6].copy().reset_index(drop=True)
+        df["event_uuid"] = [f"u{i}" for i in range(6)]
+        df["match_id"] = [1, 2, 1, 2, 1, 2]
+        df["possession_id"] = [7] * 6  # shared by both matches
+        df["period"] = 1
+        df["minute"] = [1, 1, 2, 2, 3, 3]
+        df["second"] = 0
+        return df
+
+    def test_two_matches_sharing_a_possession_id_count_independently(
+        self, sample_pass_instances_df
+    ):
+        df = self._frame(sample_pass_instances_df)
+        out = build_event_features(df)
+        assert out["possession_length"].tolist() == [0.0, 0.0, 1.0, 1.0, 2.0, 2.0]
+
+    def test_independent_of_row_order_and_of_split(self, sample_pass_instances_df):
+        df = self._frame(sample_pass_instances_df)
+        full = build_event_features(df)["possession_length"]
+        shuffled = build_event_features(df.sample(frac=1.0, random_state=0))["possession_length"]
+        assert shuffled.reindex(full.index).tolist() == full.tolist()
+        only_match_2 = build_event_features(df[df.match_id == 2])["possession_length"]
+        assert only_match_2.tolist() == full.loc[only_match_2.index].tolist()

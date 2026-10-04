@@ -152,10 +152,11 @@ def build_event_features(pass_instances_df: pd.DataFrame) -> pd.DataFrame:
     out["zone_start"] = _compute_zone(out["start_x"], out["start_y"])
 
     # ------------------------------------------------------------------
-    # 12. Possession length (index within possession)
+    # 12. Possession length: number of earlier passes of the same possession in this table
+    #     (causal; independent of row order and of how the table is split by match)
     # ------------------------------------------------------------------
     if "possession_id" in df.columns:
-        out["possession_length"] = df.groupby("possession_id").cumcount().values.astype(float)
+        out["possession_length"] = _passes_so_far_in_possession(df).astype(float)
     else:
         out["possession_length"] = 0.0
 
@@ -172,6 +173,24 @@ def build_event_features(pass_instances_df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+def _passes_so_far_in_possession(df: pd.DataFrame) -> np.ndarray:
+    """Count earlier rows of the same possession, in event order.
+
+    ``possession_id`` restarts every match, so the group key is ``(match_id, possession_id)``;
+    grouping by ``possession_id`` alone mixed different matches' possessions and made the
+    value depend on row order and on which split was being built.  Event order is
+    ``period, minute, second`` with the table order as the tie-break.  Without ``match_id``
+    (legacy tables) the key falls back to ``possession_id`` alone.
+    """
+    keys = [c for c in ("match_id", "possession_id") if c in df.columns]
+    order = [c for c in ("period", "minute", "second") if c in df.columns]
+    tmp = df[keys + order].copy()
+    tmp["_row"] = np.arange(len(tmp))
+    tmp = tmp.sort_values(keys + order + ["_row"], kind="mergesort")
+    tmp["_len"] = tmp.groupby(keys, sort=False).cumcount()
+    return tmp.sort_values("_row")["_len"].to_numpy()
 
 
 def _to_float_bool(df: pd.DataFrame, col: str) -> pd.Series:
