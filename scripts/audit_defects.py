@@ -123,7 +123,12 @@ def main() -> int:
     poss = pd.read_parquet(PROC / "possession_sequences.parquet")
     poss["event_sequence"] = poss["event_sequence"].map(_events)
     passes = pd.read_parquet(PROC / "pass_instances.parquet")
-    lines = ["# Defect audit (before fixes)", "", f"Possessions: {len(poss):,}; passes: {len(passes):,}.", ""]
+    lines = [
+        "# Defect audit (before fixes)",
+        "",
+        f"Possessions: {len(poss):,}; passes: {len(passes):,}.",
+        "",
+    ]
     lines += audit_vocab(poss) + audit_length_leak(poss) + audit_realised(poss)
     lines += audit_pass_label(passes)
     text = "\n".join(lines)

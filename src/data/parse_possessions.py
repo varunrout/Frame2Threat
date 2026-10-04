@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 
 from src.data.event_types import encode
+from src.data.possession_frame import own_team_flags, possessing_team, to_possession_frame
 from src.labels.possession_labels import attach_possession_labels
 
 # ---------------------------------------------------------------------------
@@ -38,8 +39,8 @@ from src.labels.possession_labels import attach_possession_labels
 PITCH_LENGTH = 120.0  # x-axis
 PITCH_WIDTH = 80.0  # y-axis
 
-FINAL_THIRD_X = 80.0  # x >= 80  → final third
-BOX_X = 102.0  # x >= 102 → penalty area (18-yard box)
+FINAL_THIRD_X = 80.0  # x >= 80  -> final third
+BOX_X = 102.0  # x >= 102 -> penalty area (18-yard box)
 BOX_Y_LO = 18.0
 BOX_Y_HI = 62.0
 
@@ -170,17 +171,20 @@ def _aggregate_possession(
     last = grp.iloc[-1]
 
     # --- identity ---
-    team_name = first["team_name"]
+    own = own_team_flags(grp)  # possessing team's events (see possession_frame.py)
+    team_name = possessing_team(grp)
     period = int(first["period"])  # type: ignore[arg-type]
     origin = first["play_pattern_name"] if pd.notna(first["play_pattern_name"]) else "Unknown"
 
     # --- spatial ---
-    start_x = float(first["location_x"]) if pd.notna(first["location_x"]) else np.nan
-    start_y = float(first["location_y"]) if pd.notna(first["location_y"]) else np.nan
-    end_x = float(last["location_x"]) if pd.notna(last["location_x"]) else np.nan
-    end_y = float(last["location_y"]) if pd.notna(last["location_y"]) else np.nan
+    fx, fy = to_possession_frame(
+        [first["location_x"], last["location_x"]], [first["location_y"], last["location_y"]],
+        [own[0], own[-1]],
+    )
+    start_x, start_y = float(fx[0]), float(fy[0])
+    end_x, end_y = float(fx[1]), float(fy[1])
 
-    lx = grp["location_x"].dropna()
+    lx = grp.loc[own, "location_x"].dropna()
     max_x_reached = float(lx.max()) if len(lx) else np.nan
     territory_gained = (
         float(max_x_reached - start_x)
@@ -195,7 +199,7 @@ def _aggregate_possession(
     n_carries = int((types == "carry").sum())
     n_pressures_faced = int(grp["under_pressure"].sum())
 
-    # Duration: convert minute+second to total seconds, diff first→last
+    # Duration: convert minute+second to total seconds, diff first->last
     t_start = int(first["minute"]) * 60 + int(first["second"])
     t_end = int(last["minute"]) * 60 + int(last["second"])
     duration_seconds = max(0, t_end - t_start)
@@ -206,7 +210,7 @@ def _aggregate_possession(
     has_pressure = bool(n_pressures_faced > 0)
 
     # --- sequence ---
-    event_sequence = _build_event_sequence(grp)
+    event_sequence = _build_event_sequence(grp, own)
 
     return {
         # identity
@@ -298,13 +302,15 @@ _SEQ_FIELDS = [
     "minute_norm",  # minute / 90
 ]
 
-def _build_event_sequence(grp: pd.DataFrame) -> list[dict]:
+def _build_event_sequence(grp: pd.DataFrame, own: np.ndarray | None = None) -> list[dict]:
     """
     Return a list of compact per-event dicts for GRU/sequence model input.
     Each dict has float-valued features from ``_SEQ_FIELDS``.
     """
+    if own is None:
+        own = own_team_flags(grp)
     records = []
-    for _, row in grp.iterrows():
+    for (_, row), is_own in zip(grp.iterrows(), own):
         t = str(row["type_name"]).lower() if pd.notna(row["type_name"]) else ""
         type_id = encode(t)
 
@@ -333,6 +339,7 @@ def _build_event_sequence(grp: pd.DataFrame) -> list[dict]:
                 "under_pressure": up,
                 "pass_length_norm": round(pl_norm, 4),
                 "minute_norm": round(minute, 4),
+                "own_team": 1.0 if is_own else 0.0,  # not a GRU input; used by labels/features
             }
         )
     return records
@@ -382,12 +389,12 @@ def _set_dtypes(df: pd.DataFrame) -> None:
 if __name__ == "__main__":
     import time
 
-    print("Loading events_parsed.parquet …")
+    print("Loading events_parsed.parquet ...")
     events = pd.read_parquet("data/processed/events_parsed.parquet")
     print(f"  {len(events):,} events loaded")
 
     t0 = time.time()
-    print("Building possession sequences …")
+    print("Building possession sequences ...")
     poss = build_possession_sequences(events)
     elapsed = time.time() - t0
 
@@ -422,7 +429,7 @@ if __name__ == "__main__":
     )
 
     out = save_possession_sequences(poss)
-    print(f"\nSaved → {out}  ({out.stat().st_size / 1e6:.1f} MB)")
+    print(f"\nSaved -> {out}  ({out.stat().st_size / 1e6:.1f} MB)")
 
     print("\nSample row (no event_sequence):")
     print(poss.drop(columns=["event_sequence"]).head(3).to_string())

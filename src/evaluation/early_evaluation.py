@@ -3,6 +3,14 @@ early_evaluation.py
 ===================
 Evaluation utilities for v3 early-prediction experiments.
 
+.. warning:: SUPERSEDED (fraction-based v3 formulation)
+    "First f% of events" needs the possession's total length n, so the prefix length
+    ``ceil(n*f)`` encodes n (length alone gives ROC AUC 0.683 for ``poss_dangerous``), and
+    many prefixes already contain the shot / box entry they are asked to predict
+    (reports/audit/defect_audit_before.md).  Results from this code are kept for
+    reproducibility only; use the event-time formulation in ``src/features/event_time.py``
+    (reports/event_time/event_time_results.md).
+
 Key functions
 -------------
 prefix_gru_auc_curve(poss_df, gru_model, fracs)

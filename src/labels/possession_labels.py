@@ -195,6 +195,15 @@ def _parse_sequence(seq: list[dict]) -> dict:
     if n == 0:
         return _empty_seq_summary()
 
+    # Only the possessing team's events count as ball progression / danger: the defending
+    # team's coordinates are in the opposite frame (see src/data/possession_frame.py).
+    # Legacy sequences without the ``own_team`` flag are treated as all-own.
+    own = [s.get("own_team", 1.0) >= 0.5 for s in seq]
+    seq = [s for s, o in zip(seq, own) if o]
+    n = len(seq)
+    if n == 0:
+        return _empty_seq_summary()
+
     xs = [s.get("loc_x_norm", 0.0) * PITCH_LENGTH for s in seq]  # denorm to metres
 
     # --- shot / box entry ---

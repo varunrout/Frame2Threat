@@ -60,8 +60,16 @@ def _is_type_id_expr(node: ast.AST) -> bool:
     """True for ``x["type_id"]`` / ``x.get("type_id", ...)`` expressions."""
     if isinstance(node, ast.Subscript):
         return isinstance(node.slice, ast.Constant) and node.slice.value == "type_id"
-    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "get":
-        return bool(node.args) and isinstance(node.args[0], ast.Constant) and node.args[0].value == "type_id"
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "get"
+    ):
+        return (
+            bool(node.args)
+            and isinstance(node.args[0], ast.Constant)
+            and node.args[0].value == "type_id"
+        )
     return False
 
 

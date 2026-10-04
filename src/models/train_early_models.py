@@ -3,6 +3,10 @@ train_early_models.py
 =====================
 Train and save v3 early-prediction XGBoost models.
 
+SUPERSEDED: fraction-based formulation (prefix length encodes possession length; prefixes
+often already contain the outcome).  Kept runnable for reproducibility only; see
+reports/audit/defect_audit_before.md and scripts/run_event_time.py.
+
 Run from project root:
     python src/models/train_early_models.py
 

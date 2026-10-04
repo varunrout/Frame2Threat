@@ -1,0 +1,98 @@
+[
+ {
+  "models": "saved v2 (trained on old labels)",
+  "test labels": "old labels (as published)",
+  "model": "XGBoost",
+  "roc_auc": 0.9449156265233707,
+  "ap": 0.8804143945277944,
+  "brier": 0.08645140154585856
+ },
+ {
+  "models": "saved v2 (trained on old labels)",
+  "test labels": "old labels (as published)",
+  "model": "GRU",
+  "roc_auc": 0.9524347005407612,
+  "ap": 0.9282390707851724,
+  "brier": 0.0910067847659221
+ },
+ {
+  "models": "saved v2 (trained on old labels)",
+  "test labels": "old labels (as published)",
+  "model": "Ensemble (mean)",
+  "roc_auc": 0.9703977201872824,
+  "ap": 0.9475502155908332,
+  "brier": 0.07196707260166879
+ },
+ {
+  "models": "saved v2 (trained on old labels)",
+  "test labels": "corrected labels",
+  "model": "XGBoost",
+  "roc_auc": 0.9575448483648128,
+  "ap": 0.8949959382442374,
+  "brier": 0.07748168942178106
+ },
+ {
+  "models": "saved v2 (trained on old labels)",
+  "test labels": "corrected labels",
+  "model": "GRU",
+  "roc_auc": 0.9358296272289143,
+  "ap": 0.8677974229995278,
+  "brier": 0.11173035468438362
+ },
+ {
+  "models": "saved v2 (trained on old labels)",
+  "test labels": "corrected labels",
+  "model": "Ensemble (mean)",
+  "roc_auc": 0.9736236398446737,
+  "ap": 0.9436082302778898,
+  "brier": 0.0730176329384529
+ },
+ {
+  "models": "retrained on old labels",
+  "test labels": "old labels",
+  "model": "XGBoost",
+  "roc_auc": 0.9461151923273134,
+  "ap": 0.8823497748469017,
+  "brier": 0.08951240587185133
+ },
+ {
+  "models": "retrained on old labels",
+  "test labels": "old labels",
+  "model": "GRU",
+  "roc_auc": 0.9534025722998787,
+  "ap": 0.9302742202501483,
+  "brier": 0.10272716378729692
+ },
+ {
+  "models": "retrained on old labels",
+  "test labels": "old labels",
+  "model": "Ensemble (mean)",
+  "roc_auc": 0.9708639424548515,
+  "ap": 0.9467674413037285,
+  "brier": 0.08003019461608128
+ },
+ {
+  "models": "retrained on corrected labels",
+  "test labels": "corrected labels",
+  "model": "XGBoost",
+  "roc_auc": 0.9572177508897652,
+  "ap": 0.8919746509198822,
+  "brier": 0.07855565963549531
+ },
+ {
+  "models": "retrained on corrected labels",
+  "test labels": "corrected labels",
+  "model": "GRU",
+  "roc_auc": 0.9570114394089441,
+  "ap": 0.9277048274687616,
+  "brier": 0.08602118662126643
+ },
+ {
+  "models": "retrained on corrected labels",
+  "test labels": "corrected labels",
+  "model": "Ensemble (mean)",
+  "roc_auc": 0.9750183054550257,
+  "ap": 0.9470199789005053,
+  "brier": 0.06773217342049674
+ }
+]
