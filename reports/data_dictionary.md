@@ -341,15 +341,15 @@ Built by `build_cumulative_tabular_features(poss_df, frac)`.  Returns the same ~
 |------|--------|
 | Data source | StatsBomb Open Data GitHub repository |
 | Library | `statsbombpy` ≥ 1.13 |
-| Competitions covered | FIFA World Cup (id=43), Premier League (id=2), La Liga (id=11) — configurable in `configs/data.yaml` |
-| 360 availability | Subset of matches only; see `data/interim/inventory.parquet` for per-match coverage |
+| Competitions covered | Processed data: 64 FIFA World Cup 2022 matches (id=43, all with 360) + 35 La Liga 2020/21 Barcelona matches (id=11, no 360 frames).  No Premier League matches (id=2 stays in `configs/data.yaml`, which only affects the inventory table) |
+| 360 availability | 64 of 99 matches (65%) and 26,515 of 50,688 passes (52.3%).  The inventory flags the 35 La Liga matches `has_360 = true` but no frame files exist for them |
 | Pitch coordinate system | StatsBomb standard: 120×80 metres, origin at own-goal bottom-left |
 
 ---
 
 ## Known limitations
 
-1. **360 coverage is partial.** Not all competitions or seasons have 360 data. Geometry-dependent labels and features are NaN for events without 360 context.
+1. **360 coverage is partial.** 52.3% of passes (65% of matches) have a freeze frame; the La Liga matches have none. Geometry-dependent labels and features are NaN for events without 360 context.
 2. **Positional snapshots, not trajectories.** The 360 data captures player positions at the moment of the event only. No velocity, acceleration, or movement direction is available.
 3. **Partial pitch visibility.** Not all 22 players are visible in every freeze frame. Pass option ranking is restricted to *visible* teammates only.
 4. **Recipient visibility.** The nominal pass recipient may not be visible in the freeze frame.

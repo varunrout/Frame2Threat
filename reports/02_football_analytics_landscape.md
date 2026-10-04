@@ -101,7 +101,7 @@ StatsBomb provides free access to event data and 360 freeze frames for selected 
 
 Key properties:
 - **Event types:** 30+ event categories including passes, carries, shots, pressures, duels, goalkeeper actions
-- **360 coverage:** ~65% of events in covered matches have freeze-frame data
+- **360 coverage:** in the matches used here, 87% of passes in the 64 covered World Cup 2022 matches have freeze-frame data (52.3% of all 50,688 passes; the 35 La Liga 2020/21 matches have none)
 - **Player positions:** (x, y) coordinates of all visible players at each event moment
 - **Limitations:** Not all players are visible in every frame (camera coverage); no velocity data
 

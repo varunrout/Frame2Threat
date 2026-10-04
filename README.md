@@ -95,7 +95,7 @@ At pass level the 360 geometry lift is +0.0014 [-0.0011, +0.0038] ROC AUC on the
 
 ### Hard constraints
 
-- Uses **StatsBomb Open Data** only — event data plus partial 360 freeze-frame coverage.
+- Uses **StatsBomb Open Data** only — 99 matches: 64 FIFA World Cup 2022 matches (all with 360 freeze frames) and 35 La Liga 2020/21 Barcelona matches (no 360 frames).  There are no Premier League matches.  360 freeze frames cover **52.3% of passes (26,515 of 50,688)** and 65% of matches.
 - **Not** a full tracking-data system. No continuous trajectories, velocities, or pitch control.
 - 360 features and geometry-dependent labels are **NaN** for events without freeze-frame coverage.
 - 360 geometry adds only **+0.001 to +0.005 ROC AUC** to the pass-level danger model (intervals include zero for ROC AUC).
@@ -419,12 +419,12 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 
 ## Limitations
 
-1. 360 coverage is partial — not all matches have freeze-frame data, and the measured pass-level lift from 360 geometry is only +0.001 to +0.005 ROC AUC.
+1. 360 coverage is partial — 64 of 99 matches (65%) and 52.3% of passes have freeze frames (the La Liga matches have none), and the measured pass-level lift from 360 geometry is only +0.001 to +0.005 ROC AUC.
 2. Positional snapshots, not tracking — no velocity or trajectory.
 3. Partial pitch visibility — not all 22 players are always visible.
 4. Open-play only — set-piece passes excluded from v1 modelling.
 5. Threat gain is a zone proxy — not a full possession-value model.
-6. Limited sample size — StatsBomb open data covers ~100 matches.
+6. Limited sample size — 99 matches (64 World Cup 2022, 35 La Liga 2020/21 Barcelona), 15 in the test split.
 7. Full-possession v2 scores are retrospective upper bounds because some features summarise the completed possession.
 8. Evaluation is held-out, not causal.
 9. The test split is 15 matches; intervals are match-level bootstrap and are wide.

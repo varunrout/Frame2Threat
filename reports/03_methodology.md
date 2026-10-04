@@ -61,11 +61,13 @@ StatsBomb Open Data
 
 All data is accessed from the StatsBomb Open Data repository via the `statsbombpy` library (version ≥ 1.13).  Competitions are configured in `configs/data.yaml`:
 
-| Competition | ID | 360 coverage |
-|-------------|-----|-------------|
-| FIFA World Cup | 43 | Partial |
-| Premier League | 2 | Partial |
-| La Liga | 11 | Partial |
+| Competition | ID | Matches in the processed data | 360 coverage |
+|-------------|-----|------|-------------|
+| FIFA World Cup (2022) | 43 | 64 | All 64 matches (87% of passes have a frame) |
+| Premier League | 2 | 0 | none in the processed data (still listed in the config; see the comment there) |
+| La Liga (2020/21, Barcelona) | 11 | 35 | none in practice (the inventory flag is true, but no frame files exist) |
+
+Overall: 99 matches, 360 freeze frames for 64 of them (65%) and for 26,515 of 50,688 passes (52.3%).
 
 ### 2.2 Parsing pipeline
 

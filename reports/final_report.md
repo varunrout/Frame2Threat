@@ -65,17 +65,16 @@ The project addresses six research questions spanning two analysis levels:
 
 ### 3.1 Source
 
-All data is from the **StatsBomb Open Data** repository, accessed via the `statsbombpy` library.  The project targets competitions with both event data and 360 freeze-frame coverage:
+All data is from the **StatsBomb Open Data** repository, accessed via the `statsbombpy` library.  The processed data is **99 matches**:
 
-- FIFA World Cup (competition_id = 43)
-- Premier League (competition_id = 2)
-- La Liga (competition_id = 11)
+- **64 FIFA World Cup 2022 matches** (competition_id = 43, season 106), all with 360 freeze frames (30,349 passes, of which 26,515 have a freeze frame);
+- **35 La Liga 2020/21 matches involving Barcelona** (competition_id = 11, season 90), with **no** 360 frames (20,339 passes).
 
-Coverage is configurable in `configs/data.yaml`.
+There are **no Premier League matches** in the processed data.  `configs/data.yaml` still lists competition 2 because removing it would change the inventory table (an output), not any model input; the file now carries a comment explaining this.  (Self-audit note: the inventory marks the 35 La Liga matches `has_360 = true` although no freeze-frame files exist for them; they are effectively events-only.)
 
 ### 3.2 Data reality
 
-- **360 coverage is partial.** Only a subset of matches have freeze-frame data.  All analyses distinguish events with and without 360 context.
+- **360 coverage is partial.** Freeze frames exist for 64 of 99 matches (65%) and for **52.3% of passes (26,515 of 50,688)**; the 35 La Liga matches have none, and within the World Cup matches 87% of passes have a frame.  All analyses distinguish events with and without 360 context.
 - **Positional snapshots, not trajectories.** The 360 data captures player x/y coordinates at the moment of the event.  Velocities, accelerations, and movement directions are not available.
 - **Partial pitch visibility.** Not all 22 players are captured in every frame.  Pass option ranking is restricted to *visible* teammates.
 - **Open-play filter.** The v1 modelling table contains only open-play passes; set-piece deliveries are excluded.
@@ -92,12 +91,12 @@ See `reports/data_dictionary.md` for full schema documentation.
 
 | Table | Rows (approx.) | Unit | Description |
 |-------|---------------|------|-------------|
-| `matches` | ~100 | Match | One row per match |
+| `matches` | 99 | Match | One row per match (64 World Cup 2022, 35 La Liga 2020/21) |
 | `events` | ~3,000–5,000/match | Event | All event types (passes, shots, carries, pressures, etc.) |
 | `lineups` | ~22/match | Player-match | Player roster per team |
 | `frames_360` | ~10–20/event | Player-event | Visible player positions per 360 event |
 | `pass_instances` | ~500–1,000/match | Pass | Open-play passes with all labels (v1 modelling table) |
-| `possession_sequences` | ~100–150/match | Possession | Possession-level aggregation with event sequences and 13 labels (v2 modelling table) |
+| `possession_sequences` | ~170/match (17,065 in total) | Possession | Possession-level aggregation with event sequences and 13 labels (v2 modelling table) |
 
 ---
 
@@ -288,7 +287,7 @@ Full details in `reports/experiment_log.md`.
 > | GRU event-time, one snapshot per possession | possession | in play | 0.756 | 0.597 |
 >
 > *Note: v1, v2, and v3 are not directly comparable — they operate at different units and observation horizons. v2 full-possession metrics are retrospective upper bounds because they use completed-possession information.*
-> *v1 positive rate: ~37% | v2/v3 positive rate: ~36%*
+> *v1 `dangerous_progression_k` positive rate: 43.3% (`progression_beyond_pass_k`: 21.6%) | possession `poss_dangerous` rate: 28.3% after the coordinate-frame fix (32.8% before; the earlier "~37% / ~36%" figures were approximate and are superseded)*
 
 ### 9.1 Dataset summary
 
@@ -296,12 +295,14 @@ Full details in `reports/experiment_log.md`.
 
 | Split | Matches | Pass instances | 360-available |
 |-------|---------|---------------|---------------|
-| Train | 69 | 36,037 | ~23,400 |
-| Val | 15 | 7,307 | ~4,800 |
-| Test | 15 | 7,344 | ~4,800 |
-| **Total** | **99** | **50,688** | **~33,000** |
+| Train | 69 | 36,037 | 18,234 |
+| Val | 15 | 7,307 | 4,545 |
+| Test | 15 | 7,344 | 3,736 |
+| **Total** | **99** | **50,688** | **26,515 (52.3%)** |
 
-Label prevalence (`dangerous_progression_k`, k=5): ~37%.
+*Superseded: an earlier version of this table gave ~33,000 360-available passes (about 65%); the correct figures are above (65% is the share of matches, not of passes).*
+
+Label prevalence (k=5): `dangerous_progression_k` 43.3% (test 44.8%); `progression_beyond_pass_k` 21.6% (test 22.4%).  *(Superseded: "~37%".)*
 
 **v2 — Possession level:**
 

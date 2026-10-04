@@ -147,7 +147,7 @@ Status: complete
 
 > **Correction (EXP-024/025):** match-level bootstrap 95% CI for the ROC AUC delta is [-0.0011, +0.0038], so "statistically positive" is withdrawn.  The label `dangerous_progression_k` is also self-determining (see EXP-024); on the corrected label the delta is +0.0050 [-0.0011, +0.0106].
 
-**Decision:** 360 geometry features carry a small additive value on this dataset.  The marginal gain does not justify the 65 % coverage restriction.  Event-only model (EXP-003) is preferred for deployability.  See NB06 ablation section for bar charts.
+**Decision:** 360 geometry features carry a small additive value on this dataset.  The marginal gain does not justify restricting to the 52.3% of passes (65% of matches) that have 360 coverage.  Event-only model (EXP-003) is preferred for deployability.  See NB06 ablation section for bar charts.
 
 ![v1 baseline comparison](figures/v1_baseline_comparison.png)
 *Figure: ROC/PR curves across all v1 models (EXP-001 through EXP-004).*

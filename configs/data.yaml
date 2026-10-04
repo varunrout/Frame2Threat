@@ -1,8 +1,20 @@
 statsbomb:
+  # What this list builds is the match INVENTORY.  The processed data actually used by the
+  # project is 99 matches: 64 FIFA World Cup 2022 matches (all with 360 freeze frames) and
+  # 35 La Liga 2020/21 Barcelona matches (no 360 frames).  No Premier League match is in the
+  # processed data.
+  #
+  # Competition 2 (Premier League) is left in the list on purpose: removing it would change the
+  # inventory table (it adds 418 rows, all has_360 = false), i.e. a pipeline output, even though
+  # it changes no pass instance, possession or model result.
+  #
+  # Note: the inventory flags all 35 La Liga 2020/21 matches has_360 = true, but no freeze-frame
+  # files exist for them; treat them as events-only.  360 coverage in the processed data is
+  # 52.3% of passes (26,515 of 50,688) and 64 of 99 matches (65%).
   competitions:
-    - competition_id: 43   # FIFA World Cup
-    - competition_id: 2    # Premier League
-    - competition_id: 11   # La Liga
+    - competition_id: 43   # FIFA World Cup (2022: 64 matches, 360 available)
+    - competition_id: 2    # Premier League (no matches in the processed data; see note above)
+    - competition_id: 11   # La Liga (2020/21 Barcelona: 35 matches, no 360 frames in practice)
   raw_dir: data/raw
   interim_dir: data/interim
   processed_dir: data/processed
