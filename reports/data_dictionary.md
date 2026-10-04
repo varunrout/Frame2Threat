@@ -165,7 +165,8 @@ Built by `src/data/join_pass_frames.py :: build_pass_instances()`.  One row per 
 |--------|------|-------------|
 | `strict_line_break` | bool/NaN | Pass crosses ≥2 defenders between start_x and end_x AND end_x > start_x + 5m (requires 360) |
 | `loose_line_break` | bool/NaN | Pass crosses ≥1 defender between start_x and end_x AND end_x > start_x + 5m (requires 360) |
-| `dangerous_progression_k` | bool | Within next 5 same-possession events: final-third entry OR box entry OR shot |
+| `dangerous_progression_k` | bool | Within next 5 same-possession events: final-third entry OR box entry OR shot.  Self-determining (the pass's own receipt counts) and reads opponent events unflipped; kept unchanged for comparability, see `label_methodology.md` Label B |
+| `progression_beyond_pass_k` | bool | Within next 5 same-possession events, ignoring the pass's own receipt and the opponent's events: a shot, a new box entry, or >= 10 m beyond `end_x` into a more advanced zone (`label_methodology.md` Label G) |
 | `final_third_entry_k` | bool | Within next 5 same-possession events: ball reaches x ≥ 80 |
 | `box_entry_k` | bool | Within next 5 same-possession events: ball reaches x ≥ 102 AND 18 ≤ y ≤ 62 |
 | `shot_within_k` | bool | Within next 5 same-possession events: a shot event occurs |
@@ -225,10 +226,10 @@ Built by `src/data/parse_possessions.py :: build_possession_sequences()`.  One r
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `event_sequence` | list[dict] (JSON-serialised in parquet) | Per-event feature vectors for GRU/sequence model input.  Each dict has 8 keys: `type_id` (int, TYPE_VOCAB-encoded), `loc_x_norm` (x/120), `loc_y_norm` (y/80), `end_x_norm`, `end_y_norm`, `under_pressure` (0/1), `pass_length_norm` (length/60), `minute_norm` (minute/90). |
+| `event_sequence` | list[dict] (JSON-serialised in parquet) | Per-event feature vectors for GRU/sequence model input.  Each dict has 8 GRU-input keys plus an `own_team` flag (1.0 = performed by the possessing team, 0.0 = defending team; defending-team coordinates are in the opposite frame and are excluded from ball-progression and danger labels; not a GRU input): `type_id` (int, TYPE_VOCAB-encoded), `loc_x_norm` (x/120), `loc_y_norm` (y/80), `end_x_norm`, `end_y_norm`, `under_pressure` (0/1), `pass_length_norm` (length/60), `minute_norm` (minute/90). |
 | `player_sequence` | list[str] (JSON-serialised in parquet) | Player name for each event step, aligned 1-to-1 with `event_sequence`.  `"Unknown"` when the event has no player actor. |
 
-**TYPE_VOCAB** (event type → integer encoding for `type_id`):
+**Event-type ids** (single source of truth: `src/data/event_types.py`; values are frozen because the trained GRU depends on them):
 
 | Type | ID |
 |------|----|

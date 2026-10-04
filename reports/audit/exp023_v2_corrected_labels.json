@@ -18,10 +18,10 @@
  {
   "models": "saved v2 (trained on old labels)",
   "test labels": "old labels (as published)",
-  "model": "Ensemble (mean)",
-  "roc_auc": 0.9703977201872824,
-  "ap": 0.9475502155908332,
-  "brier": 0.07196707260166879
+  "model": "Ensemble (logit mean)",
+  "roc_auc": 0.9732333151945948,
+  "ap": 0.952776319040133,
+  "brier": 0.06517843525676997
  },
  {
   "models": "saved v2 (trained on old labels)",
@@ -42,10 +42,10 @@
  {
   "models": "saved v2 (trained on old labels)",
   "test labels": "corrected labels",
-  "model": "Ensemble (mean)",
-  "roc_auc": 0.9736236398446737,
-  "ap": 0.9436082302778898,
-  "brier": 0.0730176329384529
+  "model": "Ensemble (logit mean)",
+  "roc_auc": 0.9774017657261864,
+  "ap": 0.9513530656788741,
+  "brier": 0.06264498714452744
  },
  {
   "models": "retrained on old labels",
@@ -66,10 +66,10 @@
  {
   "models": "retrained on old labels",
   "test labels": "old labels",
-  "model": "Ensemble (mean)",
-  "roc_auc": 0.9708639424548515,
-  "ap": 0.9467674413037285,
-  "brier": 0.08003019461608128
+  "model": "Ensemble (logit mean)",
+  "roc_auc": 0.9735953814236642,
+  "ap": 0.9533738581668681,
+  "brier": 0.07509609333187806
  },
  {
   "models": "retrained on corrected labels",
@@ -90,9 +90,9 @@
  {
   "models": "retrained on corrected labels",
   "test labels": "corrected labels",
-  "model": "Ensemble (mean)",
-  "roc_auc": 0.9750183054550257,
-  "ap": 0.9470199789005053,
-  "brier": 0.06773217342049674
+  "model": "Ensemble (logit mean)",
+  "roc_auc": 0.9769088688429152,
+  "ap": 0.9526308029414218,
+  "brier": 0.0636958146064487
  }
 ]

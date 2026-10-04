@@ -4,9 +4,9 @@
 
 **Breaking the Block: Predicting and Explaining Dangerous Progression from StatsBomb Event Data**
 
-A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots using StatsBomb Open Data.  The project evaluates 360 freeze-frame spatial context directly and finds that, in this dataset, event attributes carry almost all of the pass-level predictive signal: adding 360 geometry improves ROC AUC by only +0.001.  Extended with possession-level sequential modelling and player-level attribution.
+A reproducible football analytics system that predicts whether a pass breaks a defensive line, produces dangerous progression, or leads to final-third / box entries and shots using StatsBomb Open Data.  The project evaluates 360 freeze-frame spatial context directly and finds that, in this dataset, event attributes carry most of the pass-level predictive signal: adding 360 geometry improves ROC AUC by +0.001 on the original label and +0.005 (95% CI -0.001 to +0.011) on a corrected label that no longer rewards a pass for where it ends.  Extended with possession-level sequential modelling and player-level attribution.
 
-> **Upfront caveats:** This is a StatsBomb Open Data project with partial 360 coverage, not a production tracking-data model.  The reported 360 lift is marginal (+0.001 ROC AUC), so the strongest result is the event/possession modelling rather than a claim that freeze frames transform performance.  Several higher-level workflows were assembled with agent assistance and then grounded with tests, CI, reproducibility scripts, and explicit limitations.
+> **Upfront caveats:** This is a StatsBomb Open Data project with partial 360 coverage, not a production tracking-data model.  The reported 360 lift is marginal (+0.001 to +0.005 ROC AUC, intervals include zero), so the strongest result is the event/possession modelling rather than a claim that freeze frames transform performance.  **Corrections (October 2026):** an external review found four defects (event-type decoding, a possession-length leak in the early-forecasting design, opponent coordinates in the wrong frame, and a self-determining pass label).  They are fixed, every affected result was re-run, and the superseded numbers are kept and marked in `reports/`; see `reports/audit/`.  Several higher-level workflows were assembled with agent assistance and then grounded with tests, CI, reproducibility scripts, and explicit limitations.
 
 ---
 
@@ -17,14 +17,14 @@ git clone https://github.com/varunrout/Frame2Threat.git
 cd Frame2Threat
 pip install -e ".[dev]"
 streamlit run src/app/app.py   # app; demo mode labels random placeholder scores
-pytest tests/ -q               # run all tests (74 passing)
+pytest tests/ -q               # run all tests (123 passing)
 ```
 
 ---
 
 ## Project overview
 
-Frame2Threat models attacking danger from StatsBomb event data, then tests whether 360 freeze-frame geometry adds meaningful signal beyond those event attributes.  The central finding is deliberately modest: 360 context is useful for interpretability and geometry-dependent labels such as line breaks, but it does not materially improve the headline pass-level danger model here (+0.001 ROC AUC).
+Frame2Threat models attacking danger from StatsBomb event data, then tests whether 360 freeze-frame geometry adds meaningful signal beyond those event attributes.  The central finding is deliberately modest: 360 context is useful for interpretability and geometry-dependent labels such as line breaks, but it does not materially improve the pass-level danger model here (+0.001 ROC AUC on the original label, +0.005 on the corrected one; both within noise for ROC AUC).
 
 The system operates at **two complementary granularities**:
 
@@ -36,7 +36,8 @@ For each individual open-play pass, predict whether it leads to dangerous outcom
 |-------|-----------|
 | `strict_line_break` | Pass crosses ≥ 2 defenders (by x-position in freeze frame) |
 | `loose_line_break` | Pass crosses ≥ 1 defender (by x-position) |
-| `dangerous_progression_k` | Final-third entry OR box entry OR shot within k=5 same-possession events |
+| `dangerous_progression_k` | Final-third entry OR box entry OR shot within k=5 same-possession events.  **Self-determining** (the receipt of the pass itself counts; `end_x` alone gives AUC 0.786): kept for comparability only |
+| `progression_beyond_pass_k` | **Preferred.** Shot, new box entry, or >= 10 m further upfield into a more advanced zone within k=5 events, ignoring the pass's own receipt and the opponent's events (`reports/label_methodology.md`, Label G) |
 | `final_third_entry_k` | Ball reaches x ≥ 80 within k events |
 | `box_entry_k` | Ball enters penalty box within k events |
 | `shot_within_k` | Shot occurs within k events |
@@ -53,42 +54,51 @@ For each full possession sequence, predict danger and attribute it to individual
 | `poss_tempo` / `poss_verticality` / `poss_phase` | Structural characterisation |
 | `poss_broke_pressure` / `poss_bypassed_lines` | Defensive disruption labels |
 
-### v3 — Early danger forecasting
+### v3 — Early danger forecasting (rebuilt as an event-time formulation)
 
-Can we predict danger *before* the possession ends?  v3 evaluates forward-looking models under strict early-information constraints.
+Can we anticipate danger *before* it happens?  The original v3 asked for "the first f% of events", which needs the possession's total length: the prefix length alone gives ROC AUC 0.68, and 21-59% of dangerous possessions already contained their shot or box entry inside the prefix.  **Those numbers (GRU 0.820, XGBoost 0.847 at 50%) are withdrawn.**  The replacement is an in-play hazard: at every event `t` of a possession that has not yet produced a shot or box entry, estimate the probability that the possessing team produces one in a later event, from events `0..t` only (real elapsed seconds, current event type, ball position, start context).
 
-| Observation window | Model | Test ROC AUC |
-|--------------------|-------|--------------|
-| 0% (start context only) | XGBoost start-only | 0.624 |
-| 50% of events observed | GRU prefix | 0.820 |
-| 50% of events observed | XGBoost cumulative | 0.847 |
-| 100% (full possession, retrospective upper bound) | Ensemble (XGB + GRU) | **0.965** |
+Test split (15 matches, unchanged split), match-level bootstrap 95% intervals:
 
-Key finding: danger is forecastable well before the possession ends — by halfway through, models already exceed 0.82 AUC.  This early-forecasting result is the strongest predictive story in the project.  The GRU tipping point occurs at median fraction 0.619; dribbles are the dominant trigger (64.4%).
+| Model | ROC AUC, all snapshots | ROC AUC, one random snapshot per possession |
+|-------|-----------------------|--------------------------------------------|
+| Ball x/y only (logistic regression) | 0.648 [0.630, 0.664] | 0.713 [0.688, 0.735] |
+| Events so far only (logistic regression) | 0.564 [0.529, 0.601] | 0.530 [0.496, 0.567] |
+| Start context only (XGBoost) | 0.586 [0.563, 0.610] | 0.643 [0.612, 0.668] |
+| XGBoost, snapshot features | 0.668 [0.653, 0.681] | 0.749 [0.727, 0.772] |
+| GRU (1 layer, hidden 64, learned event-type embedding) | 0.670 [0.650, 0.689] | 0.756 [0.739, 0.777] |
 
-Timing audit: the full-possession v2 scores are retrospective upper bounds, not leakage-free early predictions.  The tabular model uses completed-possession summaries such as `max_x_reached` and `territory_gained`, while `poss_dangerous` includes box entry.  See `reports/feature_timing_audit.md` for the feature-level audit.
+Key finding: danger is only **modestly** forecastable in play.  The models beat a ball-position-only baseline by +0.02 (all snapshots) to +0.04 (one per possession) ROC AUC, and XGBoost and the GRU are indistinguishable.  Most of the signal is where the ball currently is.  Calibration is imperfect (both models under-predict on the test split; see `reports/event_time/event_time_results.md`).  There is no dominant "tipping" event type: passes, carries and ball receipts trigger first alerts roughly in proportion to how often they occur, and the earlier "dribbles are the dominant trigger (64.4%)" was an artefact of a decoding bug (id 3 is Ball Receipt, not Dribble).
+
+Timing audit: the full-possession v2 scores are retrospective upper bounds, not leakage-free early predictions.  The tabular model uses completed-possession summaries such as `max_x_reached` and `territory_gained`, while `poss_dangerous` includes box entry.  See `reports/feature_timing_audit.md` for the feature-level audit and the addendum on the length leak.
 
 ### Key results (all versions)
 
+Superseded values are kept in `reports/` with the reason; this table shows current numbers only.
+
 | Model | Level | Task | Test ROC AUC |
 |-------|-------|------|-------------|
-| XGBoost (event-only, 27 features) | Pass | dangerous_progression_k | **0.881** |
-| XGBoost (event+360, 41 features) | Pass | dangerous_progression_k | 0.882 |
-| PassFrameGNN (graph) | Pass | dangerous_progression_k | 0.841 (val) |
-| XGBoost (41 possession features, retrospective) | Possession | poss_dangerous | 0.9505 |
-| PossessionGRU (full event sequence, retrospective) | Possession | poss_dangerous | 0.9524 |
-| Ensemble (XGB + GRU, retrospective upper bound) | Possession | poss_dangerous | 0.9650 |
-| XGBoost cumulative @50% | Possession (early) | poss_dangerous | 0.8472 |
-| XGBoost cumulative @75% | Possession (early) | poss_dangerous | 0.8912 |
+| XGBoost (event-only, 27 features) | Pass | `dangerous_progression_k` (self-determining label) | 0.881 [0.867, 0.893] |
+| XGBoost (event+360, 41 features) | Pass | `dangerous_progression_k` | 0.882 [0.867, 0.895] |
+| `end_x` alone (logistic regression) | Pass | `dangerous_progression_k` | 0.800 |
+| XGBoost (event-only, 27 features) | Pass | `progression_beyond_pass_k` | **0.718** [0.703, 0.733] |
+| XGBoost (event+360, 41 features) | Pass | `progression_beyond_pass_k` | 0.723 [0.708, 0.739] |
+| `end_x` alone (logistic regression) | Pass | `progression_beyond_pass_k` | 0.543 |
+| XGBoost (41 possession features, retrospective) | Possession | `poss_dangerous` (corrected labels) | 0.957 |
+| PossessionGRU (full event sequence, retrospective) | Possession | `poss_dangerous` (corrected labels) | 0.957 |
+| Logit-mean XGB + GRU ensemble (retrospective upper bound) | Possession | `poss_dangerous` (corrected labels) | 0.977 |
+| XGBoost, event-time snapshots | Possession (in play) | `danger_after_t`, all snapshots | 0.668 |
+| GRU, event-time snapshots | Possession (in play) | `danger_after_t`, all snapshots | 0.670 |
+| GRU, event-time snapshots | Possession (in play) | one random snapshot per possession | 0.756 |
 
-At pass level, the event-only model (0.881) and event+360 model (0.882) are effectively tied.  Treat the 360 result as an honest negative/marginal finding, not as the main source of model lift.
+At pass level the 360 geometry lift is +0.0014 [-0.0011, +0.0038] ROC AUC on the original label and +0.0050 [-0.0011, +0.0106] on the corrected label (average precision +0.013 [+0.002, +0.025] and Brier -0.005 [-0.010, -0.001] do exclude zero).  Event attributes carry most of the signal; 360 geometry adds a small, not clearly significant amount.  On the corrected label the event model beats the destination-only baselines (`end_x`: +0.175; `(end_x, end_y)`: +0.031 ROC AUC), so the earlier headline 0.881 mostly reflected a label that rewards the pass's own destination.  The PassFrameGNN comparison (0.841 on the 360 subset) could not be re-run in this environment (see Limitations).  The possession retrospective rows come from a like-for-like retrain after the coordinate-frame fix (`reports/audit/exp023_v2_corrected_labels.md`).
 
 ### Hard constraints
 
 - Uses **StatsBomb Open Data** only — event data plus partial 360 freeze-frame coverage.
 - **Not** a full tracking-data system. No continuous trajectories, velocities, or pitch control.
 - 360 features and geometry-dependent labels are **NaN** for events without freeze-frame coverage.
-- 360 geometry adds only **+0.001 ROC AUC** to the pass-level danger model in the reported ablation.
+- 360 geometry adds only **+0.001 to +0.005 ROC AUC** to the pass-level danger model (intervals include zero for ROC AUC).
 - Pass option ranking is restricted to **visible teammates** in the freeze frame.
 
 ---
@@ -106,18 +116,18 @@ Frame2Threat/
 │   ├── model_baseline.yaml
 │   ├── model_gnn.yaml
 │   ├── model_gru.yaml         # v2 GRU architecture + training config
-│   ├── model_possession.yaml  # v2/v3 possession XGBoost + early-warning config
+│   ├── model_possession.yaml  # v2 possession XGBoost + (superseded) v3 early-warning config
 │   └── eval.yaml
 ├── data/raw|interim|processed # Data directories (gitignored)
 ├── models/                    # Trained model artefacts (gitignored)
 │   ├── xgboost_dp_event_only.joblib        # v1 pass-level XGBoost (event-only)
 │   ├── xgboost_dp_event_360.joblib         # v1 pass-level XGBoost (event+360)
-│   ├── xgboost_poss_dangerous.joblib       # v2 possession XGBoost
+│   ├── xgboost_poss_dangerous.joblib       # v2 possession XGBoost (pre-fix labels)
+│   ├── v2_corrected_*                      # v2 retrained on frame-corrected labels
 │   ├── gru_poss_dangerous.pt               # v2 PossessionGRU
-│   ├── xgboost_start_only.joblib           # v3 start-only XGBoost
-│   ├── xgboost_cumulative_25pct.joblib     # v3 cumulative XGBoost @25%
-│   ├── xgboost_cumulative_50pct.joblib     # v3 cumulative XGBoost @50%
-│   ├── xgboost_cumulative_75pct.joblib     # v3 cumulative XGBoost @75%
+│   ├── eventtime_gru.pt, eventtime_xgboost.joblib, eventtime_meta.json  # event-time models
+│   ├── xgboost_start_only.joblib           # SUPERSEDED fraction-based v3
+│   ├── xgboost_cumulative_{25,50,75}pct.joblib  # SUPERSEDED fraction-based v3
 │   ├── v1_results_summary.json
 │   └── results_summary.json
 ├── notebooks/                 # 01–10 analysis notebooks
@@ -128,25 +138,29 @@ Frame2Threat/
 │   ├── data_dictionary.md
 │   ├── design_decisions.md
 │   ├── label_methodology.md
+│   ├── feature_timing_audit.md
+│   ├── audit/                  # defect audits (before/after) and re-run results
+│   ├── event_time/             # in-play (event-time) results
+│   ├── pass_label/             # both pass labels x 360 ablation
 │   ├── experiment_log.md
 │   ├── final_report.md
 │   └── figures/               # 49 PNG figures
 ├── src/
 │   ├── data/     ingest, inventory, parse_events/lineups/360, join_pass_frames,
-│   │             parse_possessions, splits
-│   ├── labels/   line_break, dangerous_progression, downstream_outcomes,
+│   │             parse_possessions, event_types (shared type ids), possession_frame, splits
+│   ├── labels/   line_break, dangerous_progression, progression_beyond_pass, downstream_outcomes,
 │   │             possession_labels, validation_sampling
 │   ├── features/ event_features, geometry_features, graph_builder,
-│   │             sequence_context, possession_features, early_features
+│   │             sequence_context, possession_features, early_features (superseded), event_time
 │   ├── models/   baselines, tabular, gnn, hybrid, gru_possession, ranking,
-│   │             gru_train_script, train_early_models
+│   │             gru_train_script, train_early_models (superseded), event_time
 │   ├── evaluation/ metrics, calibration, ablations, tactical_review,
-│   │               possession_attribution, early_evaluation
+│   │               possession_attribution, early_evaluation (superseded), event_time_eval
 │   ├── visualization/ pitch_plots, freeze_frame_view, explanations
-│   └── app/      app.py (Streamlit), cli.py (CLI pipeline)
+│   └── app/      app.py (Streamlit), cli.py (CLI pipeline), live_scoring.py
 └── tests/        conftest, test_ingestion, test_labels, test_features,
                   test_splits, test_models, test_build_store,
-                  test_reproduce_pipeline (74 tests)
+                  test_reproduce_pipeline, test_event_types, test_event_time (123 tests)
 ```
 
 ---
@@ -202,11 +216,11 @@ metadata/provenance at `data/store/metadata.sqlite`.
 
 ### Tests
 
-CI runs the full pytest suite with coverage and currently enforces a 24%
+CI runs the full pytest suite with coverage and currently enforces a 33%
 minimum coverage floor:
 
 ```bash
-pytest --cov=src --cov-report=term-missing --cov-fail-under=24
+pytest --cov=src --cov-report=term-missing --cov-fail-under=33
 ```
 
 ### v1 — Pass-level
@@ -289,37 +303,36 @@ from src.evaluation.possession_attribution import attribute_possession, player_a
 # See notebooks/09_possession_team_analysis.ipynb
 ```
 
-### v3 — Early danger forecasting
-
-```python
-# 1. Build prefix-aware features
-from src.features.early_features import build_start_features, build_cumulative_tabular_features
-X_start = build_start_features(poss_df)                    # start-only context
-X_50pct = build_cumulative_tabular_features(poss_df, 0.50)  # first 50% of events
-
-# 2. Evaluate prefix GRU
-from src.evaluation.early_evaluation import evaluate_prefix_gru
-results = evaluate_prefix_gru(gru_model, poss_df, fracs=[0.25, 0.50, 0.75, 1.00])
-
-# 3. Train + save cumulative XGBoost models
-# python src/models/train_early_models.py
-```
-
-### CLI — Early-warning pipeline
-
-The `frame2threat` CLI provides batch and live danger scoring using the saved v2/v3 models:
+### Early danger forecasting (event-time) and CLI
 
 ```bash
-# Score all possessions in a parquet file at 50% and 100% observation
-frame2threat score-batch data/processed/possession_sequences.parquet \
-    -o scores.csv --fracs 0.50,1.00
+# Train, tune on validation, evaluate (writes reports/event_time/ and models/eventtime_*)
+python scripts/run_event_time.py
 
-# Score a single possession event-by-event (prints danger trajectory)
-frame2threat score-live possession_events.json
-
-# (Re)train the v3 early-prediction XGBoost models
-frame2threat train-early
+# Re-run the audits and the re-runs behind the corrections
+python scripts/audit_defects.py --mode after --out reports/audit/defect_audit_after.md
+python scripts/rerun_exp019_vocab_fix.py
+python scripts/rerun_v2_corrected_labels.py
+python scripts/run_pass_label_ablation.py
 ```
+
+```python
+from src.features.event_time import build_possession_arrays, build_snapshot_table
+arrs = build_possession_arrays(events_df, poss_df[["match_id", "possession_id"]])
+snapshots = build_snapshot_table(arrs)     # one row per event t before any shot / box entry
+```
+
+The superseded fraction-based v3 code (`src/features/early_features.py`, `src/evaluation/early_evaluation.py`, `src/models/train_early_models.py`, notebook 10) remains runnable for reproducibility but is labelled as superseded.
+
+The `frame2threat` CLI scores a possession event by event with the event-time model:
+
+```bash
+# Score a single possession event-by-event (prints danger trajectory and tipping point)
+frame2threat score-live possession_events.json            # GRU (default)
+frame2threat score-live possession_events.json --model xgb --threshold 0.40
+```
+
+The JSON holds a list of event dicts in the `possession_sequences.parquet` `event_sequence` schema, optionally with `own_team` and `elapsed_seconds` per event (or an object with `event_sequence`, `origin`, `period`, `minute`).  Without `elapsed_seconds` the CLI warns and assumes the training-median spacing.  The default alert threshold is the validation-chosen value in `models/eventtime_meta.json`.  `score-batch` and `train-early` are the superseded fraction-based commands.
 
 The CLI is registered as a console entry point in `pyproject.toml`.  Run `frame2threat --help` for full usage.
 
@@ -334,7 +347,7 @@ streamlit run src/app/app.py
 ## Testing
 
 ```bash
-pytest tests/ -v    # 74 tests, all passing
+pytest tests/ -v    # 123 tests, all passing
 ```
 
 | Test file | Covers |
@@ -344,6 +357,8 @@ pytest tests/ -v    # 74 tests, all passing
 | `test_features.py` | Shapes, NaN passthrough, geometry helpers |
 | `test_splits.py` | No match in two splits, reproducibility, manifest I/O |
 | `test_models.py` | Rule-based and tabular model fit/predict/serialize |
+| `test_event_types.py` | One shared event-type vocabulary: frozen ids, round-trip, no duplicate mappings, prefix counts |
+| `test_event_time.py` | Possessing-team frame, snapshot eligibility/labels, no future information in features, GRU causality, evaluation helpers |
 
 ---
 
@@ -360,7 +375,7 @@ pytest tests/ -v    # 74 tests, all passing
 | `07_possession_features.ipynb` | Possession label EDA + XGBoost baseline | v2 models |
 | `08_possession_sequence_model.ipynb` | GRU training, ensemble, H1–H4 testing | v2 models |
 | `09_possession_team_analysis.ipynb` | Team/player attribution, tactical analysis | v2 eval |
-| `10_early_prediction.ipynb` | Start-only, prefix GRU, cumulative XGB, tipping-point analysis | v3 early forecasting |
+| `10_early_prediction.ipynb` | Start-only, prefix GRU, cumulative XGB, tipping-point analysis (**superseded** fraction-based formulation) | v3 (superseded) |
 
 ---
 
@@ -372,10 +387,13 @@ pytest tests/ -v    # 74 tests, all passing
 | `reports/02_football_analytics_landscape.md` | Football analytics eras; where Frame2Threat fits |
 | `reports/03_methodology.md` | Full technical approach: pipeline, features, models, evaluation |
 | `reports/data_dictionary.md` | Schema for all canonical tables (v1 + v2) |
-| `reports/feature_timing_audit.md` | Possession feature timing audit and leakage caveats |
+| `reports/feature_timing_audit.md` | Possession feature timing audit, length leak, realised-outcome and coordinate-frame findings |
+| `reports/audit/` | Defect audit before/after, EXP-020 and EXP-023 re-run outputs |
+| `reports/event_time/` | Event-time (in-play) results, buckets, reliability, tipping points |
+| `reports/pass_label/` | Both pass labels x 360 ablation with bootstrap intervals |
 | `reports/label_methodology.md` | Operational label definitions, invariants, borderline cases |
 | `reports/repro/` | Inspectable scored sample, model cards, and repro evidence pack |
-| `reports/experiment_log.md` | 19-experiment registry with results (EXP-001 to EXP-019, v1–v3) |
+| `reports/experiment_log.md` | Experiment registry (EXP-001 to EXP-025; v3 entries marked superseded) |
 | `reports/final_report.md` | Comprehensive project report with all results |
 
 ---
@@ -384,12 +402,12 @@ pytest tests/ -v    # 74 tests, all passing
 
 | RQ | Question | Answer |
 |----|----------|--------|
-| RQ1 | Does 360 context improve prediction? | Barely: +0.001 ROC AUC at pass level, so event attributes carry nearly all measured signal |
-| RQ2 | Which geometry features matter? | n_defenders_goal_side, pass_corridor_clear, receiver_between_lines |
-| RQ3 | How to predict possession danger? | Leakage-free early forecasting is viable at 0.82+ AUC by 50%; full-possession models report retrospective upper-bound scores of XGB 0.950, GRU 0.952, Ensemble 0.965 |
-| RQ4 | Which events matter most? | Moderate concentration (Gini 0.495); dribbles dominate tipping points (64.4%) |
-| RQ5 | Player-level attribution? | Yes — 453-player leaderboard, domain-consistent |
-| RQ6 | GNN vs. tabular? | Near-parity (0.841 vs 0.845 on 360 subset) |
+| RQ1 | Does 360 context improve prediction? | Barely: +0.0014 [-0.0011, +0.0038] ROC AUC on the original (self-determining) label and +0.0050 [-0.0011, +0.0106] on the corrected `progression_beyond_pass_k`; average precision and Brier gains on the corrected label exclude zero but are small.  Event attributes carry most of the measured signal |
+| RQ2 | Which geometry features matter? | n_defenders_goal_side, pass_corridor_clear, receiver_between_lines (importance from the original-label model; not re-ranked on the corrected label) |
+| RQ3 | How to predict possession danger? | In play, only modestly: ROC AUC 0.67 (all snapshots) to 0.76 (one random snapshot per possession), about +0.02 to +0.04 over a ball-position baseline; XGBoost and GRU are indistinguishable.  Full-possession models are retrospective upper bounds: XGB 0.957, GRU 0.957, logit-mean ensemble 0.977 (corrected labels) |
+| RQ4 | Which events matter most? | Moderate concentration (Gini 0.495, from the unchanged v2 GRU; the per-type breakdown is corrected in `reports/audit/exp020_vocab_fix.md`).  There is no dominant tipping event type; the "dribble 64.4%" figure was ball receipts |
+| RQ5 | Player-level attribution? | Yes - 453-player leaderboard, domain-consistent (not recomputed after the corrections; 86 possessions changed team attribution) |
+| RQ6 | GNN vs. tabular? | Unverified: the 0.841 vs 0.845 near-parity used the self-determining label, and the GNN could not be re-run here (no `torch_geometric`, no saved checkpoint) |
 
 ---
 
@@ -401,7 +419,7 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 
 ## Limitations
 
-1. 360 coverage is partial — not all matches have freeze-frame data, and the measured pass-level lift from 360 geometry is only +0.001 ROC AUC.
+1. 360 coverage is partial — not all matches have freeze-frame data, and the measured pass-level lift from 360 geometry is only +0.001 to +0.005 ROC AUC.
 2. Positional snapshots, not tracking — no velocity or trajectory.
 3. Partial pitch visibility — not all 22 players are always visible.
 4. Open-play only — set-piece passes excluded from v1 modelling.
@@ -409,6 +427,9 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 6. Limited sample size — StatsBomb open data covers ~100 matches.
 7. Full-possession v2 scores are retrospective upper bounds because some features summarise the completed possession.
 8. Evaluation is held-out, not causal.
+9. The test split is 15 matches; intervals are match-level bootstrap and are wide.
+10. The GNN results (PassFrameGNN) were not reproduced in this environment, and the `threat_gain` zone-value map still averages over opponent events in their own frame.
+11. Event-time models under-predict on the test split (calibration shifts with the base rate) and alert thresholds trade many false alarms for a high detection rate.
 
 ---
 

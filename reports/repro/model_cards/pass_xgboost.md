@@ -35,12 +35,15 @@ shot within the next five same-possession events.
 The event+360 lift is only +0.0014 ROC AUC. Treat this as a marginal/negative
 finding for 360 additive value in this dataset.
 
+> **Correction (October 2026).** These metrics are for `dangerous_progression_k`, which is self-determining: the receipt of the pass itself sits inside the look-ahead, so `end_x` alone gives ROC AUC 0.800 on this test split.  With a match-level bootstrap the 360 delta is +0.0014 [-0.0011, +0.0038] (not "statistically positive").  On the corrected label `progression_beyond_pass_k` (Label G): event-only 0.718 [0.703, 0.733], event+360 0.723 [0.708, 0.739], delta +0.0050 [-0.0011, +0.0106], `end_x` alone 0.543 (`reports/pass_label/pass_label_results.md`).
+
 ## Known Limitations
 
 - 360 coverage is partial.
 - The pass-level model sees only an event snapshot, not player trajectories.
 - The GNN comparison is validation-only in the current report.
-- Metrics are reported without bootstrap confidence intervals.
+- Bootstrap intervals are in `reports/pass_label/pass_label_results.md` (15 test matches).
+- XGBoost uses `scale_pos_weight`, so its Brier score is not comparable with unweighted baselines.
 
 ## Artefacts
 

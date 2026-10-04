@@ -54,6 +54,16 @@ def gru_probs(model, df):
     return evaluate(model, loader, torch.device("cpu"))[1]
 
 
+def logit_mean(a, b):
+    """Equal-weight logit average: the v2 ensemble rule (reports/03_methodology.md, section 6.7)."""
+
+    def lg(p):
+        p = np.clip(p, 1e-6, 1 - 1e-6)
+        return np.log(p / (1 - p))
+
+    return 1 / (1 + np.exp(-(0.5 * lg(a) + 0.5 * lg(b))))
+
+
 def m(y, p):
     return {
         "roc_auc": roc_auc_score(y, p),
@@ -97,8 +107,8 @@ def main() -> None:
             {
                 "models": "saved v2 (trained on old labels)",
                 "test labels": tag,
-                "model": "Ensemble (mean)",
-                **m(y, (px + pg) / 2),
+                "model": "Ensemble (logit mean)",
+                **m(y, logit_mean(px, pg)),
             }
         )
 
@@ -144,7 +154,7 @@ def main() -> None:
             verbose=False,
         )
         pg = gru_probs(gru, d["test"])
-        for name, p in (("XGBoost", px), ("GRU", pg), ("Ensemble (mean)", (px + pg) / 2)):
+        for name, p in (("XGBoost", px), ("GRU", pg), ("Ensemble (logit mean)", logit_mean(px, pg))):
             rows.append(
                 {"models": f"retrained on {tag}", "test labels": tag, "model": name, **m(y, p)}
             )

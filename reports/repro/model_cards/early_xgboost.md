@@ -1,4 +1,6 @@
-# Model Card: Early XGBoost Possession Forecasts
+# Model Card: Early XGBoost Possession Forecasts (SUPERSEDED)
+
+> **SUPERSEDED.** These fraction-based models are *not* leakage-free: the prefix length `ceil(n*f)` encodes the possession's total length (length alone: ROC AUC 0.683) and 20.8% / 36.9% / 58.7% of dangerous possessions already contain their shot or box entry at f = 0.25 / 0.5 / 0.75.  The cumulative models were also trained with feature code that mis-counted passes and carries (event-type decoding defect, fixed afterwards).  The current model is `event_time.md`.  The numbers below are kept for the record only; the "cleaner predictive setting" and "leakage-aware headline" statements below are withdrawn.
 
 ## Summary
 
@@ -32,7 +34,7 @@ prefixes because they cannot be safely derived mid-possession.
 
 - Prefix models still use engineered aggregates from the observed prefix, so
   they are an offline approximation of live scoring.
-- No confidence intervals are reported yet.
+- No confidence intervals are reported (the event-time card reports match-level bootstrap intervals).
 - The current committed sample contains XGBoost early scores only; GRU prefix
   scores require loading the PyTorch artefact.
 

@@ -219,7 +219,7 @@ All from the cached data; `ball` is the position the definition uses.
 **4. Synthetic: pass already in the box.**  Pass ending at (105, 40); +1 receipt (dropped); +2 own pass ending at (108, 40).  Label 0 (no *new* entry); a shot at +2 would make it 1.
 
 ### Behaviour on the data
-Prevalence 21.6% (old label: 43.3%).  Of passes ending at x >= 80, 17.4% are positive (old: 94.3%); of passes ending at x < 80, 23.1% (old: 24.8%).  `end_x` alone now gives ROC AUC 0.447, i.e. below chance: a pass that already ends far upfield leaves less room for further progress.  The destination no longer buys a positive label.
+Prevalence 21.6% (old label: 43.3%).  Of passes ending at x >= 80, 17.4% are positive (old: 94.3%); of passes ending at x < 80, 23.1% (old: 24.8%).  Scored in the natural direction (higher `end_x` = more likely positive), `end_x` alone now gives ROC AUC 0.447, i.e. 0.553 with the sign flipped: a modest *inverse* relationship, because a pass that already ends far upfield leaves less room for further progress.  The destination no longer buys a positive label.
 
 ### Implementation
 `src/labels/progression_beyond_pass.py :: compute_progression_beyond_pass()` (pure per-pass rule in `label_window()`); also called from `scripts/reproduce_v1.py`.

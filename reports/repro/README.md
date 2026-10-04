@@ -10,7 +10,8 @@ fresh clone without downloading StatsBomb data or retraining models.
 | `scored_possessions_sample.csv` | A 25-row possession sample scored with the local XGBoost early/prefix models and the retrospective full-possession XGBoost model. |
 | `scored_possessions_manifest.json` | Source paths, column list, and generation notes for the scored sample. |
 | `model_cards/pass_xgboost.md` | Model card for the v1 pass-level XGBoost models. |
-| `model_cards/early_xgboost.md` | Model card for v3 start-only and cumulative XGBoost models. |
+| `model_cards/early_xgboost.md` | Model card for v3 start-only and cumulative XGBoost models (**superseded**: fraction-based, length leak). |
+| `model_cards/event_time.md` | Model card for the event-time (in-play) XGBoost and GRU models that replace them. |
 | `model_cards/possession_retrospective.md` | Model card for the v2 retrospective possession models and ensemble. |
 
 ## Calibration And Figures

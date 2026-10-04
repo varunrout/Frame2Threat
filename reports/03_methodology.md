@@ -349,7 +349,9 @@ No additional training required.  The complementary information captured by tabu
 
 Test ROC AUC = 0.965.
 
-### 6.8 v3 — Start-only XGBoost
+> **SUPERSEDED (sections 6.8-6.10).** The fraction-based prefix formulation leaks the possession length (length alone: ROC AUC 0.683) and often already contains the outcome; its numbers (e.g. 0.820 / 0.847 at 50%) are withdrawn.  The event-time formulation that replaces it is documented in `reports/event_time/event_time_results.md` and `reports/repro/model_cards/event_time.md`; the audit is in `reports/feature_timing_audit.md`.
+
+### 6.8 v3 — Start-only XGBoost (superseded context)
 
 XGBoost trained on ~19 start-only features (origin type, start location, zone flags).
 Tests whether danger is forecastable from pre-possession context alone.
@@ -374,7 +376,7 @@ The saved v2 `PossessionGRU` is evaluated on truncated event prefixes without re
 Results:
 - 25%: 0.7167 AUC  |  50%: 0.8195 AUC  |  75%: 0.8793 AUC  |  100%: 0.9475 AUC
 
-By 50%, the GRU already exceeds 0.82 AUC — strong evidence of forward-looking capability.
+~~By 50%, the GRU already exceeds 0.82 AUC — strong evidence of forward-looking capability.~~  *Withdrawn: the prefix length encodes the possession length and many prefixes already contain the outcome.*
 
 ---
 
