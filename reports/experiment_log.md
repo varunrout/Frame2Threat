@@ -428,6 +428,8 @@ Status: complete
 
 ### EXP-013 — H2: Attribution concentration (Gini coefficient)
 
+> **SUPERSEDED by EXP-031.**  The Gini 0.495, the 453-player leaderboard and the high-impact event types were computed in-sample (the GRU had seen the possessions it attributed), on pre-fix labels, with the wrong event-type decoder, and credited defending-team events to players.  Figure moved to `figures/superseded_attribution/`.
+
 Reconstructed sequence date: 2025-06-12
 Status: complete
 
@@ -450,7 +452,7 @@ Interpretation: Moderate concentration — about half the danger variance is att
 
 **Decision:** H2 PARTIAL.  Danger is partially concentrated (not fully distributed), but no single event dominates.  This validates the sequential approach: both individual actions and their context matter.
 
-![H2 attribution concentration](figures/v2_h2_attribution_concentration.png)
+![H2 attribution concentration](figures/superseded_attribution/v2_h2_attribution_concentration.png)
 *Figure: Distribution of Gini coefficients and max-event attribution shares (EXP-013).*
 
 **Files:** `notebooks/08_possession_sequence_model.ipynb`
@@ -779,22 +781,59 @@ Raw: recycled 36.9% vs 24.5% dangerous (+12.4 pp), mean 39.6 vs 14.0 events.  Le
 
 The processed data is 99 matches: 64 FIFA World Cup 2022 (all with 360; 30,349 passes, 26,515 with a frame) and 35 La Liga 2020/21 Barcelona (no 360 frames; 20,339 passes); no Premier League matches.  360 covers 26,515 of 50,688 passes (52.3%; train 18,234, val 4,545, test 3,736) and 64 of 99 matches (65%).  Superseded wording: "~65% of passes", "~33,000 360-available passes", "~37%" label prevalence (actual 43.3% for `dangerous_progression_k`).  The inventory marks all 35 La Liga matches `has_360 = true` although no frame files exist.  `configs/data.yaml` keeps competition 2 (removing it would change the inventory table) and now carries comments.
 
+### EXP-031 — Cross-fitted retrospective attribution on the corrected data
+
+Status: complete.  Code: `src/evaluation/attribution_crossfit.py`, `scripts/run_attribution.py`; tests `tests/test_attribution.py`; outputs `reports/attribution/` (report, leaderboards, event-type table, results JSON), `reports/figures/attribution/`, `data/processed/attribution_events.parquet` (310,726 events; gitignored).
+
+**Method.**  The 99 matches are split into 5 match-grouped folds (seed 42).  For each fold a v2 GRU (`configs/model_gru.yaml`: 1 layer, hidden 64, lr 1e-3, class-weighted loss, early stopping on validation AUC) is trained on the other four folds, with an inner match-level split (12 validation matches) for early stopping; leave-one-out (LOO) attribution is computed **only** on the held-out fold, so every possession is attributed by a model that never saw it or any other possession of its match.  First 40 events only (the GRU's input length; 14.6% of possessions are longer).  A second independent round (seed 43: different folds, inner splits and initialisation) provides the cross-run reliability check.
+
+**Results (retrospective).**
+
+| Quantity | Value |
+|---|---|
+| Held-out ROC AUC per fold (seed 42) | 0.9558, 0.9569, 0.9543, 0.9572, 0.9584 |
+| Pooled out-of-fold ROC AUC (seed 42 / seed 43) | **0.9525** / 0.9550 |
+| Possession score vs possession xG (Spearman / Pearson) | 0.501 / 0.314 |
+| Mean LOO, goal possessions vs dangerous non-goal (all events) | +0.0346 vs +0.0233 |
+| Mean LOO, goal possessions vs dangerous non-goal (possessing-team events) | +0.0242 vs +0.0209 |
+| Median Gini of per-possession |LOO| (all / dangerous / safe) | 0.478 / 0.629 / 0.434 |
+| Players with >= 100 possessing-team events | 623 of 1,008 |
+| Split-half stability of player ranking (50 repeats) | Spearman 0.620 +/- 0.018 (range 0.585-0.671) |
+| Cross-run agreement (seed 42 vs 43): player ranking / event LOO / possession score | Spearman 0.887 / Pearson 0.868 / Spearman 0.971 |
+
+**Reading.**  Possessions that end in a goal receive the highest scores and larger attributions than other dangerous possessions, and the score is moderately related to xG (the label does not use xG).  Player means are reasonably stable, but the top of the table is forwards and the bottom centre-backs and full-backs, so the stable part is mostly **role**; nothing is adjusted for position, team or opponent.  Defending-team events (goalkeeper, clearance, block, foul committed) are the model's evidence that danger occurred and are never credited to a player.  Very high scores saturate, so LOO drops vanish for the most obviously dangerous possessions.  This is retrospective, not causal credit; the recommended next step is a forward-looking action value model (xT or VAEP-style).
+
+**Superseded:** the in-sample v2 leaderboards and figures (`figures/superseded_attribution/`), Gini 0.495 and the "most impactful events are final-third entries, through balls and pre-shot carries" statement.
+
 ---
 
 ## V2 results summary table
 
+> **The 0.9505 / 0.9524 / 0.9650 rows below are superseded** (kept as originally reported).  Reasons: the possession labels, `max_x_reached` and the final-third flag used the defending team's events in the wrong coordinate frame (EXP-023), the saved XGBoost artefact no longer reproduces 0.9505 under the current XGBoost version (it scores 0.9449 on the original labels), and the recorded 0.9650 ensemble does not reproduce (0.9732 with the documented logit average).  The corrected like-for-like retrain (same split and configuration, test possessions) is in the second block.  All are **retrospective** (they see the whole possession).
+
 | EXP | Model | Task | Feature set | ROC-AUC (test) | AP (test) |
 |-----|-------|------|-------------|----------------|-----------|
-| 009 | XGBoost | poss_dangerous | 41 possession features | **0.9505** | **0.8947** |
-| 010 | PossessionGRU | poss_dangerous | 8-dim event sequence | **0.9524** | **0.9282** |
-| 011 | Ensemble (XGB+GRU) | poss_dangerous | combined | **0.9650** | **0.9358** |
-| 012 | XGBoost (origin-only) | poss_dangerous | origin_type | 0.591 | — |
-| 013 | LOO Attribution | Gini concentration | — | Gini=0.495 | — |
-| 014 | Cross-level correlation | pass↔possession | — | H1 supported | — |
+| 009 | XGBoost | poss_dangerous | 41 possession features | ~~0.9505~~ superseded | ~~0.8947~~ |
+| 010 | PossessionGRU | poss_dangerous | 8-dim event sequence | ~~0.9524~~ superseded | ~~0.9282~~ |
+| 011 | Ensemble (XGB+GRU) | poss_dangerous | combined | ~~0.9650~~ superseded | ~~0.9358~~ |
+| 012 | XGBoost (origin-only) | poss_dangerous | origin_type | 0.591 (original labels; not re-run) | — |
+| 013 | LOO Attribution | Gini concentration | — | ~~Gini=0.495~~ superseded: in-sample, pre-fix labels; see EXP-031 | — |
+| 014 | Cross-level correlation | pass↔possession | — | H1 supported (original labels and old pass model; not re-run) | — |
+
+Corrected retrain on the frame-corrected labels (EXP-023), test possessions:
+
+| EXP | Model | Task | Original labels (retrain) ROC-AUC / AP | Corrected labels ROC-AUC / AP |
+|-----|-------|------|-----------------|-----------------|
+| 009 | XGBoost | poss_dangerous | 0.9461 / 0.8823 | **0.9572 / 0.8920** |
+| 010 | PossessionGRU | poss_dangerous | 0.9534 / 0.9303 | **0.9570 / 0.9277** |
+| 011 | Ensemble (equal-weight logit mean) | poss_dangerous | 0.9736 / 0.9534 | **0.9769 / 0.9526** |
+| 031 | PossessionGRU, 5-fold match-grouped cross-fit (all 99 matches, pooled out-of-fold; retrospective) | poss_dangerous | — | **0.9525** (second seed 0.9550) |
 
 ---
 
 ## V3 results summary table
+
+> **SUPERSEDED (fraction-based formulation).**  Every row below used "the first f% of events", whose prefix length encodes the possession length (AUC 0.683 alone) and often already contains the outcome (EXP-021).  The cumulative XGBoost models were also trained with feature code that mis-counted passes and carries (EXP-020), and EXP-019's "Dribble" is Ball Receipt.  Current in-play numbers: EXP-021 / EXP-026 (`reports/event_time/`).  Kept as originally reported.
 
 | EXP | Model | Observation window | ROC-AUC (test) | AP (test) | Notes |
 |-----|-------|--------------------|----------------|-----------|-------|

@@ -53,3 +53,27 @@ box entry, which is itself determined by completed spatial progression. See
 - Results: `models/results_summary.json`
 - Timing audit: `reports/feature_timing_audit.md`
 - Calibration figure: `reports/figures/poss_calibration.png`
+
+## Cross-fitted attribution use (EXP-031, October 2026)
+
+The retrospective GRU is used to attribute a possession's score to its events by leave-one-out (LOO).  The earlier
+attribution (Gini 0.495, a 453-player leaderboard, "final-third entries and through balls matter most") was
+**in-sample** (the GRU had been trained on the possessions it attributed), used pre-fix labels and the wrong event-type
+decoder, and credited defending-team events to players; it is superseded (figures kept in
+`reports/figures/superseded_attribution/`).
+
+Current method (`reports/attribution/ATTRIBUTION_REPORT.md`): 5 match-grouped folds over all 99 matches; a GRU per fold
+trained on the other folds (inner match-level split for early stopping); LOO only on the held-out fold, first 40 events.
+
+| Quantity | Value |
+|---|---|
+| Pooled out-of-fold ROC AUC (corrected labels; retrospective) | 0.952 (folds 0.9558, 0.9569, 0.9543, 0.9572, 0.9584); second seed 0.955 |
+| Possession score vs xG, Spearman | 0.50 |
+| Median Gini of |LOO| (dangerous / safe) | 0.63 / 0.43 |
+| Player ranking, split-half Spearman / cross-seed Spearman | 0.62 / 0.89 |
+
+**What it is for:** tagging key moments for video review and producing scouting shortlists to inspect.  **What it is not:**
+causal credit (zeroed-event sequences are unrealistic), a measure of defenders' quality (defending-team events are
+evidence of danger), or a basis for ranking players on its own (the stable part of the ranking is mostly role; no
+adjustment for position, team or opponent).  Scores are class-weighted GRU outputs, not calibrated probabilities, and
+very high scores saturate so LOO drops vanish.  Next step: a forward-looking action value model (xT or VAEP-style).

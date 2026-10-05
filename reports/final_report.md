@@ -459,7 +459,7 @@ Timing caveat: the v2 tabular model includes completion-dependent features such 
 ![H1 score correlation](figures/v2_h1_score_correlation.png)
 *Figure 9-11: H1 — v1 pass danger score vs v2 possession danger score (r = 0.319).*
 
-![H2 attribution concentration](figures/v2_h2_attribution_concentration.png)
+![H2 attribution concentration](figures/superseded_attribution/v2_h2_attribution_concentration.png)
 *Figure 9-12: H2 — Distribution of Gini coefficients and max-event attribution shares.*
 
 ![H3 sequence vs snapshot](figures/v2_h3_sequence_vs_snapshot.png)
@@ -526,17 +526,19 @@ At every event `t` of a possession with no shot or box entry yet, estimate the p
 
 > **Correction.**  Event-type labels printed by the attribution code and the app used a different decoder from the encoder, and the claim below that the most impactful events are "final-third entries, through balls and pre-shot carries" is not supported.  Re-run with the shared decoder on the test split (`reports/audit/exp020_vocab_fix.md`): the largest mean leave-one-out attributions are Shot (+0.188), Goalkeeper (+0.137), Clearance, Foul Committed and Block; carries (-0.016) and passes (-0.007) are slightly negative on average.  As the argmax 'unlock' event, Ball Receipt is most frequent (33.8%, 1.2x base), Pressure next (17.7%, 2.4x), Shot 5.3% (8.4x), Goalkeeper 4.8% (6.6x).  These are model attributions, not causal effects.
 
-Leave-one-out (LOO) attribution decomposes each possession's predicted danger into per-event contributions:
+> **SUPERSEDED by the cross-fitted attribution (EXP-031, `reports/attribution/ATTRIBUTION_REPORT.md`).**  The bullets and figures below were computed in-sample (the GRU had been trained on the possessions it attributed), on pre-fix labels and with the wrong event-type decoder, and credited defending-team events (pressure, goalkeeper, clearance) to players.  Current: cross-fitted (5 match-grouped folds over all 99 matches; every possession attributed by a model that never saw its match) pooled out-of-fold ROC AUC 0.952 (folds 0.9558, 0.9569, 0.9543, 0.9572, 0.9584; second seed 0.955); 623 of 1,008 players have >= 100 possessing-team events; split-half Spearman 0.62 +/- 0.02, cross-seed player Spearman 0.89; possession score vs xG Spearman 0.50; median Gini of |LOO| 0.48.  The old '453-player leaderboard' is withdrawn; the superseded figures are kept in `reports/figures/superseded_attribution/`.  Attribution is retrospective and not causal credit.
 
-- **Moderate concentration:** Median Gini 0.495 — ~2–3 pivotal events account for half the danger
-- **High-impact event types:** Final-third entries, through balls, pre-shot carries
-- **Player leaderboard:** 453 players (≥ 20 touches) ranked by mean LOO attribution
-- **Rankings domain-consistent:** Attacking midfielders and strikers rank highest; goalkeepers and defenders rank lowest
+Leave-one-out (LOO) attribution decomposes each possession's predicted danger into per-event contributions (original, superseded claims):
 
-![Player attribution leaderboard](figures/v2_player_attribution_leaderboard.png)
+- ~~**Moderate concentration:** Median Gini 0.495~~ (cross-fitted median Gini of |LOO| 0.478; 0.629 dangerous vs 0.434 safe)
+- ~~**High-impact event types:** Final-third entries, through balls, pre-shot carries~~ (not supported; see EXP-020 and EXP-031: shots, goalkeeper, foul and block events, i.e. evidence of danger)
+- ~~**Player leaderboard:** 453 players (>= 20 touches)~~ (replaced: 623 players with >= 100 possessing-team events, with bootstrap intervals)
+- ~~**Rankings domain-consistent:** attacking midfielders and strikers rank highest~~ (the stable part of the ranking is mostly player role)
+
+![Player attribution leaderboard](figures/superseded_attribution/v2_player_attribution_leaderboard.png)
 *Figure 9-18: Top players by mean LOO danger attribution (≥ 20 event touches).*
 
-![Team attribution leaderboard](figures/v2_team_attribution_leaderboard.png)
+![Team attribution leaderboard](figures/superseded_attribution/v2_team_attribution_leaderboard.png)
 *Figure 9-19: Team-level aggregated danger attribution rankings.*
 
 ![Danger trajectories](figures/v2_danger_trajectories.png)
@@ -739,13 +741,13 @@ All figures saved in `reports/figures/`, referenced from notebooks NB01–NB10.
 |------|-------------|
 | `v2_danger_trajectories.png` | Possession danger score trajectories |
 | `v2_h1_score_correlation.png` | H1: v1 pass vs v2 possession score scatter |
-| `v2_h2_attribution_concentration.png` | H2: Gini distribution and max-event shares |
+| `superseded_attribution/v2_h2_attribution_concentration.png` | **Superseded** (in-sample): H2 Gini distribution and max-event shares |
 | `v2_h3_sequence_vs_snapshot.png` | H3: GRU vs XGBoost comparison |
 | `v2_h4_ablation.png` | H4: Origin-only vs full features |
 | `v2_model_comparison_curves.png` | ROC/PR curves for XGBoost, GRU, Ensemble |
-| `v2_player_attribution_leaderboard.png` | Player-level danger attribution rankings |
+| `superseded_attribution/v2_player_attribution_leaderboard.png` | **Superseded** (in-sample, wrong decoder, defending-team events credited to players): player attribution rankings |
 | `v2_score_correlation.png` | XGBoost vs GRU prediction correlation |
-| `v2_team_attribution_leaderboard.png` | Team-level danger attribution rankings |
+| `superseded_attribution/v2_team_attribution_leaderboard.png` | **Superseded**: team attribution rankings |
 
 ### v3 early-prediction figures (4)
 | File | Description |

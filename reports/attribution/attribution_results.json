@@ -1,0 +1,76 @@
+{
+ "fold_auc": {
+  "seed42": {
+   "0": 0.9558384832654894,
+   "1": 0.9568975351953865,
+   "2": 0.9543202774795044,
+   "3": 0.9572105660904853,
+   "4": 0.9583765202902164,
+   "-1": 0.9524651525884995
+  },
+  "seed43": {
+   "0": 0.9596854838709677,
+   "1": 0.9522792816257877,
+   "2": 0.9593032563275734,
+   "3": 0.955192021717217,
+   "4": 0.956561640536383,
+   "-1": 0.9549778711756686
+  }
+ },
+ "split_half": {
+  "mean": 0.6204241730847642,
+  "sd": 0.017776950014419573,
+  "min": 0.5854210098583089,
+  "max": 0.6712342220805315,
+  "n_players": 623,
+  "repeats": 50
+ },
+ "cross_seed": {
+  "event_pearson": 0.8683603259592205,
+  "player_spearman": 0.8872362373346875,
+  "n_players": 623,
+  "possession_score_spearman": 0.9714724434422525
+ },
+ "sanity": {
+  "score_vs_xg_spearman": 0.5006687229518519,
+  "score_vs_xg_pearson": 0.3139154686063402,
+  "n_possessions": 17065,
+  "n_goal_possessions": 300,
+  "n_dangerous_nongoal": 4524,
+  "mean_loo_all_events_goal": 0.03455735542832362,
+  "mean_loo_all_events_dangerous_nongoal": 0.02327591473745713,
+  "mean_loo_own_events_goal": 0.024168995248926642,
+  "mean_loo_own_events_dangerous_nongoal": 0.020893936470548855,
+  "gini_median_dangerous": 0.6294624850861023,
+  "gini_median_safe": 0.4343597561887562,
+  "gini_iqr_dangerous": [
+   0.4833004736937081,
+   0.7639704319478746
+  ],
+  "gini_iqr_safe": [
+   0.293565287170349,
+   0.5466315706934982
+  ],
+  "gini_median_all": 0.47846107651129544
+ },
+ "players_qualifying": 623,
+ "players_with_credited_events": 1008,
+ "example_possessions": [
+  [
+   3773403,
+   186
+  ],
+  [
+   3857294,
+   11
+  ],
+  [
+   3857285,
+   143
+  ],
+  [
+   3857264,
+   103
+  ]
+ ]
+}
