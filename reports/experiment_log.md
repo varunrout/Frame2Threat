@@ -582,10 +582,10 @@ At every partial prefix, cumulative XGBoost outperforms prefix GRU; the gap is l
 **Files:** `notebooks/10_early_prediction.ipynb`, `src/features/early_features.py`
 
 **Saved models:** Cumulative XGBoost models are trained and persisted by `src/models/train_early_models.py`:
-- `models/xgboost_start_only.joblib` (EXP-015)
-- `models/xgboost_cumulative_25pct.joblib` (EXP-017 @25%)
-- `models/xgboost_cumulative_50pct.joblib` (EXP-017 @50%)
-- `models/xgboost_cumulative_75pct.joblib` (EXP-017 @75%)
+- `models/superseded/xgboost_start_only.joblib` (EXP-015)
+- `models/superseded/xgboost_cumulative_25pct.joblib` (EXP-017 @25%)
+- `models/superseded/xgboost_cumulative_50pct.joblib` (EXP-017 @50%)
+- `models/superseded/xgboost_cumulative_75pct.joblib` (EXP-017 @75%)
 
 All hyperparameters are loaded from `configs/model_possession.yaml → xgboost_early`.
 

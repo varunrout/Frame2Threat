@@ -1,11 +1,18 @@
 {
+  "generated_by": "scripts/make_evidence_pack.py",
+  "seed": 42,
+  "sampling": "25 possessions with >= 4 events drawn at random (seed 42) from the TEST-split matches of data/processed/possession_sequences.parquet",
   "generated_from": {
-    "data": "data/processed/possession_sequences.parquet",
+    "data": [
+      "data/processed/possession_sequences.parquet",
+      "data/processed/events_parsed.parquet"
+    ],
     "models": [
-      "models/xgboost_start_only.joblib",
-      "models/xgboost_cumulative_50pct.joblib",
-      "models/xgboost_cumulative_75pct.joblib",
-      "models/xgboost_poss_dangerous.joblib"
+      "models/eventtime_xgboost.joblib",
+      "models/eventtime_gru.pt",
+      "models/eventtime_meta.json",
+      "models/v2_corrected_xgboost_poss_dangerous.joblib",
+      "models/v2_corrected_gru_poss_dangerous.pt"
     ]
   },
   "n_rows": 25,
@@ -17,14 +24,25 @@
     "origin_type",
     "n_events",
     "poss_dangerous",
-    "xgb_start_prob",
-    "xgb_50pct_prob",
-    "xgb_75pct_prob",
-    "xgb_full_retro_prob"
+    "first_danger_event_idx",
+    "eventtime_xgb_max_p",
+    "eventtime_gru_max_p",
+    "eventtime_xgb_first_alert_idx",
+    "eventtime_gru_first_alert_idx",
+    "eventtime_xgb_lead_events",
+    "eventtime_gru_lead_events",
+    "RETROSPECTIVE_xgb_prob",
+    "RETROSPECTIVE_gru_prob"
   ],
+  "thresholds": {
+    "xgb": 0.3903678810626692,
+    "gru": 0.4221348512993151,
+    "rule": "score quantile on VALIDATION snapshots whose predicted-positive rate equals validation prevalence"
+  },
   "notes": [
-    "Sample uses the first 25 possessions by match_id and possession_id from the local processed table.",
-    "xgb_start_prob, xgb_50pct_prob, and xgb_75pct_prob are prefix/early XGBoost scores.",
-    "xgb_full_retro_prob is included as a retrospective upper-bound score, not a leakage-free early prediction."
+    "eventtime_* columns come from the in-play event-time models: step t uses events 0..t only; scores are defined while no shot / box entry (incl. a possessing-team pass ending in the box) has occurred.",
+    "first_danger_event_idx is the first shot / box-entry event (NaN if none); lead_events = first_danger_event_idx - first alert.",
+    "RETROSPECTIVE_* columns are full-possession models retrained on the frame-corrected labels; they see the whole possession and are NOT early predictions.",
+    "The fraction-based v3 columns (xgb_start_prob, xgb_50pct_prob, xgb_75pct_prob) were withdrawn: the prefix length encodes the possession length."
   ]
 }

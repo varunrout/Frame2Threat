@@ -13,11 +13,14 @@ frame2threat score-live <json-file> [--model gru|xgb] [--threshold T]
     possession_sequences.parquet ``event_sequence`` schema, optionally with ``own_team``
     and ``elapsed_seconds`` per event).  Scoring at step t uses events 0..t only.
 
-SUPERSEDED (fraction-based v3; its prefix length encodes the possession length, see
-reports/feature_timing_audit.md -- kept runnable for reproducibility only):
+frame2threat score-batch [events.parquet] [-o out.csv] [--limit N] [--seed S]
+    Score every event of every possession with the event-time models: per event, the XGBoost
+    and GRU probabilities, the alert flags (thresholds chosen on validation, models/eventtime_meta.json)
+    and the label where defined.  Input is a flat events parquet (events_parsed.parquet schema).
 
-frame2threat score-batch <parquet> [-o output.csv] [--fracs 0.25,0.50,0.75,1.00]
 frame2threat train-early
+    DEPRECATED: the fraction-based v3 trainer.  Prints a message and exits; the withdrawn models
+    live in models/superseded/.  Train the event-time models with scripts/run_event_time.py.
 """
 
 from __future__ import annotations
@@ -55,201 +58,42 @@ def _load_config(root: Path) -> dict:
         return yaml.safe_load(f)
 
 
-def _load_gru(root: Path, cfg: dict):
-    """Load the GRU model (returns model, config dict)."""
-    sys.path.insert(0, str(root))
-    from src.evaluation.possession_attribution import load_gru_model
-
-    gru_path = root / cfg["early_warning"]["gru_model"]
-    return load_gru_model(str(gru_path))
-
-
-def _load_xgb_cumulative(root: Path, cfg: dict, pct: int):
-    """Load a cumulative XGBoost model for a given percentage."""
-    import joblib
-
-    pattern = cfg["early_warning"]["xgb_model_pattern"]
-    model_path = root / pattern.format(pct=pct)
-    if model_path.exists():
-        return joblib.load(model_path)
-    return None
-
-
-def _load_xgb_start(root: Path, cfg: dict):
-    """Load the start-only XGBoost model."""
-    import joblib
-
-    model_path = root / cfg["early_warning"]["start_model"]
-    if model_path.exists():
-        return joblib.load(model_path)
-    return None
-
-
 # ---------------------------------------------------------------------------
 # score-batch
 # ---------------------------------------------------------------------------
 
 
 def cmd_score_batch(args: argparse.Namespace) -> None:
-    """Score all possessions in a parquet file at multiple observation fractions."""
-    import numpy as np
+    """Score every event of every possession with the event-time (in-play) models."""
     import pandas as pd
-    import torch
 
     root = _project_root()
     sys.path.insert(0, str(root))
-    cfg = _load_config(root)
-    ew = cfg["early_warning"]
+    from src.app.batch_scoring import score_events
 
-    from src.data.parse_possessions import load_possession_sequences
-    from src.labels.possession_labels import attach_possession_labels
-    from src.features.early_features import (
-        build_start_features,
-        build_cumulative_tabular_features,
-    )
-    from src.evaluation.possession_attribution import cumulative_danger_scores, _parse_event_seq
-
-    # Parse fractions
-    if args.fracs:
-        fracs = [float(f) for f in args.fracs.split(",")]
-    else:
-        fracs = ew["fractions"]
-
-    threshold = ew["alert_threshold"]
-    min_events = ew["min_events"]
-
-    # Load data
-    print(f"Loading {args.parquet} …")
-    poss_df = load_possession_sequences(args.parquet)
-    if "poss_tempo" not in poss_df.columns:
-        poss_df = attach_possession_labels(poss_df)
-    print(f"  {len(poss_df):,} possessions loaded")
-
-    # Filter possessions with enough events
-    n_events_series = poss_df["n_events"].astype(int)
-    mask = n_events_series >= min_events
-    poss_df = poss_df.loc[mask].reset_index(drop=True)
-    print(f"  {len(poss_df):,} after min_events={min_events} filter")
-
-    # Load models
-    print("Loading models …")
-    gru_model, _ = _load_gru(root, cfg)
-    xgb_start = _load_xgb_start(root, cfg)
-
-    xgb_models = {}
-    for frac in fracs:
-        pct = int(frac * 100)
-        if pct == 100:
-            import joblib
-
-            main_path = root / "models" / "xgboost_poss_dangerous.joblib"
-            if main_path.exists():
-                xgb_models[pct] = joblib.load(main_path)
-        else:
-            m = _load_xgb_cumulative(root, cfg, pct)
-            if m is not None:
-                xgb_models[pct] = m
-
-    N = len(poss_df)
-
-    # --- Vectorised XGBoost scoring (one batch per fraction) ----------------
-    print(f"Building tabular features for {len(fracs)} fraction(s) …")
-    xgb_probs: dict[int, np.ndarray] = {}  # pct → array(N,)
-    for frac in fracs:
-        pct = int(frac * 100)
-        if pct not in xgb_models:
-            continue
-        X_tab = build_cumulative_tabular_features(poss_df, frac=frac).fillna(0)
-        xgb_probs[pct] = xgb_models[pct].predict_proba(X_tab)[:, 1]
-        print(f"  frac={frac:.0%} XGB features+predict done")
-
-    # Start-only XGBoost (one batch)
-    start_probs: np.ndarray | None = None
-    if xgb_start is not None:
-        X_start = build_start_features(poss_df).fillna(0)
-        start_probs = xgb_start.predict_proba(X_start)[:, 1]
-        print("  start-only XGB features+predict done")
-
-    # --- GRU scoring (per-possession, but fast on GPU/CPU) ------------------
-    print("Computing GRU cumulative scores …")
-    gru_cum: list[np.ndarray] = []
-    for i in range(N):
-        if i > 0 and i % 2000 == 0:
-            print(f"  GRU {i:,}/{N:,}", end="\r")
-        events = _parse_event_seq(poss_df.iloc[i])
-        with torch.no_grad():
-            gru_cum.append(cumulative_danger_scores(events, gru_model))
-    print(f"  GRU {N:,}/{N:,} done")
-
-    # --- Assemble results ---------------------------------------------------
-    print("Assembling output …")
-    rows = []
-    n_events_arr = poss_df["n_events"].values.astype(int)
-    match_ids = poss_df.get("match_id", pd.Series([""] * N)).values
-    poss_ids = poss_df.get("possession_id", pd.Series([""] * N)).values
-    teams = poss_df.get("team_name", pd.Series([""] * N)).values
-    labels = poss_df.get("poss_dangerous", pd.Series([-1] * N)).values.astype(int)
-
-    for i in range(N):
-        cum_scores = gru_cum[i]
-        n_ev = n_events_arr[i]
-
-        for frac in fracs:
-            pct = int(frac * 100)
-            t = max(1, int(np.ceil(n_ev * frac)))
-            t = min(t, len(cum_scores))
-            gru_prob = float(cum_scores[t - 1])
-
-            xgb_prob = float(xgb_probs[pct][i]) if pct in xgb_probs else None
-
-            sp = None
-            if start_probs is not None and frac == fracs[0]:
-                sp = float(start_probs[i])
-
-            alert = gru_prob >= threshold
-            if xgb_prob is not None:
-                alert = alert or (xgb_prob >= threshold)
-
-            rows.append(
-                {
-                    "match_id": match_ids[i],
-                    "possession_id": poss_ids[i],
-                    "team_name": teams[i],
-                    "n_events": n_ev,
-                    "fraction": frac,
-                    "events_observed": t,
-                    "gru_prob": round(gru_prob, 4),
-                    "xgb_prob": round(xgb_prob, 4) if xgb_prob is not None else None,
-                    "start_prob": round(sp, 4) if sp is not None else None,
-                    "alert": int(alert),
-                    "true_label": labels[i],
-                }
-            )
-
-    result = pd.DataFrame(rows)
-
-    # Output
-    out_path = args.output or "early_warning_scores.csv"
+    path = Path(args.events)
+    if not path.is_absolute():
+        path = root / path
+    events = pd.read_parquet(path)
+    result = score_events(events, root, limit=args.limit, seed=args.seed)
+    out_path = args.output or "event_time_scores.csv"
     result.to_csv(out_path, index=False)
-    print(f"\nSaved {len(result):,} rows → {out_path}")
+    n_poss = result.groupby(["match_id", "possession_id"]).ngroups
+    print(f"Saved {len(result):,} event rows for {n_poss:,} possessions -> {out_path}")
+    print("Columns: p_xgb / p_gru = P(shot or box entry by the possessing team in a later event | events so far);")
+    print("alert_* uses the validation-chosen thresholds in models/eventtime_meta.json;")
+    print("label_danger_after is defined only where eligible (no shot / box entry yet, not the last event).")
 
-    # Summary stats
-    if "true_label" in result.columns and (result["true_label"] >= 0).any():
-        labelled = result[result["true_label"] >= 0]
-        for frac in fracs:
-            subset = labelled[labelled["fraction"] == frac]
-            if len(subset) > 0 and subset["true_label"].nunique() > 1:
-                from sklearn.metrics import roc_auc_score
+    lab = result[result["eligible"]]
+    if lab["label_danger_after"].nunique() > 1:
+        from sklearn.metrics import roc_auc_score
 
-                gru_auc = roc_auc_score(subset["true_label"], subset["gru_prob"])
-                line = f"  frac={frac:.0%}  GRU AUC={gru_auc:.4f}"
-                if subset["xgb_prob"].notna().any():
-                    xgb_auc = roc_auc_score(
-                        subset.loc[subset["xgb_prob"].notna(), "true_label"],
-                        subset.loc[subset["xgb_prob"].notna(), "xgb_prob"],
-                    )
-                    line += f"  XGB AUC={xgb_auc:.4f}"
-                print(line)
+        y = lab["label_danger_after"].astype(int)
+        print(f"Eligible snapshots: {len(lab):,}  prevalence {y.mean():.3f}")
+        print(f"  XGBoost ROC AUC {roc_auc_score(y, lab['p_xgb']):.4f}   GRU ROC AUC {roc_auc_score(y, lab['p_gru']):.4f}")
+        print(
+            "  (the models were trained on the train matches; use only held-out matches for evaluation)"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -319,17 +163,17 @@ def cmd_score_live(args: argparse.Namespace) -> None:
 
 
 def cmd_train_early(args: argparse.Namespace) -> None:
-    """Run the early-model training script."""
-    import subprocess
-
-    root = _project_root()
-    script = root / "src" / "models" / "train_early_models.py"
-    print(f"Running {script} …")
-    result = subprocess.run(
-        [sys.executable, str(script)],
-        cwd=str(root),
+    """Deprecated: the fraction-based v3 models were withdrawn."""
+    print(
+        "DEPRECATED: 'train-early' trained the fraction-based v3 models, which were withdrawn "
+        "(prefix length encodes the possession length and many prefixes already contain the outcome; "
+        "see reports/feature_timing_audit.md).  The models and the old scoring path are kept under "
+        "models/superseded/ for reference only."
+        + "\n"
+        + "Train the event-time models with:  python scripts/run_event_time.py",
+        file=sys.stderr,
     )
-    sys.exit(result.returncode)
+    sys.exit(2)
 
 
 # ---------------------------------------------------------------------------
@@ -347,26 +191,19 @@ def build_parser() -> argparse.ArgumentParser:
     # score-batch
     p_batch = sub.add_parser(
         "score-batch",
-        help="[SUPERSEDED fraction-based v3] Score possessions at fixed observation fractions",
+        help="Score every event of every possession with the event-time models",
     )
     p_batch.add_argument(
-        "parquet",
-        type=str,
-        help="Path to possession_sequences.parquet (or any parquet with event_sequence col)",
+        "events",
+        nargs="?",
+        default="data/processed/events_parsed.parquet",
+        help="Flat events parquet (events_parsed.parquet schema; default: data/processed/events_parsed.parquet)",
     )
     p_batch.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        default=None,
-        help="Output CSV path (default: early_warning_scores.csv)",
+        "-o", "--output", type=str, default=None, help="Output CSV (default: event_time_scores.csv)"
     )
-    p_batch.add_argument(
-        "--fracs",
-        type=str,
-        default=None,
-        help="Comma-separated observation fractions (default: from config)",
-    )
+    p_batch.add_argument("--limit", type=int, default=None, help="Score a random sample of N possessions")
+    p_batch.add_argument("--seed", type=int, default=42, help="Seed for --limit sampling")
     p_batch.set_defaults(func=cmd_score_batch)
 
     # score-live
@@ -393,7 +230,7 @@ def build_parser() -> argparse.ArgumentParser:
     # train-early
     p_train = sub.add_parser(
         "train-early",
-        help="[SUPERSEDED fraction-based v3] Train cumulative-fraction XGBoost models",
+        help="[DEPRECATED] withdrawn fraction-based v3 trainer; prints a message and exits",
     )
     p_train.set_defaults(func=cmd_train_early)
 

@@ -17,7 +17,7 @@ git clone https://github.com/varunrout/Frame2Threat.git
 cd Frame2Threat
 pip install -e ".[dev]"
 streamlit run src/app/app.py   # app; demo mode labels random placeholder scores
-pytest tests/ -q               # run all tests (123 passing)
+pytest tests/ -q               # run all tests (137 passing)
 ```
 
 ---
@@ -105,6 +105,17 @@ At pass level the 360 geometry lift is +0.0021 [-0.0010, +0.0055] ROC AUC on the
 
 ---
 
+## Deliverables
+
+| Deliverable | What it is for | Where |
+|---|---|---|
+| Pass-level model and app | Analyst review of pass progression.  **Status: pending a decision.**  The final models on `progression_beyond_pass_k` have not been saved: training with early stopping and no `scale_pos_weight` gives test ROC AUC 0.734 / 0.738, not the 0.728 / 0.729 of EXP-027 (`reports/pass_label/pass_model_repro_gate.md`).  The app and the old-label model card are unchanged | `src/app/app.py`, `reports/repro/model_cards/pass_xgboost.md`, `reports/pass_label/` |
+| Event-time (in-play) danger models | Anticipating shots and box entries from the events so far; `score-live` (one possession, JSON in) and `score-batch` (every event of many possessions, events parquet in) | `models/eventtime_*`, `src/app/cli.py`, `reports/event_time/`, `reports/repro/model_cards/event_time.md` |
+| Retrospective attribution | Which events the retrospective possession model relies on: tagging moments for video review, scouting shortlists to inspect (not a ranking); cross-fitted, with stability checks | `reports/attribution/ATTRIBUTION_REPORT.md`, `data/processed/attribution_events.parquet`, `reports/figures/attribution/` |
+| Evidence pack | 25 test-split possessions scored with the event-time models plus the retrospective models (labelled) | `reports/repro/` |
+
+---
+
 ## Repository structure
 
 ```
@@ -128,8 +139,7 @@ Frame2Threat/
 │   ├── v2_corrected_*                      # v2 retrained on frame-corrected labels
 │   ├── gru_poss_dangerous.pt               # v2 PossessionGRU
 │   ├── eventtime_gru.pt, eventtime_xgboost.joblib, eventtime_meta.json  # event-time models
-│   ├── xgboost_start_only.joblib           # SUPERSEDED fraction-based v3
-│   ├── xgboost_cumulative_{25,50,75}pct.joblib  # SUPERSEDED fraction-based v3
+│   ├── superseded/                         # withdrawn fraction-based v3 models + pre-fix event-time files
 │   ├── v1_results_summary.json
 │   └── results_summary.json
 ├── notebooks/                 # 01–10 analysis notebooks
@@ -162,7 +172,7 @@ Frame2Threat/
 │   └── app/      app.py (Streamlit), cli.py (CLI pipeline), live_scoring.py
 └── tests/        conftest, test_ingestion, test_labels, test_features,
                   test_splits, test_models, test_build_store,
-                  test_reproduce_pipeline, test_event_types, test_event_time (123 tests)
+                  test_reproduce_pipeline, test_event_types, test_event_time, test_attribution, test_batch_scoring, test_shot_columns (137 tests)
 ```
 
 ---
@@ -334,7 +344,7 @@ frame2threat score-live possession_events.json            # GRU (default)
 frame2threat score-live possession_events.json --model xgb --threshold 0.40
 ```
 
-The JSON holds a list of event dicts in the `possession_sequences.parquet` `event_sequence` schema, optionally with `own_team` and `elapsed_seconds` per event (or an object with `event_sequence`, `origin`, `period`, `minute`).  Without `elapsed_seconds` the CLI warns and assumes the training-median spacing.  The default alert threshold is the validation-chosen value in `models/eventtime_meta.json`.  `score-batch` and `train-early` are the superseded fraction-based commands.
+The JSON holds a list of event dicts in the `possession_sequences.parquet` `event_sequence` schema, optionally with `own_team` and `elapsed_seconds` per event (or an object with `event_sequence`, `origin`, `period`, `minute`).  Without `elapsed_seconds` the CLI warns and assumes the training-median spacing.  The default alert threshold is the validation-chosen value in `models/eventtime_meta.json`.  `score-batch` now scores every event of every possession with the event-time models (flat events parquet in, per-event XGBoost / GRU probabilities, alert flags and labels out; no `--fracs`); `train-early` is deprecated (it prints a message and exits) and the withdrawn fraction-based models live in `models/superseded/`.
 
 The CLI is registered as a console entry point in `pyproject.toml`.  Run `frame2threat --help` for full usage.
 
@@ -349,7 +359,7 @@ streamlit run src/app/app.py
 ## Testing
 
 ```bash
-pytest tests/ -v    # 123 tests, all passing
+pytest tests/ -v    # 137 tests, all passing
 ```
 
 | Test file | Covers |
@@ -421,7 +431,7 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 
 ## Limitations
 
-1. 360 coverage is partial — 64 of 99 matches (65%) and 52.3% of passes have freeze frames (the La Liga matches have none), and the measured pass-level lift from 360 geometry is only about +0.002 ROC AUC.
+1. 360 coverage is partial — 64 of 99 matches (65%) and 52.3% of passes have freeze frames (the La Liga matches have none; note that the match inventory flags those 35 matches `has_360 = true` although no frames exist, and correcting the flag would change which matches the pipeline selects, so it is documented rather than changed), and the measured pass-level lift from 360 geometry is only about +0.002 ROC AUC.
 2. Positional snapshots, not tracking — no velocity or trajectory.
 3. Partial pitch visibility — not all 22 players are always visible.
 4. Open-play only — set-piece passes excluded from v1 modelling.

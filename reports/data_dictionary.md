@@ -326,10 +326,10 @@ Built by `build_cumulative_tabular_features(poss_df, frac)`.  Returns the same ~
 | v1 XGBoost (event+360) | `models/xgboost_dp_event_360.joblib` | v1 | 41 features (event+geometry), EXP-004 |
 | v2 XGBoost (possession) | `models/xgboost_poss_dangerous.joblib` | v2 | 41 possession features, EXP-009 |
 | v2 PossessionGRU | `models/gru_poss_dangerous.pt` | v2 | GRU checkpoint (arch+weights), EXP-010 |
-| v3 XGBoost start-only | `models/xgboost_start_only.joblib` | v3 | ~19 start features, EXP-015 |
-| v3 XGBoost cumulative @25% | `models/xgboost_cumulative_25pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
-| v3 XGBoost cumulative @50% | `models/xgboost_cumulative_50pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
-| v3 XGBoost cumulative @75% | `models/xgboost_cumulative_75pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
+| v3 XGBoost start-only | `models/superseded/xgboost_start_only.joblib` | v3 | ~19 start features, EXP-015 |
+| v3 XGBoost cumulative @25% | `models/superseded/xgboost_cumulative_25pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
+| v3 XGBoost cumulative @50% | `models/superseded/xgboost_cumulative_50pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
+| v3 XGBoost cumulative @75% | `models/superseded/xgboost_cumulative_75pct.joblib` | v3 | Prefix-built tabular, EXP-017 |
 | v1 results | `models/v1_results_summary.json` | v1 | All v1 metrics |
 | v2+v3 results | `models/results_summary.json` | v2+v3 | All v2/v3 metrics + ensemble |
 

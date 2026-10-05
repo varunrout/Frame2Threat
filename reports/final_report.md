@@ -620,36 +620,32 @@ streamlit run src/app/app.py
 
 ### 12.2 CLI early-warning pipeline
 
-The `src/app/cli.py` command-line interface is registered in `pyproject.toml` as `frame2threat` and provides three subcommands (`score-live` now uses the event-time model; the other two are the superseded fraction-based v3 commands):
+The `src/app/cli.py` command-line interface is registered in `pyproject.toml` as `frame2threat` and provides three subcommands (`score-live` and `score-batch` use the event-time model; `train-early` is deprecated):
 
 | Subcommand | Purpose |
 |------------|--------|
-| `score-batch <parquet>` | *(superseded fraction-based v3)* Score all possessions at multiple observation fractions.  Outputs CSV with GRU + XGBoost probabilities, alert flags, and true labels.  XGBoost features are built in vectorised batch mode; GRU scores are computed per-possession. |
+| `score-batch [events.parquet] [--limit N]` | Score every event of every possession with the event-time models.  Per event: XGBoost and GRU probabilities, the alert flags (validation-chosen thresholds in `models/eventtime_meta.json`) and the label where defined; no `--fracs`.  Input is a flat events table (`events_parsed.parquet`), because the features need timestamps and teams. |
 | `score-live <json> [--model gru\|xgb] [--threshold T]` | Score a single possession event-by-event with the event-time model (step `t` uses events `0..t` only), printing correct event names, the danger trajectory, a tipping-point marker and the point where the outcome is realised.  The alert threshold is chosen on validation (`models/eventtime_meta.json`). |
-| `train-early` | *(superseded fraction-based v3)* Trains the cumulative XGBoost models and saves `.joblib` artefacts to `models/`.  The event-time models are trained by `scripts/run_event_time.py`. |
+| `train-early` | **Deprecated.** Prints a message and exits (status 2).  The withdrawn fraction-based models are kept in `models/superseded/`; the event-time models are trained by `scripts/run_event_time.py`. |
 
 Example usage:
 
 ```bash
-# Batch-score at 50% and 100% observation
-frame2threat score-batch data/processed/possession_sequences.parquet \
-    -o early_warning_scores.csv --fracs 0.50,1.00
+# Batch-score every event with the event-time models (sample of 500 possessions)
+frame2threat score-batch data/processed/events_parsed.parquet --limit 500 -o event_time_scores.csv
 
-# Live scoring — prints event-by-event danger trajectory
+# Live scoring: prints the event-by-event danger trajectory
 frame2threat score-live possession_events.json
-
-# (Re)train v3 early XGBoost models
-frame2threat train-early
 ```
 
-Configuration (alert threshold, observation fractions, model paths) is loaded from `configs/model_possession.yaml → early_warning`.
+Alert thresholds come from `models/eventtime_meta.json` (chosen on validation); the `early_warning` block in `configs/model_possession.yaml` belongs to the superseded fraction-based path.
 
 ### 12.3 Training scripts
 
 | Script | Produces | Config |
 |--------|---------|--------|
 | `src/models/gru_train_script.py` | `models/gru_poss_dangerous.pt` | `configs/model_gru.yaml` |
-| `src/models/train_early_models.py` | `models/xgboost_start_only.joblib`, `xgboost_cumulative_{25,50,75}pct.joblib` | `configs/model_possession.yaml → xgboost_early` |
+| `src/models/train_early_models.py` | `models/superseded/xgboost_start_only.joblib`, `xgboost_cumulative_{25,50,75}pct.joblib` | `configs/model_possession.yaml → xgboost_early` |
 
 ---
 
@@ -782,7 +778,7 @@ The system bridges the gap between raw event data and tactical decision-making �
 - [x] Feature generation tested for leakage
 - [x] v1 model artefacts: `models/xgboost_dp_event_only.joblib`, `models/xgboost_dp_event_360.joblib`
 - [x] v2 model artefacts: `models/xgboost_poss_dangerous.joblib`, `models/gru_poss_dangerous.pt`
-- [x] v3 model artefacts (superseded): `models/xgboost_start_only.joblib`, `models/xgboost_cumulative_{25,50,75}pct.joblib`
+- [x] v3 model artefacts (superseded): `models/superseded/xgboost_start_only.joblib`, `models/superseded/xgboost_cumulative_{25,50,75}pct.joblib`
 - [x] event-time model artefacts: `models/eventtime_xgboost.joblib`, `models/eventtime_gru.pt`, `models/eventtime_meta.json`; results `reports/event_time/`
 - [x] corrected-label v2 retrain: `models/v2_corrected_*`; pass-label ablation `reports/pass_label/`; audits `reports/audit/`
 - [x] v1 results: `models/v1_results_summary.json`
@@ -790,6 +786,6 @@ The system bridges the gap between raw event data and tactical decision-making �
 - [x] v2/v3 XGBoost hyperparameters centralised in `configs/model_possession.yaml`
 - [x] CLI pipeline (`frame2threat`) registered in `pyproject.toml`
 - [x] Training scripts for GRU and v3 XGBoost models (`src/models/`)
-- [x] 130/130 tests passing (CI coverage floor 33%)
+- [x] 137/137 tests passing (CI coverage floor 33%)
 - [x] All notebooks executed end-to-end (NB01–NB10)
 - [x] 49 figures saved in `reports/figures/`

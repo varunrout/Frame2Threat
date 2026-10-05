@@ -1,26 +1,26 @@
-match_id,possession_id,team_name,period,origin_type,n_events,poss_dangerous,xgb_start_prob,xgb_50pct_prob,xgb_75pct_prob,xgb_full_retro_prob
-3764440,1,Barcelona,1,Regular Play,4,False,0.004812,0.006527,0.00442,0.817662
-3764440,2,Elche,1,From Kick Off,15,False,0.148236,0.061266,0.06629,0.01248
-3764440,3,Barcelona,1,Regular Play,49,True,0.428726,0.472314,0.893432,0.839653
-3764440,4,Elche,1,From Goal Kick,22,True,0.217545,0.65185,0.700756,0.669902
-3764440,5,Barcelona,1,Regular Play,51,False,0.283142,0.423278,0.231328,0.001993
-3764440,6,Barcelona,1,From Throw In,24,True,0.458942,0.351532,0.548419,0.509379
-3764440,7,Elche,1,From Throw In,17,True,0.26988,0.222914,0.712007,0.779496
-3764440,8,Barcelona,1,From Goal Kick,22,False,0.272356,0.347462,0.238607,0.024234
-3764440,9,Elche,1,Regular Play,15,False,0.368781,0.232635,0.095403,0.001711
-3764440,10,Barcelona,1,Regular Play,70,False,0.293208,0.534641,0.344326,0.637756
-3764440,11,Barcelona,1,From Throw In,51,False,0.455122,0.32453,0.380564,0.556583
-3764440,12,Barcelona,1,From Throw In,9,True,0.425232,0.254717,0.255201,0.736416
-3764440,13,Elche,1,Regular Play,18,False,0.301367,0.260912,0.107756,0.000847
-3764440,14,Elche,1,From Free Kick,5,False,0.493095,0.157989,0.042352,0.010163
-3764440,15,Barcelona,1,From Throw In,66,True,0.183985,0.799768,0.816999,0.6955
-3764440,16,Barcelona,1,From Throw In,56,True,0.404693,0.601855,0.462111,0.843544
-3764440,17,Elche,1,From Keeper,34,False,0.162305,0.277106,0.196821,0.034326
-3764440,18,Barcelona,1,Regular Play,11,False,0.267834,0.158941,0.149065,0.00317
-3764440,19,Barcelona,1,From Free Kick,8,False,0.24821,0.06613,0.022403,0.000876
-3764440,20,Elche,1,Regular Play,15,False,0.249246,0.321241,0.65202,0.653948
-3764440,21,Elche,1,From Corner,6,True,0.684056,0.746334,0.581023,0.80009
-3764440,22,Barcelona,1,Regular Play,183,False,0.257391,0.485329,0.49938,0.076745
-3764440,23,Elche,1,Regular Play,9,True,0.268246,0.152643,0.751785,0.892046
-3764440,24,Elche,1,From Keeper,7,False,0.18072,0.225676,0.027612,0.000576
-3764440,25,Barcelona,1,Regular Play,55,False,0.283846,0.729728,0.776245,0.546802
+match_id,possession_id,team_name,period,origin_type,n_events,poss_dangerous,first_danger_event_idx,eventtime_xgb_max_p,eventtime_gru_max_p,eventtime_xgb_first_alert_idx,eventtime_gru_first_alert_idx,eventtime_xgb_lead_events,eventtime_gru_lead_events,RETROSPECTIVE_xgb_prob,RETROSPECTIVE_gru_prob
+3773474,118,Real Valladolid,2,From Counter,8,False,,0.5414,0.6602,6.0,6.0,,,0.0024,0.1873
+3773474,185,Barcelona,2,From Throw In,10,False,,0.5837,0.4249,7.0,8.0,,,0.0366,0.0317
+3773477,12,Barcelona,1,Regular Play,7,True,2.0,0.5745,0.6091,0.0,1.0,2.0,1.0,0.9829,0.9983
+3773497,19,Real Madrid,1,Regular Play,4,False,,0.3237,0.2537,,,,,0.0006,0.0009
+3773497,152,Real Madrid,2,From Throw In,5,False,,0.4529,0.4437,0.0,2.0,,,0.002,0.023
+3773497,168,Barcelona,2,From Throw In,29,True,13.0,0.605,0.6416,0.0,2.0,13.0,11.0,0.7307,0.805
+3773586,122,Barcelona,2,From Corner,48,True,3.0,0.7661,0.8535,0.0,0.0,3.0,3.0,0.978,0.9997
+3857254,120,Denmark,2,From Corner,4,True,0.0,,,,,,,0.9703,0.9865
+3857255,112,Japan,2,From Goal Kick,4,False,,0.3891,0.1487,,,,,0.0008,0.0471
+3857260,32,Mexico,1,Regular Play,38,False,,0.537,0.5688,34.0,12.0,,,0.859,0.3312
+3857260,85,Saudi Arabia,1,From Throw In,5,False,,0.4923,0.4196,0.0,,,,0.5502,0.0035
+3857260,149,Saudi Arabia,2,Regular Play,21,True,19.0,0.5979,0.6755,2.0,2.0,17.0,17.0,0.8071,0.8765
+3857266,27,Denmark,1,Regular Play,51,False,,0.4308,0.5971,29.0,16.0,,,0.0017,0.4839
+3857266,111,Denmark,2,Regular Play,13,False,,0.3858,0.4752,,9.0,,,0.0034,0.0037
+3857272,26,England,1,From Goal Kick,5,False,,0.5011,0.2114,2.0,,,,0.0114,0.0255
+3857272,51,England,1,From Goal Kick,4,False,,0.4035,0.0835,2.0,,,,0.0017,0.0002
+3857272,106,United States,2,From Throw In,60,False,56.0,0.6129,0.6629,6.0,8.0,50.0,48.0,0.241,0.6603
+3857283,17,Belgium,1,From Corner,10,False,7.0,0.8138,0.8161,0.0,0.0,7.0,7.0,0.8385,0.4652
+3857283,46,Morocco,1,From Goal Kick,50,True,42.0,0.5377,0.5443,39.0,34.0,3.0,8.0,0.919,0.4723
+3857284,19,Japan,1,From Throw In,29,True,27.0,0.5569,0.4827,24.0,26.0,3.0,1.0,0.9327,0.9196
+3857284,166,Japan,2,Regular Play,12,True,10.0,0.6145,0.7183,1.0,1.0,9.0,9.0,0.9453,0.9057
+3857285,112,Netherlands,2,From Throw In,37,True,8.0,0.5092,0.5463,0.0,6.0,8.0,2.0,0.7973,0.831
+3857296,8,Belgium,1,Regular Play,63,True,20.0,0.5284,0.6416,13.0,6.0,7.0,14.0,0.7645,0.7686
+3857296,149,Croatia,2,From Throw In,36,False,,0.5513,0.5419,0.0,2.0,,,0.0175,0.7381
+3857296,154,Croatia,2,Regular Play,16,False,,0.2997,0.3245,,,,,0.0008,0.0163

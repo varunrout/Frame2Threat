@@ -48,6 +48,8 @@ xgboost_early:
   n_jobs: 0
 
 # ── v3 early-warning pipeline (CLI / inference) ─────────────────────────────
+# SUPERSEDED: this block configures the withdrawn fraction-based v3 path (models now in models/superseded/).
+# The event-time models take their thresholds from models/eventtime_meta.json.
 early_warning:
   fractions: [0.25, 0.50, 0.75, 1.00]
   alert_threshold: 0.50

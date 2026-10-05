@@ -369,7 +369,7 @@ Results:
 
 Outperforms prefix GRU at every partial fraction; the gap is largest early on (+0.097 at 25%).
 
-Training: `src/models/train_early_models.py`.  Artifacts: `models/xgboost_cumulative_{25,50,75}pct.joblib`.
+Training: `src/models/train_early_models.py`.  Artifacts: `models/superseded/xgboost_cumulative_{25,50,75}pct.joblib`.
 
 ### 6.10 v3 — Prefix GRU evaluation
 
@@ -486,10 +486,10 @@ All hyperparameters, thresholds, and data paths are in `configs/*.yaml`:
 | v1 XGBoost (event+360) | `models/xgboost_dp_event_360.joblib` | Trained model + metadata |
 | v2 XGBoost (possession) | `models/xgboost_poss_dangerous.joblib` | Trained model + metadata |
 | v2 GRU | `models/gru_poss_dangerous.pt` | PyTorch checkpoint (architecture + weights) |
-| v3 XGBoost start-only | `models/xgboost_start_only.joblib` | Start-context-only model |
-| v3 XGBoost cumulative @25% | `models/xgboost_cumulative_25pct.joblib` | Prefix-trained model |
-| v3 XGBoost cumulative @50% | `models/xgboost_cumulative_50pct.joblib` | Prefix-trained model |
-| v3 XGBoost cumulative @75% | `models/xgboost_cumulative_75pct.joblib` | Prefix-trained model |
+| v3 XGBoost start-only | `models/superseded/xgboost_start_only.joblib` | Start-context-only model |
+| v3 XGBoost cumulative @25% | `models/superseded/xgboost_cumulative_25pct.joblib` | Prefix-trained model |
+| v3 XGBoost cumulative @50% | `models/superseded/xgboost_cumulative_50pct.joblib` | Prefix-trained model |
+| v3 XGBoost cumulative @75% | `models/superseded/xgboost_cumulative_75pct.joblib` | Prefix-trained model |
 | v1 results | `models/v1_results_summary.json` | All v1 metrics |
 | v2+v3 results | `models/results_summary.json` | All v2/v3 metrics + ensemble |
 | Split manifest | `data/processed/split_manifest.csv` | Match → split assignment |
