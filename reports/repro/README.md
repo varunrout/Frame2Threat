@@ -9,7 +9,7 @@ fresh clone without downloading StatsBomb data or retraining models.
 |---|---|
 | `scored_possessions_sample.csv` | 25 test-split possessions (fixed seed 42) scored with the **event-time** XGBoost and GRU (max score, first alert, lead before the shot / box entry) plus the **retrospective** XGBoost and GRU (columns prefixed `RETROSPECTIVE_`, not early predictions).  Regenerate with `python scripts/make_evidence_pack.py`. |
 | `scored_possessions_manifest.json` | Source paths, column list, and generation notes for the scored sample. |
-| `model_cards/pass_xgboost.md` | Model card for the v1 pass-level XGBoost models (original label; a corrected-label model card is pending a decision, see `reports/pass_label/pass_model_repro_gate.md`). |
+| `model_cards/pass_xgboost.md` | Model card for the final pass-level XGBoost models on `progression_beyond_pass_k` (early stopping, no `scale_pos_weight`); the old-label models are superseded. |
 | `model_cards/early_xgboost.md` | Model card for v3 start-only and cumulative XGBoost models (**superseded**: fraction-based, length leak). |
 | `model_cards/pass_gnn.md` | Model card for the PassFrameGNN retrained on the corrected label (graph-only; does not beat XGBoost). |
 | `model_cards/event_time.md` | Model card for the event-time (in-play) XGBoost and GRU models that replace them. |

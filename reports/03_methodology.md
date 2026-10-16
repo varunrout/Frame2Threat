@@ -484,8 +484,8 @@ All hyperparameters, thresholds, and data paths are in `configs/*.yaml`:
 
 | Artefact | Path | Content |
 |----------|------|---------|
-| v1 XGBoost (event-only) | `models/xgboost_dp_event_only.joblib` | Trained model + metadata |
-| v1 XGBoost (event+360) | `models/xgboost_dp_event_360.joblib` | Trained model + metadata |
+| v1 XGBoost (event-only) | `models/superseded/xgboost_dp_event_only.joblib` | Trained model + metadata (**superseded**: `dangerous_progression_k`; final models: `models/pass_progression_event_*.joblib`) |
+| v1 XGBoost (event+360) | `models/superseded/xgboost_dp_event_360.joblib` | Trained model + metadata (**superseded**: `dangerous_progression_k`; final models: `models/pass_progression_event_*.joblib`) |
 | v2 XGBoost (possession) | `models/xgboost_poss_dangerous.joblib` | Trained model + metadata |
 | v2 GRU | `models/gru_poss_dangerous.pt` | PyTorch checkpoint (architecture + weights) |
 | v3 XGBoost start-only | `models/superseded/xgboost_start_only.joblib` | Start-context-only model |

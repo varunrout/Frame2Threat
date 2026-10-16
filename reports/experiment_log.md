@@ -739,6 +739,8 @@ XGBoost - ball x/y: +0.021 -> +0.022 (all), +0.036 -> +0.041 (one per possession
 
 ### EXP-027 — `possession_length` in the v1 pass features (self-audit, second round)
 
+> **Recipe superseded by EXP-033.**  The XGBoost numbers below used the EXP-027 recipe (`scale_pos_weight`, 500 trees); the final models use early stopping without weighting (event-only 0.7337, event+360 0.7380 on all test passes) and the 360 gain is then measurable (EXP-033).  Kept as reported.
+
 Status: complete.  Code: `src/features/event_features.py`; tests `tests/test_features.py`; before/after `reports/pass_label/possession_length_fix_before_after.md`; superseded outputs `reports/pass_label/superseded_pre_possession_length_fix/`.
 
 **Defect.**  `possession_length` used `groupby("possession_id").cumcount()`; `possession_id` restarts every match, so different matches' possessions were mixed and the value depended on row order and on which split was being built (mean 145.4, maximum 836, correlation 0.06 with the correct count; changed for 49,216 of 50,688 passes).  **Fix.**  Count earlier passes of the same `(match_id, possession_id)` in event order (period, minute, second); mean 6.6, maximum 82.
@@ -826,7 +828,28 @@ Status: complete.  Code: `src/features/pass_graph.py`, `src/models/pass_gnn.py`,
 
 GNN - XGBoost event+360: -0.1209 [-0.1379, -0.1033] ROC AUC.  GNN seeds: test ROC AUC 0.5950 (sd 0.0031).
 
-**Answer.**  The GNN does **not** beat XGBoost; it carries signal beyond the pass destination (above the `end_x` baseline) but is about 0.12 ROC AUC worse than the event-based models, which see the destination, length, angle and pressure.  It is not a like-for-like feature-set comparison (graph only vs event features).  **Supersedes** the old "near-parity, 0.841 vs 0.845 (original label only, superseded)" (original label only, validation subset, unreproducible: the saved output says 0.834).  No existing result was changed.
+**Answer.**  Player positions alone (graph-only, no pass destination) reach ROC AUC 0.595 [0.578, 0.606] against 0.530 [0.502, 0.551] for `end_x` alone; event features dominate (final-recipe XGBoost event+360 on the same 360 subset: 0.728 [0.709, 0.748]).  This is not a like-for-like contest between feature sets.  The GNN scores below the event-based models, but that is expected rather than a contest result: it sees neither event attributes nor the pass destination.  **Supersedes** the old "near-parity, 0.841 vs 0.845" (original label only, superseded, validation subset, unreproducible: the saved output says 0.834).  No existing result was changed.
+
+### EXP-033 — Final pass models: pre-specified recipe; the 360 comparison re-run
+
+Status: complete.  Code: `src/models/pass_progression.py`, `scripts/train_pass_models.py`; tests `tests/test_pass_progression.py`; outputs `reports/pass_label/pass_model_final.md` and `.json`, `models/pass_progression_event_only.*` and `models/pass_progression_event_360.*`; model card `reports/repro/model_cards/pass_xgboost.md`.
+
+**Decision.**  The reproduction gate (`reports/pass_label/pass_model_repro_gate.md`) showed that the pre-specified recipe (early stopping on validation, no `scale_pos_weight`, no calibrator unless validation reliability needs one) gives test ROC AUC 0.7337 / 0.7380 rather than EXP-027's 0.7279 / 0.7294.  EXP-027 used `TabularClassifier`, which ignores `early_stopping_rounds` (all 500 trees) and applies `scale_pos_weight` (mean prediction 0.41 vs prevalence 0.224).  The pre-specified recipe was adopted; EXP-027's recipe is **superseded**.  Validation reliability needed no calibrator.
+
+**Results (test; 1,000 match-level bootstrap resamples).**
+
+| Subset | Model | ROC AUC | AP | Brier | Log loss |
+|---|---|---|---|---|---|
+| All test passes (7,344) | Event-only (129 trees) | 0.7337 [0.7185, 0.7490] | 0.4283 [0.4049, 0.4525] | 0.1532 [0.1465, 0.1600] | 0.4719 [0.4557, 0.4882] |
+| | Event+360 (163 trees) | 0.7380 [0.7239, 0.7519] | 0.4326 [0.4114, 0.4579] | 0.1525 [0.1457, 0.1591] | 0.4694 [0.4533, 0.4853] |
+| | **Paired difference** | **+0.0043 [+0.0015, +0.0076]** | +0.0043 [-0.0045, +0.0144] | -0.0007 [-0.0015, -0.0000] | **-0.0025 [-0.0041, -0.0010]** |
+| 360-only subset (3,736) | Event-only | 0.7195 [0.6983, 0.7389] | 0.4006 [0.3697, 0.4357] | 0.1525 [0.1419, 0.1646] | 0.4710 [0.4454, 0.5000] |
+| | Event+360 | 0.7281 [0.7091, 0.7480] | 0.4212 [0.3886, 0.4597] | 0.1508 [0.1402, 0.1629] | 0.4664 [0.4404, 0.4945] |
+| | **Paired difference** | **+0.0087 [+0.0029, +0.0147]** | **+0.0206 [+0.0086, +0.0326]** | **-0.0018 [-0.0031, -0.0004]** | **-0.0047 [-0.0077, -0.0013]** |
+
+**Conclusion on the 360 gain.**  With the final recipe the 360 gain is **small but measurable**.  Event+360 minus event-only (paired match-level bootstrap, 1,000 resamples): on all 7,344 test passes ROC AUC +0.0043 [+0.0015, +0.0076], log loss -0.0025 [-0.0041, -0.0010], Brier -0.0007 [-0.0015, -0.0000] (upper bound just below zero), average precision +0.0043 [-0.0045, +0.0144] (includes zero); on the 3,736-pass 360-only subset all four exclude zero: ROC AUC +0.0087 [+0.0029, +0.0147], AP +0.0206 [+0.0086, +0.0326], Brier -0.0018 [-0.0031, -0.0004], log loss -0.0047 [-0.0077, -0.0013].  The earlier reading "360 adds nothing measurable" (EXP-027 recipe: ROC AUC +0.0015 [-0.0036, +0.0070], AP +0.0041 [-0.0053, +0.0134]) is **superseded**; the effect is still only about +0.004 ROC AUC over all passes (+0.009 where a freeze frame exists).  Calibration: slope 1.09 / 1.08, mean prediction 0.216 vs prevalence 0.224.
+
+**Superseded:** "360 adds nothing measurable" (EXP-025 / EXP-027), the 0.728 / 0.729 headline as the final pass model, and the `scale_pos_weight` probabilities.  The old-label models moved to `models/superseded/`.
 
 ---
 

@@ -4,8 +4,7 @@
 
 A graph neural network over the 360 freeze frame at the moment of the pass, trained on
 `progression_beyond_pass_k` (the corrected label; `dangerous_progression_k` is kept for comparison only).
-It answers one question: **how much of pass progression can the freeze-frame geometry alone explain**, with no
-event attributes and no information about where the pass ends?  On the identical 360 test subset (3,736 passes, 9 World Cup 2022 matches) the graph-only PassFrameGNN scores ROC AUC 0.595 [0.578, 0.606] against 0.715 [0.697, 0.734] for XGBoost event+360; the paired difference is -0.1209 [-0.1379, -0.1033], so the GNN is clearly worse.  It beats the `end_x`-only baseline (0.530 [0.502, 0.551]; paired difference +0.0646 [+0.0501, +0.0845]).
+It answers one question: **what do player positions alone explain** (graph-only, no pass destination, no event attributes)?  Player positions alone (graph-only, no pass destination) reach ROC AUC 0.595 [0.578, 0.606] against 0.530 [0.502, 0.551] for `end_x` alone; event features dominate (final-recipe XGBoost event+360 on the same 360 subset: 0.728 [0.709, 0.748]).  This is not a like-for-like contest between feature sets.
 
 Artefacts: `models/pass_gnn_progression.pt` and `models/pass_gnn_progression.json` (metadata, seeds, git commit
 `ea07f0d`).  Code: `src/features/pass_graph.py`, `src/models/pass_gnn.py`; training and comparison:
@@ -74,16 +73,14 @@ Paired differences: GNN - XGBoost event+360 -0.1209 [-0.1379, -0.1033] ROC AUC, 
 GNN - `end_x`-only +0.0646 [+0.0501, +0.0845] ROC AUC; XGBoost event+360 - event-only -0.0015 [-0.0106, +0.0069] (no measurable 360 gain
 on this subset either).
 
-**The GNN does not beat XGBoost.**  It carries real signal beyond the destination (above the `end_x` baseline) but about
-0.12 ROC AUC less than the event-based models, which also see the pass destination, length, angle and pressure.
-Calibration: the GNN is well calibrated (slope 0.96, mean prediction 0.225 vs prevalence 0.217)
+**Reading.**  The graph carries real signal beyond the destination (ROC AUC above the `end_x` baseline) but the event-based models are about 0.12 ROC AUC higher; that gap mostly reflects what each model is given (the event models also see the pass destination, length, angle and pressure), so it is not a contest between like feature sets.  Calibration: the GNN is well calibrated (slope 0.96, mean prediction 0.225 vs prevalence 0.217)
 because it uses plain BCE; the EXP-027 XGBoost recipe uses `scale_pos_weight` and is inflated (mean prediction
 0.39), which is why its Brier score is worse than the GNN's despite much higher discrimination.  The
 unweighted reference rows show the fair calibration comparison.  Reliability tables: `reports/pass_label/gnn_comparison.md`.
 
 ## Intended use and scope
 
-- A diagnostic of how much progression the static freeze-frame geometry explains **on its own**.  Not a replacement
+- A diagnostic of how much progression the static freeze-frame geometry (player positions) explains **on its own**.  Not a replacement
   for the event model and not for production scoring.
 - It is **not** a like-for-like contest between feature sets: the GNN has no event attributes and no destination, XGBoost
   has both.  A graph + event hybrid (the original design, minus `is_receiver`) was not trained here.

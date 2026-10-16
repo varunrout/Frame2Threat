@@ -22,6 +22,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from src.models import pass_progression as pp
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -114,27 +116,19 @@ def _load_gru_model() -> Any | None:
         return None
 
 
-@st.cache_resource(show_spinner="Loading model…")  # type: ignore[misc]
-def _load_model() -> Any | None:
-    """Load the saved TabularClassifier from models/.
+@st.cache_resource(show_spinner="Loading pass model…")  # type: ignore[misc]
+def _load_model(name: str = pp.DEFAULT_MODEL) -> Any:
+    """Load a saved pass-progression model (default: ``pass_progression_event_only.joblib``).
 
-    Prefers ``xgboost_dp_event_only.joblib`` (27 engineered event features)
-    to avoid the 41-feature shape mismatch caused by the event+360 model
-    when geometry features have not been pre-computed for the selected data.
+    Raises :class:`pp.ArtefactError` naming the missing artefact; never returns a stand-in.
     """
-    try:
-        from src.models.tabular import TabularClassifier
+    return pp.load_model(name, _MODELS_DIR)
 
-        preferred = _MODELS_DIR / "xgboost_dp_event_only.joblib"
-        if preferred.exists():
-            return TabularClassifier.load(preferred)
-        candidates = sorted(_MODELS_DIR.glob("**/*.joblib"))
-        if not candidates:
-            return None
-        return TabularClassifier.load(candidates[0])
-    except Exception as exc:
-        logger.warning("Model loading failed: %s", exc)
-        return None
+
+@st.cache_data(show_spinner=False)  # type: ignore[misc]
+def _load_geometry_cache() -> pd.DataFrame | None:
+    path = _PROCESSED_DIR / "geometry_features_v1.parquet"
+    return pd.read_parquet(path) if path.exists() else None
 
 
 # ---------------------------------------------------------------------------
@@ -308,91 +302,51 @@ def main() -> None:
     # ----------------------------------------------------------------
     pass_df_real = _load_pass_instances()
     frames_df_real = _load_frames()
-    model = _load_model()
-
     demo_mode = pass_df_real is None or frames_df_real is None
 
+    pm = None
+    model = None
+    feature_cols: list[str] = []
+    actual_labels = None
+    score_source = "model"
+
     if demo_mode:
+        # Synthetic demo only when the processed data is absent, clearly labelled as demo.
         st.warning(
-            "⚠️ **Demo mode** – processed data files not found in `data/processed/`. "
-            "Run the data pipeline first to analyse real matches. "
-            "Showing synthetic demo data.",
+            "⚠️ **DEMO MODE** – processed data files not found in `data/processed/`. "
+            "Everything below is synthetic and the scores are random placeholders, not model output.",
             icon="⚠️",
         )
         pass_df = _make_demo_pass_instances()
         frames_df = _make_demo_frames(pass_df)
+        scores = _make_demo_scores(len(pass_df))
+        score_source = "demo_random"
+        st.sidebar.warning("DEMO MODE: random placeholder scores.")
     else:
         pass_df = pass_df_real
         frames_df = frames_df_real
-
-    # Compute or simulate scores
-    _prediction_error: str | None = None  # carries any scoring error to the UI
-    score_source = "model"
-
-    if model is not None and not demo_mode:
         try:
-            from src.features.event_features import build_event_features
-
-            X_all = build_event_features(pass_df)
-            feature_cols = list(X_all.columns)
-            scores = model.predict_proba(X_all)[:, 1]
-            st.sidebar.success(
-                f"✅ Model loaded — {len(feature_cols)} features, "
-                f"{len(pass_df):,} passes scored"
-            )
-        except Exception as exc:
-            _prediction_error = str(exc)
-            score_source = "random_placeholder"
-            st.sidebar.warning(
-                "Prediction failed - using random placeholder scores. "
-                "These are not model predictions. See details below."
-            )
-            scores = _make_demo_scores(len(pass_df))
-            feature_cols = []
-    else:
-        score_source = "random_placeholder"
-        scores = _make_demo_scores(len(pass_df))
-        feature_cols = []
-        st.sidebar.warning(
-            "Scores shown in demo mode are random placeholders, not trained model output."
+            pm = _load_model()
+            scores = pm.predict_proba_frame(pp.build_feature_frame(pass_df))
+        except (
+            Exception
+        ) as exc:  # real data is loaded: show the cause, never substitute placeholders
+            st.error(f"Cannot score passes with the trained model: {exc}")
+            st.stop()
+        model = pm.model
+        feature_cols = list(pm.features)
+        try:
+            actual_labels = pp.load_actual_labels(pass_df, _PROCESSED_DIR)
+        except pp.ArtefactError as exc:
+            st.sidebar.warning(f"Actual progression rates unavailable: {exc}")
+        st.sidebar.success(
+            f"✅ {pp.DEFAULT_MODEL} loaded — {len(feature_cols)} features, {len(pass_df):,} passes scored"
         )
-        if model is None:
-            st.sidebar.info(
-                "ℹ️ No model artifacts found in `models/`. "
-                "Run the training pipeline or upload a model."
-            )
 
-    # ── Show feature-mismatch explanation if scoring failed ─────────
-    if _prediction_error:
-        with st.expander("⚠️ Why did model prediction fail?", expanded=True):
-            st.error(f"**Error:** {_prediction_error}")
-            st.markdown(
-                """
-**Root cause — Feature shape mismatch**
-
-The model was trained on **engineered features** produced by
-`build_event_features()` (27 columns such as `goal_dist_gain`,
-`x_gain`, `pass_angle_sin`, one-hot body-part flags, etc.).
-
-The raw `pass_instances.parquet` file only contains **base columns**
-from the StatsBomb event log (e.g. `start_x`, `pass_length`, `minute`)
-— roughly 19 numeric columns.
-
-When the app tried to score passes using those 19 raw columns, the
-model rejected them because it expected 27 (event-only) or 41
-(event + 360 geometry) engineered features.
-
-**How it is now fixed:**
-The app calls `build_event_features(pass_df)` before scoring, which
-reproduces exactly the 27-column feature matrix the model was trained
-on. The predictions you see now use those correct features.
-                """
-            )
-
-    if score_source == "random_placeholder":
+    if score_source == "demo_random":
         st.error(
-            "Scores in this view are random placeholders for UI demonstration only. "
-            "They are not representative of Frame2Threat model behaviour."
+            "DEMO: scores in this view are random placeholders for UI demonstration only; they are "
+            "not Frame2Threat model output."
         )
 
     # ----------------------------------------------------------------
@@ -451,6 +405,11 @@ on. The predictions you see now use those correct features.
     # ================================================================
     if page == "🎯 Event Inspector":
         st.header("🎯 Event Inspector")
+        st.info(
+            "**What the score means.** "
+            + pp.LABEL_PLAIN_ENGLISH
+            + " The score is the model's probability of that outcome for this pass."
+        )
 
         # Event selection
         match_df_sorted = match_df.copy()
@@ -480,7 +439,7 @@ on. The predictions you see now use those correct features.
         # Key metrics row
         col1, col2, col3, col4 = st.columns(4)
         col1.metric(
-            "🎯 Danger Score",
+            "🎯 Progression probability (event-only)",
             f"{event_score:.3f}",
             help=(
                 "Predicted dangerous progression probability"
@@ -491,6 +450,25 @@ on. The predictions you see now use those correct features.
         col2.metric("📐 Pass Length", f"{event_row.get('pass_length', 'N/A'):.1f}m")
         col3.metric("⏱ Minute", int(event_row.get("minute", 0)))
         col4.metric("🗺 Zone", f"Zone {int(event_row.get('zone_start', 0))}")
+
+        if not demo_mode:
+            if bool(event_row.get("has_360", False)):
+                try:
+                    _single = match_df[match_df[uuid_col] == selected_uuid].copy()
+                    _geo = pp.geometry_for(_single, frames_df, _load_geometry_cache())
+                    _pm360 = _load_model(pp.EVENT_360)
+                    _p360 = _pm360.predict_proba_frame(
+                        pp.build_feature_frame(_single, _geo, with_360=True)
+                    )[0]
+                    st.metric(
+                        "❄️ Event+360 probability",
+                        f"{_p360:.3f}",
+                        help="Same label, model with 14 freeze-frame geometry features added.",
+                    )
+                except Exception as exc:
+                    st.error(f"Event+360 score unavailable: {exc}")
+            else:
+                st.caption("No freeze frame for this pass: only the event-only score is available.")
 
         # Score confidence bar
         st.markdown("#### Confidence Bar")
@@ -504,14 +482,15 @@ on. The predictions you see now use those correct features.
         # Freeze frame plot
         st.markdown("#### ❄️ Freeze Frame")
 
-        show_ranked = st.checkbox("Show ranked pass options", value=True)
         ranked_opts = None
-        if show_ranked:
-            sx = float(event_row.get("start_x", 60))
-            sy = float(event_row.get("start_y", 40))
-            ranked_opts = _make_ranked_options(sx, sy)
-            if score_source == "random_placeholder":
+        if demo_mode:
+            if st.checkbox("Show ranked pass options (demo only)", value=True):
+                sx = float(event_row.get("start_x", 60))
+                sy = float(event_row.get("start_y", 40))
+                ranked_opts = _make_ranked_options(sx, sy)
                 st.caption("Ranked pass options are synthetic random placeholders in demo mode.")
+        else:
+            st.caption("Ranked pass options are not shown: there is no option-level model.")
 
         event_frames = frames_df[
             frames_df.get("event_uuid", frames_df.get("id", pd.Series())) == selected_uuid
@@ -554,7 +533,7 @@ on. The predictions you see now use those correct features.
         # Explanation panel
         st.markdown("#### 💡 Explanation")
         with st.expander("Show detailed explanation", expanded=True):
-            if model is not None and feature_cols:
+            if not demo_mode:
                 try:
                     from src.features.event_features import build_event_features
                     from src.visualization.explanations import explain_single_event
@@ -670,28 +649,44 @@ on. The predictions you see now use those correct features.
     elif page == "👤 Player Profile":
         st.header("👤 Player Profile")
 
-        name_col = "player_name" if "player_name" in pass_df.columns else None
-        if name_col is None:
-            st.warning("No player_name column in data.")
+        if demo_mode:
+            st.info("Demo mode: the player table needs real data and the trained model.")
+        elif actual_labels is None:
+            st.warning(
+                "Actual progression rates are unavailable, so the player table cannot be built."
+            )
         else:
-            all_players = sorted(pass_df[name_col].dropna().unique())
-            selected_player = st.selectbox("Select Player", all_players)
-
-            player_mask = pass_df[name_col] == selected_player
-            player_df = pass_df[player_mask].reset_index(drop=True)
-            player_scores = scores[player_mask]
-
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Total Passes", len(player_df))
-            col2.metric("Mean Score", f"{np.mean(player_scores):.3f}")
-            col3.metric("Progressive Pass Rate", f"{(player_scores >= 0.5).mean():.1%}")
-
-            try:
-                fig_player = _render_player_profile(selected_player, pass_df, scores)
-                st.pyplot(fig_player, use_container_width=True)
-                plt.close(fig_player)
-            except Exception as exc:
-                st.error(f"Player profile error: {exc}")
+            st.markdown(
+                "Mean **predicted** progression probability against the **actual** progression rate "
+                "(`progression_beyond_pass_k`).  *Actual minus predicted* is descriptive: it mixes "
+                "finishing, team and opponent effects and is noisy for small samples."
+            )
+            min_passes = st.slider("Minimum passes per player", 1, 300, 50)
+            table = pp.player_profile_table(pass_df, scores, actual_labels, min_passes)
+            st.caption(
+                f"{len(table)} players with at least {min_passes} passes (default 50 hides smaller samples)."
+            )
+            st.dataframe(
+                table.rename(
+                    columns={
+                        "player": "Player",
+                        "team": "Team",
+                        "passes": "Passes",
+                        "mean_predicted": "Mean predicted",
+                        "actual_rate": "Actual rate",
+                        "actual_minus_predicted": "Actual - predicted",
+                    }
+                ).round(3),
+                use_container_width=True,
+            )
+            if not table.empty:
+                selected_player = st.selectbox("Pass map for player", table["player"].tolist())
+                try:
+                    fig_player = _render_player_profile(selected_player, pass_df, scores)
+                    st.pyplot(fig_player, use_container_width=True)
+                    plt.close(fig_player)
+                except Exception as exc:
+                    st.error(f"Player profile error: {exc}")
 
         # Team profiles
         st.markdown("---")
@@ -711,58 +706,79 @@ on. The predictions you see now use those correct features.
     elif page == "📈 Model Diagnostics":
         st.header("📈 Model Diagnostics")
 
-        label_col = next(
-            (c for c in ["dangerous_progression_k", "line_break"] if c in pass_df.columns),
-            None,
-        )
-
-        if label_col is not None:
-            y_true = pass_df[label_col].fillna(0).values
-            valid_mask = ~np.isnan(y_true) & ~np.isnan(scores)
-            y_true_valid = y_true[valid_mask]
-            y_prob_valid = scores[valid_mask]
-
-            from src.evaluation.metrics import classification_metrics
-
-            met = classification_metrics(y_true_valid, y_prob_valid)
-
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("ROC-AUC", f"{met.get('roc_auc', float('nan')):.4f}")
-            col2.metric("PR-AUC", f"{met.get('pr_auc', float('nan')):.4f}")
-            col3.metric("Brier Score", f"{met.get('brier_score', float('nan')):.4f}")
-            col4.metric("Log Loss", f"{met.get('log_loss', float('nan')):.4f}")
-
-            st.markdown("#### 🎛 Calibration Curve")
+        if demo_mode:
+            st.warning(
+                "Demo mode: diagnostics come from the trained model's saved metadata, which needs real data."
+            )
+        else:
             try:
-                from src.evaluation.calibration import plot_calibration_curve
+                meta = pp.load_metadata(pp.EVENT_ONLY, _MODELS_DIR)
+                meta360 = pp.load_metadata(pp.EVENT_360, _MODELS_DIR)
+            except pp.ArtefactError as exc:
+                st.error(f"Diagnostics unavailable: {exc}")
+                st.stop()
+            st.caption(
+                "Shown from the metadata saved at training time (test split, match-level bootstrap 95% "
+                "intervals); nothing is recomputed here.  Label: "
+                + meta["label"]
+                + ".  "
+                + meta["recipe"]
+                + "."
+            )
+            rows = []
+            for m in (meta, meta360):
+                t = m["test_all_passes"]
+                r = {"Model": m["name"], "Test passes": t["n"], "Matches": t["matches"]}
+                for stat, nm in (
+                    ("roc_auc", "ROC AUC"),
+                    ("avg_precision", "AP"),
+                    ("brier", "Brier"),
+                    ("log_loss", "Log loss"),
+                ):
+                    v = t["metrics_with_95ci_match_bootstrap"][stat]
+                    r[nm] = f"{v['estimate']:.4f} [{v['ci_low']:.4f}, {v['ci_high']:.4f}]"
+                r["Cal. intercept"] = round(t["calibration"]["intercept"], 3)
+                r["Cal. slope"] = round(t["calibration"]["slope"], 3)
+                rows.append(r)
+            st.dataframe(pd.DataFrame(rows), use_container_width=True)
 
-                fig_cal, ax_cal = plt.subplots(figsize=(6, 6))
-                plot_calibration_curve(y_true_valid, y_prob_valid, task_name=label_col, ax=ax_cal)
-                st.pyplot(fig_cal, use_container_width=False)
-                plt.close(fig_cal)
-            except Exception as exc:
-                st.error(f"Calibration plot error: {exc}")
-        else:
-            st.info("No ground-truth label columns found. Run labelling pipeline first.")
-
-        # Feature importance
-        if model is not None and feature_cols:
-            st.markdown("#### 🔍 SHAP Feature Importance")
-            with st.spinner("Computing SHAP values…"):
-                try:
-                    sample_df = pass_df[feature_cols].fillna(0.0).head(200)
-                    fig_shap = _render_shap_summary(model, sample_df, feature_cols)
-                    st.pyplot(fig_shap, use_container_width=True)
-                    plt.close(fig_shap)
-                except Exception as exc:
-                    st.warning(f"SHAP summary unavailable: {exc}")
-        else:
-            st.info("Load a trained model to view SHAP feature importance.")
-            if score_source == "random_placeholder":
-                st.warning(
-                    "Current diagnostics use random placeholder scores, so calibration "
-                    "and score distributions are UI checks only."
+            st.markdown("#### 🎛 Reliability table (test split, 10 bins)")
+            rel_cols = st.columns(2)
+            for col, m in zip(rel_cols, (meta, meta360)):
+                col.markdown(f"**{m['name']}**")
+                col.dataframe(
+                    pd.DataFrame(m["test_all_passes"]["reliability_table"]).round(3),
+                    use_container_width=True,
                 )
+
+            st.markdown(
+                "#### ❄️ Does 360 add anything? (event+360 minus event-only, paired match-level bootstrap)"
+            )
+            deltas = meta360["comparison_360"]["paired_delta_event360_minus_event_only"]
+            for view, rows_d in deltas.items():
+                st.markdown(f"**{view}**")
+                dd = pd.DataFrame(rows_d)[["stat", "estimate", "ci_low", "ci_high"]].copy()
+                dd["interval excludes zero"] = (dd["ci_low"] > 0) | (dd["ci_high"] < 0)
+                st.dataframe(dd.round(4), use_container_width=True)
+            st.caption(
+                "The 360 gain is small but measurable: intervals exclude zero for most statistics "
+                "(see reports/pass_label/pass_model_final.md)."
+            )
+
+            if model is not None and feature_cols:
+                st.markdown("#### 🔍 SHAP Feature Importance")
+                with st.spinner("Computing SHAP values…"):
+                    try:
+                        from src.features.event_features import build_event_features
+
+                        sample_df = build_event_features(pass_df.head(200))[feature_cols].fillna(
+                            0.0
+                        )
+                        fig_shap = _render_shap_summary(model, sample_df, feature_cols)
+                        st.pyplot(fig_shap, use_container_width=True)
+                        plt.close(fig_shap)
+                    except Exception as exc:
+                        st.warning(f"SHAP summary unavailable: {exc}")
 
     # ================================================================
     # PAGE 5 – Possession Inspector

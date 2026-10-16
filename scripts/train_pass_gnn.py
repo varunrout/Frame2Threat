@@ -436,9 +436,9 @@ def main() -> None:
         f"Test subset: {len(y):,} passes with 360 data from {len(set(mid))} World Cup 2022 matches; positive rate {y.mean():.3f}.  "
         f"Graphs: train {len(graphs['train']):,} / val {len(graphs['val']):,} / test {len(graphs['test']):,}.",
         "",
-        "## Verdict",
+        "## Reading",
         "",
-        sentence,
+        "Player positions alone (graph-only, no pass destination) are compared with `end_x` alone and with the event-based models; the paired differences are reported for completeness and are not a like-for-like contest between feature sets.",
         "",
         "## Test metrics (identical 360 test subset; 1,000 match-level bootstrap resamples)",
         "",

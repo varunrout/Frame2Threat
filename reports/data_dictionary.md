@@ -322,8 +322,8 @@ Built by `build_cumulative_tabular_features(poss_df, frac)`.  Returns the same ~
 
 | Artefact | Path | Version | Description |
 |----------|------|---------|-------------|
-| v1 XGBoost (event-only) | `models/xgboost_dp_event_only.joblib` | v1 | 27 event features, EXP-003 |
-| v1 XGBoost (event+360) | `models/xgboost_dp_event_360.joblib` | v1 | 41 features (event+geometry), EXP-004 |
+| v1 XGBoost (event-only) | `models/superseded/xgboost_dp_event_only.joblib` | v1 | 27 event features, EXP-003 |
+| v1 XGBoost (event+360) | `models/superseded/xgboost_dp_event_360.joblib` | v1 | 41 features (event+geometry), EXP-004 |
 | v2 XGBoost (possession) | `models/xgboost_poss_dangerous.joblib` | v2 | 41 possession features, EXP-009 |
 | v2 PossessionGRU | `models/gru_poss_dangerous.pt` | v2 | GRU checkpoint (arch+weights), EXP-010 |
 | v3 XGBoost start-only | `models/superseded/xgboost_start_only.joblib` | v3 | ~19 start features, EXP-015 |
