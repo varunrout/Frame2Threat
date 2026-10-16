@@ -11,6 +11,7 @@ fresh clone without downloading StatsBomb data or retraining models.
 | `scored_possessions_manifest.json` | Source paths, column list, and generation notes for the scored sample. |
 | `model_cards/pass_xgboost.md` | Model card for the v1 pass-level XGBoost models (original label; a corrected-label model card is pending a decision, see `reports/pass_label/pass_model_repro_gate.md`). |
 | `model_cards/early_xgboost.md` | Model card for v3 start-only and cumulative XGBoost models (**superseded**: fraction-based, length leak). |
+| `model_cards/pass_gnn.md` | Model card for the PassFrameGNN retrained on the corrected label (graph-only; does not beat XGBoost). |
 | `model_cards/event_time.md` | Model card for the event-time (in-play) XGBoost and GRU models that replace them. |
 | `model_cards/possession_retrospective.md` | Model card for the retrospective possession models, their corrected-label retrain and the cross-fitted attribution use (`reports/attribution/ATTRIBUTION_REPORT.md`). |
 

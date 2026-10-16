@@ -306,6 +306,8 @@ Settings: `n_estimators=500`, `max_depth=6`, `learning_rate=0.05`, `subsample=0.
 
 ### 6.4 v1 — PassFrameGNN
 
+> **Superseded by EXP-032 for the corrected label.**  The description below is the original design (graph + event hybrid, 9 node features incl. `is_receiver`, multitask heads).  The retrained model is graph-only with 8 node features (`src/features/pass_graph.py`, `src/models/pass_gnn.py`); see `reports/repro/model_cards/pass_gnn.md`.
+
 `src/models/gnn.py :: PassFrameGNN`
 
 Graph neural network operating on player-position graphs:
@@ -315,7 +317,7 @@ Graph neural network operating on player-position graphs:
 - Multitask classification heads (5 binary labels + 1 regression target)
 - Weighted multitask loss
 
-Achieves 0.841 val AUC — near-parity with XGBoost on the 360-available subset, demonstrating that raw spatial graph structure encodes comparable information to hand-crafted geometry features.
+Achieves 0.841 val AUC (original label only, superseded; unreproducible, the saved output says 0.834) — near-parity with XGBoost on the 360-available subset, demonstrating that raw spatial graph structure encodes comparable information to hand-crafted geometry features.
 
 ### 6.5 v2 — Possession XGBoost
 
@@ -400,7 +402,7 @@ Ablations systematically test the contribution of each component:
 | Ablation | Compared configurations | Key finding |
 |----------|------------------------|-------------|
 | Event-only vs. Event+360 | EXP-003 vs EXP-004 | +0.001 AUC from geometry |
-| Tabular vs. Graph (GNN) | EXP-003 vs EXP-005 | Near-parity (0.845 vs 0.841 on 360 subset) |
+| Tabular vs. Graph (GNN) | EXP-003 vs EXP-005 | Near-parity (0.845 vs 0.841 on 360 subset; original label only, superseded; corrected label, EXP-032: GNN 0.595 [0.578, 0.606] vs XGBoost 0.715 [0.697, 0.734]) |
 | XGBoost vs. GRU (possession) | EXP-009 vs EXP-010 | +0.002 AUC from sequence modelling |
 | Origin-only vs. Full features | EXP-012 | 0.591 vs 0.950 AUC |
 | Single model vs. Ensemble | EXP-009/010 vs EXP-011 | +0.013 AUC from ensemble |

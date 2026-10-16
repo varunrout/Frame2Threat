@@ -1,0 +1,246 @@
+{
+  "name": "pass_gnn_progression",
+  "label": "progression_beyond_pass_k",
+  "label_definition": "Within the next 5 events of the same possession, ignoring the receipt of this pass and the opponent's events: a shot, a new box entry, or a gain of >= 10 m beyond the pass end into a more advanced zone (reports/label_methodology.md, Label G).",
+  "architecture": "graph-only PassFrameGNN: node projection 8->64 + ReLU, 3 x GraphSAGE (mean aggregation, plain torch), mean pooling, fusion Linear(64,64)+ReLU+dropout, one Linear(64,1) head; BCE, no class weighting",
+  "node_features": [
+    "x",
+    "y",
+    "teammate",
+    "is_keeper",
+    "is_actor",
+    "dist_to_goal",
+    "dist_to_passer",
+    "local_density"
+  ],
+  "graph": "nodes = visible players; edges = 5 nearest neighbours + same-team links (both directions); no edge features; pass-START location used for dist_to_passer; no pass-destination information",
+  "deviations_from_original": [
+    "node feature is_receiver (derived from the pass END location) dropped: 8 node features instead of 9",
+    "graph-only: the original 27-feature event branch and the 5 multitask heads are not used",
+    "GraphSAGE implemented in plain torch instead of torch_geometric",
+    "node features scaled to ~[0, 1]"
+  ],
+  "hyperparameters": {
+    "lr": 0.001,
+    "dropout": 0.3,
+    "weight_decay": 0.0,
+    "hidden": 64,
+    "layers": 3,
+    "batch_size": 64,
+    "max_epochs": 40,
+    "patience": 6
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "selected_seed": 0,
+  "seed_results": [
+    {
+      "seed": 0,
+      "val_auc": 0.5815759252790506,
+      "best_epoch": 34,
+      "val_logloss": 0.5168128510043637,
+      "epochs_run": 40,
+      "test_auc": 0.5945182303073595,
+      "test_ap": 0.28365527392554607,
+      "test_brier": 0.16685996098966382
+    },
+    {
+      "seed": 1,
+      "val_auc": 0.5802239082837332,
+      "best_epoch": 38,
+      "val_logloss": 0.518153920555013,
+      "epochs_run": 40,
+      "test_auc": 0.5984636236210603,
+      "test_ap": 0.2860188635808752,
+      "test_brier": 0.16693654268722027
+    },
+    {
+      "seed": 2,
+      "val_auc": 0.5763052707401548,
+      "best_epoch": 39,
+      "val_logloss": 0.5182666974469531,
+      "epochs_run": 40,
+      "test_auc": 0.5948223214706894,
+      "test_ap": 0.28207970571590746,
+      "test_brier": 0.16704786945723435
+    },
+    {
+      "seed": 3,
+      "val_auc": 0.5746879872968906,
+      "best_epoch": 32,
+      "val_logloss": 0.5199515657135482,
+      "epochs_run": 38,
+      "test_auc": 0.5970175058796574,
+      "test_ap": 0.2822761054341604,
+      "test_brier": 0.1674796071910086
+    },
+    {
+      "seed": 4,
+      "val_auc": 0.5784518028415331,
+      "best_epoch": 24,
+      "val_logloss": 0.5166182519678617,
+      "epochs_run": 30,
+      "test_auc": 0.5903984689304751,
+      "test_ap": 0.2791720578237015,
+      "test_brier": 0.16729146305530124
+    }
+  ],
+  "seed_summary_mean_sd": {
+    "val_auc": [
+      0.5782489788882724,
+      0.0028048493025086677
+    ],
+    "test_auc": [
+      0.5950440300418484,
+      0.003061661526860099
+    ],
+    "test_ap": [
+      0.2826404012960381,
+      0.0024960203982965614
+    ],
+    "test_brier": [
+      0.16712308867608566,
+      0.00025746305524636134
+    ]
+  },
+  "split": {
+    "source": "data/processed/{train,val,test}.parquet (saved match-level split, seed 42)",
+    "graphs": {
+      "train": 18234,
+      "val": 4545,
+      "test": 3736
+    },
+    "matches_with_graphs": {
+      "train": 44,
+      "val": 11,
+      "test": 9
+    }
+  },
+  "test_subset": {
+    "n": 3736,
+    "matches": 9,
+    "prevalence": 0.21734475374732334
+  },
+  "test_metrics_with_95ci_match_bootstrap": {
+    "GNN": {
+      "roc_auc": {
+        "estimate": 0.5945182303073595,
+        "ci_low": 0.5782087294157245,
+        "ci_high": 0.6064855629187949
+      },
+      "avg_precision": {
+        "estimate": 0.28365527392554607,
+        "ci_low": 0.2619867723240739,
+        "ci_high": 0.32538986353685395
+      },
+      "brier": {
+        "estimate": 0.16685996098966382,
+        "ci_low": 0.15673991237563717,
+        "ci_high": 0.17859980162559375
+      }
+    },
+    "XGB_event360": {
+      "roc_auc": {
+        "estimate": 0.7153900453525436,
+        "ci_low": 0.6967194338586497,
+        "ci_high": 0.7335992733293915
+      },
+      "avg_precision": {
+        "estimate": 0.4030398992687825,
+        "ci_low": 0.38087306860924425,
+        "ci_high": 0.428824954458798
+      },
+      "brier": {
+        "estimate": 0.19326004270958094,
+        "ci_low": 0.1856937470742715,
+        "ci_high": 0.20131179787019068
+      }
+    },
+    "XGB_event": {
+      "roc_auc": {
+        "estimate": 0.7169260847883661,
+        "ci_low": 0.700084822995306,
+        "ci_high": 0.7325498078458059
+      },
+      "avg_precision": {
+        "estimate": 0.40032729341424955,
+        "ci_low": 0.3701199719113221,
+        "ci_high": 0.43606520350258643
+      },
+      "brier": {
+        "estimate": 0.19932640977544547,
+        "ci_low": 0.1942593393943702,
+        "ci_high": 0.2059605702703344
+      }
+    },
+    "LR_end_x": {
+      "roc_auc": {
+        "estimate": 0.5299506631040547,
+        "ci_low": 0.5022380319137599,
+        "ci_high": 0.5505881710936043
+      },
+      "avg_precision": {
+        "estimate": 0.25062573340947997,
+        "ci_low": 0.22709794663882252,
+        "ci_high": 0.2810125650297876
+      },
+      "brier": {
+        "estimate": 0.16997988767867878,
+        "ci_low": 0.1592171081611655,
+        "ci_high": 0.18317213448650213
+      }
+    },
+    "XGB_event360_ES": {
+      "roc_auc": {
+        "estimate": 0.7281307069740486,
+        "ci_low": 0.7090741985419798,
+        "ci_high": 0.7479700731245658
+      },
+      "avg_precision": {
+        "estimate": 0.42119521471081156,
+        "ci_low": 0.3885703449223294,
+        "ci_high": 0.4597458397888073
+      },
+      "brier": {
+        "estimate": 0.1507650481381474,
+        "ci_low": 0.14018498978717084,
+        "ci_high": 0.1628668328192239
+      }
+    },
+    "XGB_event_ES": {
+      "roc_auc": {
+        "estimate": 0.7194725323970808,
+        "ci_low": 0.6983451716758761,
+        "ci_high": 0.7388825891340355
+      },
+      "avg_precision": {
+        "estimate": 0.4006374256197315,
+        "ci_low": 0.36967225780663876,
+        "ci_high": 0.43574234954521723
+      },
+      "brier": {
+        "estimate": 0.15253001605021987,
+        "ci_low": 0.14185830761067408,
+        "ci_high": 0.1645687096007394
+      }
+    }
+  },
+  "calibration_test": {
+    "intercept": -0.08757136922273695,
+    "slope": 0.9647311457583798,
+    "calibration_in_the_large": -0.045190427434819214,
+    "mean_pred": 0.2249677041894507,
+    "prevalence": 0.21734475374732334
+  },
+  "git": {
+    "commit": "ea07f0df79dff478a31c1cef9d23ddb4e5cc9ade",
+    "working_tree_dirty": false
+  },
+  "torch": "2.9.0+cpu",
+  "trained_utc": "2026-10-16T06:56:29.752115+00:00"
+}

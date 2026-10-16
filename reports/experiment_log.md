@@ -164,6 +164,8 @@ Status: complete
 
 ### EXP-005 — GNN frame model (multitask)
 
+> **Superseded (EXP-032).**  Original label only (`dangerous_progression_k`, validation, 360 subset); the checkpoint was never committed and the saved notebook output shows 0.834, not 0.841.  The corrected-label retrain is a different, graph-only model: the GNN scores 0.595 [0.578, 0.606] vs 0.715 [0.697, 0.734] for XGBoost event+360 on the identical test subset.
+
 Reconstructed sequence date: 2025-06-05
 Status: complete
 
@@ -253,7 +255,7 @@ Status: complete
 |---------------|---------------|-------------|------------|-------|
 | event-only (XGBoost) | 27 event attributes | 0.881 | 0.891 | 0.130 |
 | event+360 (XGBoost) | 27 + 14 geometry | 0.882 | 0.892 | 0.129 |
-| graph (PassFrameGNN) | Player position graph | 0.841* | — | — |
+| graph (PassFrameGNN) | Player position graph | 0.841* (original label only, superseded; see EXP-032) | — | — |
 
 *Val set 360-subset only; not directly comparable to test AUC above.
 
@@ -271,7 +273,7 @@ Status: complete
 | 002 | LogReg | dangerous_progression_k | event-only (27) | 0.768 (val) | — | — | — |
 | 003 | XGBoost | dangerous_progression_k | event-only (27) | **0.881** | **0.891** | **0.130** | **0.024** |
 | 004 | XGBoost | dangerous_progression_k | event+360 (41) | 0.882 | 0.892 | 0.129 | — |
-| 005 | PassFrameGNN | dangerous_progression_k | graph (val 360 subset) | 0.841* | — | — | — |
+| 005 | PassFrameGNN | dangerous_progression_k | graph (val 360 subset) | 0.841* (original label only, superseded; see EXP-032) | — | — | — |
 | 006 | Hybrid GNN+GRU | — | — | abandoned | — | — | — |
 | 007 | Multitask vs. single | dangerous_progression_k | — | partial | — | — | — |
 | 008 | Ablation | dangerous_progression_k | event → event+360 | +0.0014 | +0.0010 | -0.001 | — |
@@ -804,6 +806,27 @@ Status: complete.  Code: `src/evaluation/attribution_crossfit.py`, `scripts/run_
 **Reading.**  Possessions that end in a goal receive the highest scores and larger attributions than other dangerous possessions, and the score is moderately related to xG (the label does not use xG).  Player means are reasonably stable, but the top of the table is forwards and the bottom centre-backs and full-backs, so the stable part is mostly **role**; nothing is adjusted for position, team or opponent.  Defending-team events (goalkeeper, clearance, block, foul committed) are the model's evidence that danger occurred and are never credited to a player.  Very high scores saturate, so LOO drops vanish for the most obviously dangerous possessions.  This is retrospective, not causal credit; the recommended next step is a forward-looking action value model (xT or VAEP-style).
 
 **Superseded:** the in-sample v2 leaderboards and figures (`figures/superseded_attribution/`), Gini 0.495 and the "most impactful events are final-third entries, through balls and pre-shot carries" statement.
+
+### EXP-032 — PassFrameGNN retrained on the corrected label; fair comparison on the 360 subset
+
+Status: complete.  Code: `src/features/pass_graph.py`, `src/models/pass_gnn.py`, `scripts/train_pass_gnn.py`; tests `tests/test_pass_gnn.py`; outputs `reports/pass_label/gnn_comparison.md` and `.json`, `models/pass_gnn_progression.pt` and `.json`; model card `reports/repro/model_cards/pass_gnn.md`.
+
+**Investigation.**  The original code (`src/models/gnn.py`, `src/features/graph_builder.py`, `configs/model_gnn.yaml`, `notebooks/05_gnn.ipynb`) exists, but no checkpoint was ever committed and `torch_geometric` is not installed.  The original node feature `is_receiver` used the pass END location, and the original model was a graph + 27-feature event hybrid with 5 multitask heads.  The old validation figure in the notebook output and `v1_xgb_vs_gnn.png` is **0.834**, not the 0.841 quoted in the docs.
+
+**Method.**  Graph-only model (one binary head), 8 node features (no `is_receiver`), kNN(5) + same-team edges, 3 x GraphSAGE (mean, 64 hidden, plain torch), BCE without class weighting.  Saved split; label from the same table as the XGBoost models; graphs: 18,234 / 4,545 / 3,736.  Validation-only grid (8 configurations), 5 seeds, reported model chosen by validation ROC AUC, test read once.
+
+**Results (test, 360 subset: 3,736 passes, 9 matches; match-level bootstrap, 1,000 resamples).**
+
+| Model | ROC AUC | AP | Brier |
+|---|---|---|---|
+| PassFrameGNN (graph-only) | 0.595 [0.578, 0.606] | 0.284 [0.262, 0.325] | 0.167 [0.157, 0.179] |
+| XGBoost event+360 (EXP-027 recipe) | 0.715 [0.697, 0.734] | 0.403 [0.381, 0.429] | 0.193 [0.186, 0.201] |
+| XGBoost event-only (EXP-027 recipe) | 0.717 [0.700, 0.733] | 0.400 [0.370, 0.436] | 0.199 [0.194, 0.206] |
+| `end_x`-only logistic regression | 0.530 [0.502, 0.551] | 0.251 [0.227, 0.281] | 0.170 [0.159, 0.183] |
+
+GNN - XGBoost event+360: -0.1209 [-0.1379, -0.1033] ROC AUC.  GNN seeds: test ROC AUC 0.5950 (sd 0.0031).
+
+**Answer.**  The GNN does **not** beat XGBoost; it carries signal beyond the pass destination (above the `end_x` baseline) but is about 0.12 ROC AUC worse than the event-based models, which see the destination, length, angle and pressure.  It is not a like-for-like feature-set comparison (graph only vs event features).  **Supersedes** the old "near-parity, 0.841 vs 0.845 (original label only, superseded)" (original label only, validation subset, unreproducible: the saved output says 0.834).  No existing result was changed.
 
 ---
 

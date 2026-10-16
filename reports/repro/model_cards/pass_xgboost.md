@@ -41,7 +41,7 @@ finding for 360 additive value in this dataset.
 
 - 360 coverage is partial.
 - The pass-level model sees only an event snapshot, not player trajectories.
-- The GNN comparison is validation-only in the current report.
+- GNN comparison: the old validation-only near-parity (0.841 vs 0.845) is original label only and superseded.  The retrained graph-only PassFrameGNN on the corrected label does not beat XGBoost (0.595 [0.578, 0.606] vs 0.715 [0.697, 0.734] ROC AUC on the identical 360 test subset); see `pass_gnn.md`.
 - Bootstrap intervals are in `reports/pass_label/pass_label_results.md` (15 test matches).
 - XGBoost uses `scale_pos_weight`, so its Brier score is not comparable with unweighted baselines.
 

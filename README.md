@@ -17,7 +17,7 @@ git clone https://github.com/varunrout/Frame2Threat.git
 cd Frame2Threat
 pip install -e ".[dev]"
 streamlit run src/app/app.py   # app; demo mode labels random placeholder scores
-pytest tests/ -q               # run all tests (137 passing)
+pytest tests/ -q               # run all tests (146 passing)
 ```
 
 ---
@@ -93,7 +93,7 @@ Superseded values are kept in `reports/` with the reason; this table shows curre
 | GRU, event-time snapshots | Possession (in play) | `danger_after_t`, all snapshots | 0.664 |
 | GRU, event-time snapshots | Possession (in play) | one random snapshot per possession | 0.739 |
 
-At pass level the 360 geometry lift is +0.0021 [-0.0010, +0.0055] ROC AUC on the original label and +0.0015 [-0.0036, +0.0070] on the corrected label (on the corrected label average precision +0.0041 [-0.0053, +0.0134] includes zero and only the Brier improvement, -0.0038 [-0.0067, -0.0015], excludes it).  Event attributes carry most of the signal; 360 geometry adds a very small amount that is not clearly distinguishable from zero.  On the corrected label the event model beats the destination-only baselines (`end_x`: +0.185; `(end_x, end_y)`: +0.040 ROC AUC), so the earlier headline 0.881 mostly reflected a label that rewards the pass's own destination.  *Superseded:* the first correction reported +0.0050 on the corrected label ("about 3.5x larger"); that used the broken `possession_length` feature (it mixed matches), see `reports/pass_label/possession_length_fix_before_after.md`.  The PassFrameGNN comparison (0.841 on the 360 subset) could not be re-run in this environment (see Limitations).  The possession retrospective rows come from a like-for-like retrain after the coordinate-frame fix (`reports/audit/exp023_v2_corrected_labels.md`); the shot-column fix does not affect them (no v2 model uses xG or goals as a feature).
+At pass level the 360 geometry lift is +0.0021 [-0.0010, +0.0055] ROC AUC on the original label and +0.0015 [-0.0036, +0.0070] on the corrected label (on the corrected label average precision +0.0041 [-0.0053, +0.0134] includes zero and only the Brier improvement, -0.0038 [-0.0067, -0.0015], excludes it).  Event attributes carry most of the signal; 360 geometry adds a very small amount that is not clearly distinguishable from zero.  On the corrected label the event model beats the destination-only baselines (`end_x`: +0.185; `(end_x, end_y)`: +0.040 ROC AUC), so the earlier headline 0.881 mostly reflected a label that rewards the pass's own destination.  *Superseded:* the first correction reported +0.0050 on the corrected label ("about 3.5x larger"); that used the broken `possession_length` feature (it mixed matches), see `reports/pass_label/possession_length_fix_before_after.md`.  The PassFrameGNN was retrained on the corrected label as a graph-only model and does not beat XGBoost on the identical 360 test subset (0.595 [0.578, 0.606] vs 0.715 [0.697, 0.734] ROC AUC; EXP-032); the old 0.841 vs 0.845 is original label only and superseded.  The possession retrospective rows come from a like-for-like retrain after the coordinate-frame fix (`reports/audit/exp023_v2_corrected_labels.md`); the shot-column fix does not affect them (no v2 model uses xG or goals as a feature).
 
 ### Hard constraints
 
@@ -112,6 +112,7 @@ At pass level the 360 geometry lift is +0.0021 [-0.0010, +0.0055] ROC AUC on the
 | Pass-level model and app | Analyst review of pass progression.  **Status: pending a decision.**  The final models on `progression_beyond_pass_k` have not been saved: training with early stopping and no `scale_pos_weight` gives test ROC AUC 0.734 / 0.738, not the 0.728 / 0.729 of EXP-027 (`reports/pass_label/pass_model_repro_gate.md`).  The app and the old-label model card are unchanged | `src/app/app.py`, `reports/repro/model_cards/pass_xgboost.md`, `reports/pass_label/` |
 | Event-time (in-play) danger models | Anticipating shots and box entries from the events so far; `score-live` (one possession, JSON in) and `score-batch` (every event of many possessions, events parquet in) | `models/eventtime_*`, `src/app/cli.py`, `reports/event_time/`, `reports/repro/model_cards/event_time.md` |
 | Retrospective attribution | Which events the retrospective possession model relies on: tagging moments for video review, scouting shortlists to inspect (not a ranking); cross-fitted, with stability checks | `reports/attribution/ATTRIBUTION_REPORT.md`, `data/processed/attribution_events.parquet`, `reports/figures/attribution/` |
+| PassFrameGNN (corrected label) | A diagnostic of how much progression freeze-frame geometry explains on its own; does not beat XGBoost (0.595 [0.578, 0.606] vs 0.715 [0.697, 0.734]) | `models/pass_gnn_progression.pt`, `reports/pass_label/gnn_comparison.md`, `reports/repro/model_cards/pass_gnn.md` |
 | Evidence pack | 25 test-split possessions scored with the event-time models plus the retrospective models (labelled) | `reports/repro/` |
 
 ---
@@ -172,7 +173,7 @@ Frame2Threat/
 │   └── app/      app.py (Streamlit), cli.py (CLI pipeline), live_scoring.py
 └── tests/        conftest, test_ingestion, test_labels, test_features,
                   test_splits, test_models, test_build_store,
-                  test_reproduce_pipeline, test_event_types, test_event_time, test_attribution, test_batch_scoring, test_shot_columns (137 tests)
+                  test_reproduce_pipeline, test_event_types, test_event_time, test_attribution, test_batch_scoring, test_shot_columns, test_pass_gnn (146 tests)
 ```
 
 ---
@@ -188,7 +189,7 @@ pip install -e .                    # core
 pip install -e ".[dev,notebooks]"   # + pytest, jupyter
 ```
 
-PyTorch and `torch-geometric` are optional (required only for GNN and GRU models).
+PyTorch is optional (required only for the GRU and GNN models); `torch-geometric` is **not** needed by the retrained PassFrameGNN (plain-torch GraphSAGE), only by the original `src/models/gnn.py`.
 
 The repository pins the development Python line with `.python-version` (`3.11`)
 and commits `poetry.lock` for repeatable dependency resolution. To run the same
@@ -359,7 +360,7 @@ streamlit run src/app/app.py
 ## Testing
 
 ```bash
-pytest tests/ -v    # 137 tests, all passing
+pytest tests/ -v    # 146 tests, all passing
 ```
 
 | Test file | Covers |
@@ -419,7 +420,7 @@ pytest tests/ -v    # 137 tests, all passing
 | RQ3 | How to predict possession danger? | In play, only modestly: ROC AUC 0.66 (all snapshots) to 0.74 (one random snapshot per possession), about +0.02 to +0.04 over a ball-position baseline; XGBoost and GRU are indistinguishable.  Full-possession models are retrospective upper bounds: XGB 0.957, GRU 0.957, logit-mean ensemble 0.977 (corrected labels) |
 | RQ4 | Which events matter most? | Cross-fitted LOO attribution (EXP-031): median Gini of |LOO| 0.48 (0.63 dangerous, 0.43 safe); the model leans on shots, goalkeeper/block/clearance events (defending-team evidence) and possessing-team carries/receipts in proportion; the earlier in-sample Gini 0.495 and "dribble 64.4%" are superseded |
 | RQ5 | Player-level attribution? | Partly: 623 players have >= 100 possessing-team events; the ranking is reasonably stable (split-half Spearman 0.62, cross-seed 0.89) but mostly reflects player role, so it is for shortlists to inspect, not for ranking (the old 453-player in-sample leaderboard is superseded) |
-| RQ6 | GNN vs. tabular? | Unverified: the 0.841 vs 0.845 near-parity used the self-determining label, and the GNN could not be re-run here (no `torch_geometric`, no saved checkpoint) |
+| RQ6 | GNN vs. tabular? | **No.**  Corrected label, graph-only PassFrameGNN vs XGBoost event+360 on the identical 360 test subset: ROC AUC 0.595 [0.578, 0.606] vs 0.715 [0.697, 0.734] (difference -0.1209 [-0.1379, -0.1033]); the GNN beats the `end_x` baseline (0.530 [0.502, 0.551]) but not the event models.  The earlier near-parity (0.841 vs 0.845) was original label only and is superseded |
 
 ---
 
@@ -440,7 +441,7 @@ StatsBomb standard: **120 × 80 metres**.  x: own goal (0) → opponent goal (12
 7. Full-possession v2 scores are retrospective upper bounds because some features summarise the completed possession.
 8. Evaluation is held-out, not causal.
 9. The test split is 15 matches; intervals are match-level bootstrap and are wide.
-10. The GNN results (PassFrameGNN) were not reproduced in this environment, and the `threat_gain` zone-value map still averages over opponent events in their own frame.
+10. The original PassFrameGNN checkpoint was never committed, so the old 0.841 / 0.834 results cannot be reproduced; the retrained graph-only GNN (EXP-032) is a new model, trained on 360 World Cup passes only.  The `threat_gain` zone-value map still averages over opponent events in their own frame.
 11. Event-time models under-predict on the test split (calibration shifts with the base rate) and alert thresholds trade many false alarms for a high detection rate.
 
 ---

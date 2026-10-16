@@ -15,7 +15,7 @@
 > | 360 lift at pass level | +0.0014 ROC AUC ("statistically positive") | +0.0021 [-0.0010, +0.0055] on the original label; +0.0015 [-0.0036, +0.0070] on the corrected label (first correction said +0.0050; superseded, it used the broken `possession_length`) | **Holds (marginal); "statistically positive" withdrawn** |
 > | Pass-level headline | 0.881 | 0.881 on a label that `end_x` alone predicts at 0.800; 0.728 on `progression_beyond_pass_k` (`end_x` alone 0.543; first correction said 0.718, before the `possession_length` fix) | **Corrected** |
 > | Possession retrospective | XGB 0.9505, GRU 0.9524, ensemble 0.9650 | Like-for-like retrain on corrected labels: XGB 0.957, GRU 0.957, logit-mean ensemble 0.977 | **Holds** |
-> | GNN vs tabular near-parity | 0.841 vs 0.845 (360 subset) | Not re-runnable here (no `torch_geometric`, no checkpoint); used the self-determining label | **Unverified** |
+> | GNN vs tabular near-parity | 0.841 vs 0.845 (360 subset; original label only, superseded) | Retrained on the corrected label (graph-only, EXP-032): GNN 0.595 [0.578, 0.606] vs XGBoost event+360 0.715 [0.697, 0.734] on the identical 360 test subset; difference -0.1209 [-0.1379, -0.1033] | **Withdrawn / replaced: the GNN does not beat XGBoost** |
 >
 > The four defects: (1) `parse_possessions.py`, `possession_attribution.py` and `early_features.py` each defined a different event-type mapping (now one enum, `src/data/event_types.py`); (2) "first f% of events" needs the possession length, which alone gives AUC 0.683, and 21-59% of dangerous prefixes already contained the outcome; (3) the defending team's events were used in the wrong coordinate frame, so 765 of 5,589 `poss_dangerous` positives (13.7%) were spurious; (4) the pass label counted the receipt of the pass itself.
 >
@@ -323,12 +323,12 @@ Label prevalence (`poss_dangerous`): ~25%.
 | LogReg + isotonic | event (27) | val | 0.768 | — | — | — |
 | **XGBoost** | **event (27)** | **test** | **0.881** | **0.891** | **0.130** | **0.024** |
 | XGBoost | event+360 (41) | test | 0.882 | 0.892 | 0.129 | — |
-| PassFrameGNN | graph | val (360) | 0.841 | — | — | — |
+| PassFrameGNN (original label only, superseded) | graph | val (360) | 0.841 | — | — | — |
 
 **Key findings:**
 - XGBoost (event-only): 0.881 AUC with excellent calibration (ECE 0.024)
 - 360 geometry: +0.001 AUC — practically negligible (*on the self-determining label; +0.0021 [-0.0010, +0.0055] after the `possession_length` fix, and +0.0015 [-0.0036, +0.0070] on the corrected label, see the correction above*)
-- GNN: near-parity (0.841) with XGBoost on same 360 subset (*unverified: used the self-determining label and could not be re-run*)
+- GNN: near-parity (0.841) with XGBoost on same 360 subset (*original label only, superseded; unreproducible, the saved output says 0.834; see EXP-032: on the corrected label the graph-only GNN scores 0.595 [0.578, 0.606] vs 0.715 [0.697, 0.734] for XGBoost event+360*)
 - Linear→non-linear gap: +9 AUC points (LogReg → XGBoost)
 
 **Top SHAP features:** goal_dist_gain, end_x, x_gain, pass_length, dist_to_goal_end
@@ -369,7 +369,7 @@ Label prevalence (`poss_dangerous`): ~25%.
 |----|-----------|---------|---------------|
 | H1 | 360 geometry improves prediction | **Rejected (marginal)** | +0.002 [-0.001, +0.006] on the original label (0.881 → 0.883), +0.0015 [-0.004, +0.007] on the corrected label; small, ROC AUC intervals include zero |
 | H2 | Non-linear > linear | **Supported** | +9 AUC points (LogReg 0.768 → XGBoost 0.881) |
-| H3 | GNN outperforms tabular | **Not supported (unverified)** | GNN 0.841 vs XGBoost 0.845 on same 360 subset, using the self-determining label; not re-run |
+| H3 | GNN outperforms tabular | **Not supported** | (EXP-032, corrected label: GNN 0.595 [0.578, 0.606] vs XGBoost event+360 0.715 [0.697, 0.734]; original: GNN 0.841 vs XGBoost 0.845 on same 360 subset, using the self-determining label; not re-run |
 | H4 | Multitask > single-task | **Inconclusive** | EXP-007 partial; controlled comparison not completed |
 
 **Detailed v1 hypothesis evidence:**
@@ -379,6 +379,8 @@ Label prevalence (`poss_dangerous`): ~25%.
 
 > **H2** — Logistic regression: 0.768 AUC.  XGBoost: 0.881 AUC.  Delta: +0.113.
 > The 9 AUC-point gap demonstrates that non-linear interactions among event features (e.g., pass_length × end_x, angle × under_pressure) are essential.  The strongest features (goal_dist_gain, end_x, x_gain) interact multiplicatively rather than additively.
+
+> **Superseded (EXP-032).**  The H3 evidence below is original label only and could not be reproduced (no checkpoint; the saved output says 0.834).  Retrained on the corrected label as a graph-only model (8 node features, no pass-destination information): On the identical 360 test subset (3,736 passes, 9 World Cup 2022 matches) the graph-only PassFrameGNN scores ROC AUC 0.595 [0.578, 0.606] against 0.715 [0.697, 0.734] for XGBoost event+360; the paired difference is -0.1209 [-0.1379, -0.1033], so the GNN is clearly worse.  It beats the `end_x`-only baseline (0.530 [0.502, 0.551]; paired difference +0.0646 [+0.0501, +0.0845]).  The GNN does not outperform tabular.
 
 > **H3** — PassFrameGNN (3× GraphSAGE, 64 hidden): 0.841 val AUC on 360-subset.  XGBoost on same subset: 0.845 val AUC.
 > The GNN achieves near-parity, confirming that spatial player graphs carry equivalent signal to hand-engineered geometry features.  However, the GNN does not exceed the tabular model, likely due to dataset size (~11K 360-available passes) and the effectiveness of the existing tabular feature engineering.
@@ -567,7 +569,7 @@ LOO attribution: median Gini 0.495 (moderate concentration).  2–3 pivotal even
 Yes.  LOO attribution per event mapped to `player_sequence` produces domain-consistent 453-player leaderboard.
 
 ### RQ6 — Can GNN outperform tabular?
-Near-parity, not outperformance, *on the original self-determining label*: GNN (0.841 val) ≈ XGBoost (0.845 val on same 360 subset).  **Unverified:** the GNN could not be re-run (no `torch_geometric`, no saved checkpoint) and has not been evaluated on `progression_beyond_pass_k`.
+**No.**  Original label (superseded): near-parity, GNN 0.841 vs XGBoost 0.845 on the validation 360 subset (unreproducible; the saved output says 0.834).  Corrected label, graph-only GNN vs XGBoost on the identical 360 test subset (EXP-032): 0.595 [0.578, 0.606] vs 0.715 [0.697, 0.734] ROC AUC, difference -0.1209 [-0.1379, -0.1033]; the GNN does beat the `end_x` baseline (0.530 [0.502, 0.551]), so freeze-frame geometry alone carries some signal, but far less than event attributes.
 
 ---
 
@@ -786,6 +788,6 @@ The system bridges the gap between raw event data and tactical decision-making �
 - [x] v2/v3 XGBoost hyperparameters centralised in `configs/model_possession.yaml`
 - [x] CLI pipeline (`frame2threat`) registered in `pyproject.toml`
 - [x] Training scripts for GRU and v3 XGBoost models (`src/models/`)
-- [x] 137/137 tests passing (CI coverage floor 33%)
+- [x] 146/146 tests passing (CI coverage floor 33%)
 - [x] All notebooks executed end-to-end (NB01–NB10)
 - [x] 49 figures saved in `reports/figures/`
