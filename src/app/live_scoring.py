@@ -106,7 +106,6 @@ def score_stream(
 ) -> dict:
     """Score each event of a possession; returns steps, threshold and warnings."""
     meta = load_meta(root)
-    thr = float(threshold if threshold is not None else meta[f"{model}_threshold"])
     arr, warns = events_to_arrays(
         events,
         origin=origin,
@@ -114,6 +113,21 @@ def score_stream(
         minute=minute,
         median_dt=float(meta.get("median_inter_event_seconds", 2.0)),
     )
+    return score_arrays(arr, root, model=model, threshold=threshold, warnings=warns)
+
+
+def score_arrays(
+    arr: PossessionArrays,
+    root: Path,
+    *,
+    model: str = "gru",
+    threshold: float | None = None,
+    warnings: list[str] | None = None,
+) -> dict:
+    """Score a prepared :class:`PossessionArrays` event by event (step ``t`` uses events ``0..t``)."""
+    meta = load_meta(root)
+    thr = float(threshold if threshold is not None else meta[f"{model}_threshold"])
+    warns = list(warnings or [])
     if model == "gru":
         import torch
 

@@ -899,6 +899,9 @@ Corrected retrain on the frame-corrected labels (EXP-023), test possessions:
 
 ## V2 hypothesis verdicts
 
+> **STALE, SUPERSEDED IN PART (audit of 2026-10-30).**  Items quoting the 453-player leaderboard, Gini 0.495, "final-third entries, through balls and pre-shot carries", the 0.841-vs-0.845 GNN near-parity, or any v3 fraction-based number are withdrawn.  Current answers: README "Research questions and answers", EXP-031 (attribution) and EXP-032/033 (GNN, pass model).  Kept as historical record.
+
+
 | Hypothesis | Statement | Verdict | Key evidence |
 |-----------|-----------|---------|--------------|
 | H1 | Possession-level danger correlates with pass-level DP | **Supported** | Team-level rank correlation confirmed |
@@ -909,6 +912,9 @@ Corrected retrain on the frame-corrected labels (EXP-023), test possessions:
 ---
 
 ## V2 research question answers
+
+> **STALE, SUPERSEDED IN PART (audit of 2026-10-30).**  Items quoting the 453-player leaderboard, Gini 0.495, "final-third entries, through balls and pre-shot carries", the 0.841-vs-0.845 GNN near-parity, or any v3 fraction-based number are withdrawn.  Current answers: README "Research questions and answers", EXP-031 (attribution) and EXP-032/033 (GNN, pass model).  Kept as historical record.
+
 
 **RQ3 — How should possession-level danger be defined and predicted?**
 We define `poss_dangerous = poss_has_shot OR poss_entered_box`.  XGBoost on 41 aggregated features achieves 0.950 ROC AUC; PossessionGRU on raw event sequences achieves 0.952.  The ensemble reaches 0.965.  Possession-level prediction is highly effective because the full sequence of events within a possession provides stronger signal than any single pass.
@@ -922,6 +928,9 @@ Yes.  Using LOO attribution per event combined with the `player_sequence` column
 ---
 
 ## Combined research question answers (v1 + v2)
+
+> **STALE, SUPERSEDED IN PART (audit of 2026-10-30).**  Items quoting the 453-player leaderboard, Gini 0.495, "final-third entries, through balls and pre-shot carries", the 0.841-vs-0.845 GNN near-parity, or any v3 fraction-based number are withdrawn.  Current answers: README "Research questions and answers", EXP-031 (attribution) and EXP-032/033 (GNN, pass model).  Kept as historical record.
+
 
 1. **Does 360 positional context improve prediction over event-only baselines?**
    Marginally.  Event+360 XGBoost improves ROC AUC by +0.0014 [-0.0011, +0.0038] over event-only (0.882 vs 0.881) on the original label and +0.0050 [-0.0011, +0.0106] on the corrected `progression_beyond_pass_k` (EXP-025).  The 360 freeze-frame geometry features add a small signal whose ROC AUC interval includes zero.  Event features — particularly `goal_dist_gain`, `end_x`, `x_gain` — already capture most of the predictive information.

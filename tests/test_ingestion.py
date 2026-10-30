@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from src.data.parse_events import parse_events
 from src.data.parse_360 import parse_360_frames, get_frame_summary
@@ -105,7 +104,6 @@ def _make_raw_frames(event_ids: list[str], seed: int = 1) -> pd.DataFrame:
 
 def _make_raw_lineups(seed: int = 2) -> pd.DataFrame:
     """Minimal raw lineups DataFrame."""
-    rng = np.random.default_rng(seed)
     rows = []
     for team_id in [1, 2]:
         for i in range(11):
@@ -213,7 +211,6 @@ class TestBuildPassInstances:
         """has_360 column is boolean and correctly populated."""
         result, _ = self._build()
         assert "has_360" in result.columns
-        valid_vals = {True, False, None, np.nan}
         assert result["has_360"].dtype == bool or result["has_360"].isin([True, False]).all()
 
     def test_no_duplicate_event_uuids(self):

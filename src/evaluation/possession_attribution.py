@@ -33,11 +33,14 @@ from __future__ import annotations
 import json
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
 import torch
+
+if TYPE_CHECKING:
+    from src.models.gru_possession import PossessionGRU
 
 from src.data.event_types import EventType
 from src.data.event_types import label as type_label
@@ -471,5 +474,5 @@ if __name__ == "__main__":
     print("\nBuilding player attribution summary (sample 200) …")
     sample = poss.sample(200, random_state=42)
     summary = player_attribution_summary(sample, gru, min_touches=3, verbose=True)
-    print(f"\nTop 10 players by mean LOO attribution:")
+    print("\nTop 10 players by mean LOO attribution:")
     print(summary.head(10).to_string(index=False))

@@ -1,4 +1,4 @@
-.PHONY: pipeline pipeline-smoke store store-smoke reproduce reproduce-smoke
+.PHONY: pipeline pipeline-smoke store store-smoke reproduce reproduce-smoke test lint verify demo
 
 pipeline:
 	python scripts/run_pipeline.py --verbose
@@ -17,3 +17,15 @@ reproduce:
 
 reproduce-smoke:
 	python scripts/run_pipeline.py --smoke --synthetic --output-dir data/repro/v1_smoke
+
+test:
+	pytest -q
+
+lint:
+	ruff check src tests scripts
+
+verify:
+	python scripts/verify_artefacts.py
+
+demo:
+	python scripts/make_demo_evidence.py

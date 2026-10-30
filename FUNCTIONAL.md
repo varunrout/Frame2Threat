@@ -1,3 +1,5 @@
+> **Historical (pre-correction) review.**  Its statements about the 0.847 v3 number, 453 players and GNN near-parity are withdrawn; see `reports/audit/final_audit_2026-10.md` for the current state.
+
 # Frame2Threat - Functional Completeness Plan
 
 ## 1. Coherence verdict

@@ -33,7 +33,6 @@ from src.data.event_types import EventType
 from src.features.possession_features import (
     build_tabular_features,
     PITCH_LENGTH,
-    PITCH_WIDTH,
 )
 
 
@@ -264,7 +263,7 @@ def build_prefix_sequence_tensors(
 
     Useful for training prefix-specific GRU models.
     """
-    from src.features.possession_features import build_sequence_tensors, N_SEQ_FEAT
+    from src.features.possession_features import build_sequence_tensors
 
     if frac >= 1.0:
         return build_sequence_tensors(poss_df, max_seq_len=max_seq_len)

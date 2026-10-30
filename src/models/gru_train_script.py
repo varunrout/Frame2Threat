@@ -12,12 +12,11 @@ import sys, warnings, json
 sys.path.insert(0, ".")
 warnings.filterwarnings("ignore")
 
-import numpy as np
 import pandas as pd
 import torch
 import yaml
 from pathlib import Path
-from sklearn.metrics import roc_auc_score, average_precision_score, classification_report
+from sklearn.metrics import average_precision_score, classification_report
 
 from src.data.parse_possessions import load_possession_sequences
 from src.features.possession_features import build_sequence_tensors, build_tabular_features
@@ -147,6 +146,6 @@ results_path.write_text(json.dumps(results, indent=2))
 print("Updated models/results_summary.json")
 
 xgb = results.get("xgboost_poss_dangerous", {}).get("test_roc_auc", "N/A")
-print(f"\nv2 Summary:")
+print("\nv2 Summary:")
 print(f"  XGBoost possession tabular : {xgb}")
 print(f"  GRU     possession sequence: {round(test_auc, 4)}")

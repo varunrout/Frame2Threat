@@ -418,7 +418,7 @@ def main() -> None:
     verdict = ci("GNN - XGB_event360", "roc_auc")
     beats = verdict[1] > 0
     worse = verdict[2] < 0
-    sentence = (
+    _sentence = (  # computed but not written to the report
         "The GNN is **better** than XGBoost event+360 on ROC AUC (interval above zero)."
         if beats
         else (

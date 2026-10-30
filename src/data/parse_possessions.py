@@ -408,7 +408,7 @@ if __name__ == "__main__":
         "poss_bypassed_lines",
         "poss_recycled",
     ]
-    print(f"Label rates:")
+    print("Label rates:")
     for col in label_cols:
         if col not in poss.columns:
             continue

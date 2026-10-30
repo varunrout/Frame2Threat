@@ -12,7 +12,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 try:
-    from mplsoccer import Pitch, VerticalPitch
+    from mplsoccer import Pitch, VerticalPitch  # noqa: F401
 
     _MPLSOCCER_AVAILABLE = True
 except ImportError:  # pragma: no cover

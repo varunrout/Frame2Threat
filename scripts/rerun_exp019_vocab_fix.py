@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.data.event_types import label as type_label
 from src.data.parse_possessions import load_possession_sequences
 from src.evaluation.early_evaluation import (
-    max_delta_event_type_distribution,
     tipping_event_type_distribution,
     tipping_point_analysis,
 )

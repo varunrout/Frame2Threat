@@ -23,7 +23,6 @@ tipping_point_analysis(poss_df, gru_model, threshold)
 from __future__ import annotations
 
 import json
-import warnings
 from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
@@ -88,7 +87,6 @@ def prefix_gru_auc_curve(
     -------
     pd.DataFrame with columns: frac, n_poss, roc_auc, pr_auc
     """
-    from src.evaluation.possession_attribution import cumulative_danger_scores
 
     gru_model.eval()
 

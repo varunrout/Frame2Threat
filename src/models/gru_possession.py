@@ -14,9 +14,10 @@ Architecture
 
 from __future__ import annotations
 
+import numpy as np
 import torch
 import torch.nn as nn
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from torch.nn.utils.rnn import pack_padded_sequence
 
 
 class PossessionGRU(nn.Module):
@@ -109,7 +110,6 @@ def make_dataloader(
 ) -> "torch.utils.data.DataLoader":
     """Wrap arrays in a DataLoader.  If X_tab is supplied, each batch is
     (X_seq, lengths, y, X_tab); otherwise (X_seq, lengths, y)."""
-    import numpy as np
     from torch.utils.data import TensorDataset, DataLoader
 
     X_t = torch.from_numpy(X_seq.astype("float32"))
@@ -158,7 +158,6 @@ def evaluate(
     device: torch.device,
 ) -> tuple[float, "np.ndarray"]:
     """Return (roc_auc, proba_array)."""
-    import numpy as np
     from sklearn.metrics import roc_auc_score
 
     model.eval()
@@ -218,7 +217,6 @@ def train_gru(
     best_model : PossessionGRU (weights restored to best val AUC)
     history    : list of dicts with epoch-level metrics
     """
-    import numpy as np
 
     device = torch.device(device_str)
 

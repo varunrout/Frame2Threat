@@ -1,3 +1,5 @@
+> **Historical fix list.**  Current status of every item: `reports/audit/final_audit_2026-10.md`.
+
 # Frame2Threat - Finish-Off Plan
 
 Football | Substantial (80% complete) | Python, XGBoost, PyTorch, scikit-learn, pandas, SQLite, GitHub Actions

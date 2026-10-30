@@ -1,0 +1,42 @@
+$ frame2threat sample-possession -o demo_possession.json --dangerous 1 --seed 42
+Wrote held-out possession (match 3857266, possession 121, 27 events) -> C:\Users\USER\Documents\Python Projects\Frame2Threat\reports\repro\demo_possession.json
+
+
+$ frame2threat score-live demo_possession.json --model gru
+MODE: event-time (prospective) - step t uses events 0..t only; not a retrospective score.
+Possession: 27 events | model: gru (event-time) | alert threshold: 0.422
+P(danger) = P(shot or box entry by the possessing team in a later event | events so far)
+
+Step  Event Type       Team   P(danger)  Alert
+----------------------------------------------
+   1  Pass             own       0.2309     
+   2  Ball Receipt     own       0.2301     
+   3  Pass             own       0.2752     
+   4  Ball Receipt     own       0.2896     
+   5  Carry            own       0.3367     
+   6  Pass             own       0.3658     
+   7  Ball Receipt     own       0.3982     
+   8  Carry            own       0.4282  YES << TIPPING POINT
+   9  Pass             own       0.4372  YES <<
+  10  Ball Receipt     own       0.4820  YES <<
+  11  Carry            own       0.5101  YES <<
+  12  Pass             own       0.4929  YES <<
+  13  Ball Receipt     own       0.5213  YES <<
+  14  Carry            own       0.4144     
+  15  Pressure         opp       0.3593     
+  16  Pass             own       0.4852  YES <<
+  17  Ball Receipt     own       0.5484  YES <<
+  18  Carry            own       0.5861  YES <<
+  19  Dribble          own            -         << OUTCOME REALISED (shot/box entry)
+  20  Duel             opp            -       
+  21  Carry            opp            -       
+  22  Pressure         own            -       
+  23  Pass             opp            -       
+  24  Ball Receipt     opp            -       
+  25  Duel             own            -       
+  26  Pass             opp            -       
+  27  Ball Receipt     opp            -       
+
+Last scored step (18): P(danger) = 0.5861
+First alert at step 8 (Carry), 19 event(s) before the end of the input.
+

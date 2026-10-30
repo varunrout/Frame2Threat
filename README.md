@@ -15,9 +15,10 @@ A reproducible football analytics system that predicts whether a pass breaks a d
 ```bash
 git clone https://github.com/varunrout/Frame2Threat.git
 cd Frame2Threat
-pip install -e ".[dev]"
-streamlit run src/app/app.py   # app; demo mode labels random placeholder scores
-pytest tests/ -q               # run all tests (154 passing)
+pip install -e ".[dev]"        # CPU torch first if you want a small install: see REPRODUCIBILITY.md
+pytest tests/ -q               # 184 tests (real-data tests skip without data/ and models/)
+streamlit run src/app/app.py   # needs data/processed + models; otherwise an explicit DEMO MODE with random placeholders
+frame2threat sample-possession -o poss.json --dangerous 1 && frame2threat score-live poss.json   # CLI on a real held-out possession
 ```
 
 ---
@@ -350,6 +351,8 @@ frame2threat score-live possession_events.json --model xgb --threshold 0.40
 
 The JSON holds a list of event dicts in the `possession_sequences.parquet` `event_sequence` schema, optionally with `own_team` and `elapsed_seconds` per event (or an object with `event_sequence`, `origin`, `period`, `minute`).  Without `elapsed_seconds` the CLI warns and assumes the training-median spacing.  The default alert threshold is the validation-chosen value in `models/eventtime_meta.json`.  `score-batch` now scores every event of every possession with the event-time models (flat events parquet in, per-event XGBoost / GRU probabilities, alert flags and labels out; no `--fracs`); `train-early` is deprecated (it prints a message and exits) and the withdrawn fraction-based models live in `models/superseded/`.
 
+`score-live` and `score-batch` validate their input (schema, ranges, event ids) and exit with status 2 and an `error:` line on bad input or missing model files; `-o` writes `.csv` or `.parquet`; `frame2threat sample-possession` writes a real held-out test possession (with real elapsed seconds) as a ready-made input.  Every run prints that it is **event-time (prospective)**; retrospective scores are only in the attribution outputs.  Example session: `reports/repro/cli_demo.txt`; figure: `reports/figures/demo/possession_demo.png`.
+
 The CLI is registered as a console entry point in `pyproject.toml`.  Run `frame2threat --help` for full usage.
 
 ### App
@@ -358,12 +361,14 @@ The CLI is registered as a console entry point in `pyproject.toml`.  Run `frame2
 streamlit run src/app/app.py
 ```
 
+The **Possession Inspector** page scores real possessions (held-out test matches by default) with the event-time XGBoost/GRU, shows the danger curve, the alert threshold, the events where the prediction moved most, the ball path, and (separately labelled **retrospective**) the cross-fitted event attribution and a player table with a minimum-events slider and bootstrap intervals.  `FRAME2THREAT_PROCESSED_DIR` overrides the data folder.  `python scripts/verify_artefacts.py` re-scores the saved models and checks them against the reports (`reports/repro/artefact_check.md`).
+
 ---
 
 ## Testing
 
 ```bash
-pytest tests/ -v    # 154 tests, all passing
+pytest tests/ -v    # 184 tests, all passing locally (2026-10-30)
 ```
 
 | Test file | Covers |
@@ -411,6 +416,9 @@ pytest tests/ -v    # 154 tests, all passing
 | `reports/repro/` | Inspectable scored sample, model cards, and repro evidence pack |
 | `reports/experiment_log.md` | Experiment registry (EXP-001 to EXP-025; v3 entries marked superseded) |
 | `reports/final_report.md` | Comprehensive project report with all results |
+| `reports/audit/final_audit_2026-10.md` | Latest repository audit: defects fixed, acceptance status (PASS / PARTIAL / BLOCKED) |
+| `reports/attribution/ranking_change_audit.md` | Old vs corrected player ranking (partial; old table was never saved as data) |
+| `REPRODUCIBILITY.md` | Install, test, rebuild, train, verify, run |
 
 ---
 

@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from src.features.event_features import build_event_features
 from src.features.geometry_features import (

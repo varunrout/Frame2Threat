@@ -26,7 +26,6 @@ import sys, json, warnings
 sys.path.insert(0, ".")
 warnings.filterwarnings("ignore")
 
-import numpy as np
 import pandas as pd
 import yaml
 import joblib

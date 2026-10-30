@@ -11,7 +11,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 try:
-    import matplotlib
+    import matplotlib  # noqa: F401  (availability probe)
     import matplotlib.pyplot as plt
     from matplotlib.axes import Axes
 

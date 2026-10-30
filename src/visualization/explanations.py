@@ -158,7 +158,7 @@ def plot_shap_summary(
         fig = ax.get_figure()
 
     colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(ordered_names)))  # type: ignore[attr-defined]
-    bars = ax.barh(
+    ax.barh(
         range(len(ordered_names)),
         ordered_values[::-1],
         color=colors[::-1],

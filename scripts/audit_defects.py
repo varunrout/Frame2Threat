@@ -151,7 +151,7 @@ def audit_event_time(poss_keys: pd.DataFrame) -> list[str]:
     else:
         ev = pd.read_parquet(PROC / "events_parsed.parquet")
         arrs = build_possession_arrays(ev, poss_keys)
-    ys, ts, ns, realised, rows, pids = [], [], [], 0, 0, []
+    ys, ts, _ns, realised, rows, pids = [], [], [], 0, 0, []
     for i, p in enumerate(arrs):
         elig, lab, _ = snapshot_labels(p)
         d = danger_flags(p)

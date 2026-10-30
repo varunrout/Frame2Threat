@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from src.labels.line_break import compute_line_break_labels, _count_defenders_between
 from src.labels.dangerous_progression import compute_downstream_labels
