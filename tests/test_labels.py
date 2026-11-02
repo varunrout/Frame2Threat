@@ -10,7 +10,6 @@ from src.labels.dangerous_progression import compute_downstream_labels
 from src.labels.downstream_outcomes import compute_threat_gain
 from src.labels.validation_sampling import label_prevalence_table, label_sanity_checks
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

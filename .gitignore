@@ -39,6 +39,7 @@ data/store/
 *.pt
 *.pth
 *.onnx
+*.ubj
 
 # Parquet files (except fixtures used in tests)
 *.parquet

@@ -53,6 +53,22 @@ def own_team_flags(grp: pd.DataFrame) -> np.ndarray:
     return (grp["team_name"] == possessing_team(grp)).to_numpy()
 
 
+def possessing_team_at_start(grp: pd.DataFrame) -> str:
+    """Causal owner: provider possession team on the first event, else first actor.
+
+    Unlike the retrospective majority heuristic, appending future events cannot
+    change this choice. A live feed must supply its possession-team assignment.
+    """
+    first = grp.iloc[0]
+    owner = first.get("possession_team_name")
+    if owner is not None and pd.notna(owner):
+        return str(owner)
+    actor = first["team_name"]
+    if pd.isna(actor):
+        raise ValueError("first event must identify a possession team or acting team")
+    return str(actor)
+
+
 def to_possession_frame(x, y, own):
     """Express coordinates in the possessing team's frame (flip opponent events)."""
     x = np.asarray(x, dtype=float)

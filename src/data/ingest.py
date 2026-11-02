@@ -10,6 +10,7 @@ the statsbombpy API, persist to data/raw/, and return the DataFrame.
 from __future__ import annotations
 
 import logging
+import re
 import warnings
 from pathlib import Path
 from typing import Optional
@@ -125,7 +126,29 @@ def get_matches(competition_id: int, season_id: int) -> pd.DataFrame:
         raise
 
 
-def get_events(match_id: int) -> pd.DataFrame:
+def flatten_open_events(events: list[dict], match_id: int) -> pd.DataFrame:
+    """Flatten public event JSON to the fields consumed by parse_events."""
+    rows = []
+    for event in events:
+        row = {"match_id": match_id}
+        for key, value in event.items():
+            if isinstance(value, dict):
+                if "name" in value:
+                    row[key] = value["name"]
+                else:
+                    for subkey, subvalue in value.items():
+                        row[f"{key}_{subkey}"] = (
+                            subvalue["name"]
+                            if isinstance(subvalue, dict) and "name" in subvalue
+                            else subvalue
+                        )
+            else:
+                row[key] = value
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def get_events(match_id: int, *, revision: str | None = None) -> pd.DataFrame:
     """Return a flattened events DataFrame for a single match.
 
     Parameters
@@ -138,16 +161,28 @@ def get_events(match_id: int) -> pd.DataFrame:
     pd.DataFrame
         One row per event; all nested attributes are flattened by statsbombpy.
     """
-    cache = _raw_dir() / f"events_{match_id}.parquet"
+    if revision is not None and not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise ValueError("revision must be a full immutable Git commit SHA")
+    cache_dir = _raw_dir() / revision if revision else _raw_dir()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache = cache_dir / f"events_{match_id}.parquet"
     if cache.exists():
         logger.debug("Loading events from cache: %s", cache)
         return pd.read_parquet(cache)
 
     logger.info("Fetching events for match_id=%d", match_id)
     try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            df = _sb().events(match_id=match_id, flatten_attrs=True)
+        if revision:
+            import requests
+
+            url = f"https://raw.githubusercontent.com/statsbomb/open-data/{revision}/data/events/{match_id}.json"
+            response = requests.get(url, timeout=60)
+            response.raise_for_status()
+            df = flatten_open_events(response.json(), match_id)
+        else:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                df = _sb().events(match_id=match_id, flatten_attrs=True)
         df.to_parquet(cache, index=False)
         logger.debug("Saved %d events to %s", len(df), cache)
         return df

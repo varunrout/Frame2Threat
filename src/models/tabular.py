@@ -129,9 +129,9 @@ class TabularClassifier:
             self._feature_names = list(X_train.columns)
 
         y_arr = np.asarray(y_train)
-        pos = y_arr.sum()
+        pos = float(y_arr.sum())
         neg = len(y_arr) - pos
-        spw = neg / max(pos, 1)
+        spw = neg / max(pos, 1.0)
         logger.info(
             "[%s/%s] Fitting on %d samples (pos=%d, neg=%d, spw=%.2f)",
             self.task,
@@ -202,7 +202,7 @@ class TabularClassifier:
         names = (
             self._feature_names
             if self._feature_names is not None
-            else list(range(self._get_n_features()))
+            else [str(i) for i in range(self._get_n_features())]
         )
 
         if self.model_type == "logistic":
@@ -380,7 +380,7 @@ class MultitaskTabular:
 # ---------------------------------------------------------------------------
 
 
-def _lgbm_early_stop_callback(stopping_rounds: int):  # type: ignore[return]
+def _lgbm_early_stop_callback(stopping_rounds: int):
     """Return a LightGBM early-stopping callback if available."""
     try:
         from lightgbm import early_stopping

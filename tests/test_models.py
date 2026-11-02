@@ -12,7 +12,6 @@ import pytest
 from src.models.baselines import RuleBasedDangerousProgression, RuleBasedLineBreak
 from src.models.tabular import MultitaskTabular, TabularClassifier
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -185,3 +184,22 @@ class TestMultitaskTabular:
         for task, probs in preds.items():
             p = probs[:, 1] if np.asarray(probs).ndim == 2 else np.asarray(probs)
             assert (p >= 0).all() and (p <= 1).all(), f"{task} probs out of range"
+
+
+def test_gru_epoch_loss_uses_observed_batches():
+    """Dropped rows must not dilute reported training loss."""
+    torch = pytest.importorskip("torch")
+    from src.models.gru_possession import PossessionGRU, train_epoch
+    from torch.utils.data import DataLoader, TensorDataset
+
+    net = PossessionGRU(input_size=2, hidden_size=2, num_layers=1, dropout=0)
+    for parameter in net.parameters():
+        torch.nn.init.zeros_(parameter)
+    data = TensorDataset(torch.zeros(3, 2, 2), torch.tensor([2, 2, 2]), torch.zeros(3))
+    loader = DataLoader(data, batch_size=2, drop_last=True)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0)
+    loss = train_epoch(net, loader, optimizer, torch.nn.BCEWithLogitsLoss(), torch.device("cpu"))
+    assert loss == pytest.approx(np.log(2), rel=1e-6)
+    empty = DataLoader(data, batch_size=4, drop_last=True)
+    with pytest.raises(ValueError, match="no observations"):
+        train_epoch(net, empty, optimizer, torch.nn.BCEWithLogitsLoss(), torch.device("cpu"))

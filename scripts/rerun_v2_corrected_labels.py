@@ -154,7 +154,11 @@ def main() -> None:
             verbose=False,
         )
         pg = gru_probs(gru, d["test"])
-        for name, p in (("XGBoost", px), ("GRU", pg), ("Ensemble (logit mean)", logit_mean(px, pg))):
+        for name, p in (
+            ("XGBoost", px),
+            ("GRU", pg),
+            ("Ensemble (logit mean)", logit_mean(px, pg)),
+        ):
             rows.append(
                 {"models": f"retrained on {tag}", "test labels": tag, "model": name, **m(y, p)}
             )

@@ -1,0 +1,28 @@
+model,t,event,own,p_danger,alert,tipping,realised,threshold
+xgb,0,Pass,True,0.45950838923454285,True,True,False,0.3903678810626692
+xgb,1,Ball Receipt,True,0.44420838356018066,True,False,False,0.3903678810626692
+xgb,2,Pass,True,0.49259671568870544,True,False,False,0.3903678810626692
+xgb,3,Ball Receipt,True,0.4733015298843384,True,False,False,0.3903678810626692
+xgb,4,Carry,True,0.49764707684516907,True,False,False,0.3903678810626692
+xgb,5,Pass,True,0.5489223599433899,True,False,False,0.3903678810626692
+xgb,6,Ball Receipt,True,0.5128467082977295,True,False,False,0.3903678810626692
+xgb,7,Carry,True,0.5276141166687012,True,False,False,0.3903678810626692
+xgb,8,Pass,True,0.5301340818405151,True,False,False,0.3903678810626692
+xgb,9,Ball Receipt,True,0.5599024295806885,True,False,False,0.3903678810626692
+xgb,10,Carry,True,0.5794603228569031,True,False,False,0.3903678810626692
+xgb,11,Pass,True,0.5682763457298279,True,False,False,0.3903678810626692
+xgb,12,Ball Receipt,True,0.5876759886741638,True,False,False,0.3903678810626692
+xgb,13,Carry,True,0.6021263003349304,True,False,False,0.3903678810626692
+xgb,14,Pressure,False,0.5197771787643433,True,False,False,0.3903678810626692
+xgb,15,Pass,True,0.6118816137313843,True,False,False,0.3903678810626692
+xgb,16,Ball Receipt,True,0.6318928599357605,True,False,False,0.3903678810626692
+xgb,17,Carry,True,0.6540074348449707,True,False,False,0.3903678810626692
+xgb,18,Dribble,True,,False,False,True,0.3903678810626692
+xgb,19,Duel,False,,False,False,False,0.3903678810626692
+xgb,20,Carry,False,,False,False,False,0.3903678810626692
+xgb,21,Pressure,True,,False,False,False,0.3903678810626692
+xgb,22,Pass,False,,False,False,False,0.3903678810626692
+xgb,23,Ball Receipt,False,,False,False,False,0.3903678810626692
+xgb,24,Duel,True,,False,False,False,0.3903678810626692
+xgb,25,Pass,False,,False,False,False,0.3903678810626692
+xgb,26,Ball Receipt,False,,False,False,False,0.3903678810626692

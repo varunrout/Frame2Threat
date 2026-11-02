@@ -25,10 +25,12 @@ from pathlib import Path
 import numpy as np
 
 from src.data.event_types import EventType
+from src.app.validation import InputError, validate_event_list
 from src.data.event_types import label as type_label
 from src.data.possession_frame import PITCH_LENGTH, PITCH_WIDTH
 from src.features.event_time import (
     FEATURE_NAMES,
+    N_SEQ_NUMERIC,
     PossessionArrays,
     danger_flags,
     sequence_inputs,
@@ -36,6 +38,39 @@ from src.features.event_time import (
 )
 
 DEFAULT_ORIGIN = "Regular Play"
+
+
+def arrays_to_payload(arr: PossessionArrays) -> dict:
+    """Lossless JSON input in the actor coordinate frame used during training."""
+
+    def finite(value):
+        return float(value) if np.isfinite(value) else None
+
+    events = []
+    for t in range(arr.n):
+        events.append(
+            {
+                "type_id": int(arr.type_id[t]),
+                "loc_x_norm": finite(arr.x[t] / PITCH_LENGTH),
+                "loc_y_norm": finite(arr.y[t] / PITCH_WIDTH),
+                "end_x_norm": finite(arr.end_x[t] / PITCH_LENGTH),
+                "end_y_norm": finite(arr.end_y[t] / PITCH_WIDTH),
+                "pass_length_norm": finite(arr.pass_length[t] / 60.0),
+                "under_pressure": float(arr.under_pressure[t]),
+                "own_team": int(arr.own[t]),
+                "elapsed_seconds": float(arr.abs_s[t] - arr.abs_s[0]),
+            }
+        )
+    return {
+        "source": "StatsBomb Open Data, held-out test-split possession (not used for training)",
+        "match_id": arr.match_id,
+        "possession_id": arr.possession_id,
+        "team": arr.team,
+        "origin": arr.origin,
+        "period": arr.period,
+        "minute": arr.minute,
+        "event_sequence": events,
+    }
 
 
 def events_to_arrays(
@@ -48,17 +83,23 @@ def events_to_arrays(
 ) -> tuple[PossessionArrays, list[str]]:
     """Convert schema dicts to :class:`PossessionArrays`; returns (arrays, warnings)."""
     warns: list[str] = []
+    validate_event_list(events)
+    if period not in (1, 2, 3, 4, 5) or not np.isfinite(minute) or minute < 0:
+        raise InputError("period must be 1..5 and minute must be finite and non-negative")
+    if not isinstance(origin, str):
+        raise InputError("origin must be a string")
+
+    def number(e, key):
+        value = e.get(key)
+        return np.nan if value is None else float(value)
+
     n = len(events)
     type_id = np.array([int(e.get("type_id", 0)) for e in events], dtype=int)
-    x = np.array([float(e.get("loc_x_norm", 0.0)) * PITCH_LENGTH for e in events])
-    y = np.array([float(e.get("loc_y_norm", 0.0)) * PITCH_WIDTH for e in events])
+    x = np.array([number(e, "loc_x_norm") * PITCH_LENGTH for e in events])
+    y = np.array([number(e, "loc_y_norm") * PITCH_WIDTH for e in events])
     is_pass = type_id == int(EventType.PASS)
-    end_x = np.where(
-        is_pass, [float(e.get("end_x_norm", 0.0)) * PITCH_LENGTH for e in events], np.nan
-    )
-    end_y = np.where(
-        is_pass, [float(e.get("end_y_norm", 0.0)) * PITCH_WIDTH for e in events], np.nan
-    )
+    end_x = np.where(is_pass, [number(e, "end_x_norm") * PITCH_LENGTH for e in events], np.nan)
+    end_y = np.where(is_pass, [number(e, "end_y_norm") * PITCH_WIDTH for e in events], np.nan)
     own = np.array([float(e.get("own_team", 1.0)) >= 0.5 for e in events])
     if all("elapsed_seconds" in e for e in events):
         abs_s = np.array([float(e["elapsed_seconds"]) for e in events])
@@ -83,7 +124,7 @@ def events_to_arrays(
         end_y=end_y,
         under_pressure=np.array([float(e.get("under_pressure", 0.0)) for e in events]),
         pass_length=np.where(
-            is_pass, [float(e.get("pass_length_norm", 0.0)) * 60.0 for e in events], np.nan
+            is_pass, [number(e, "pass_length_norm") * 60.0 for e in events], np.nan
         ),
         abs_s=abs_s,
     )
@@ -126,7 +167,11 @@ def score_arrays(
 ) -> dict:
     """Score a prepared :class:`PossessionArrays` event by event (step ``t`` uses events ``0..t``)."""
     meta = load_meta(root)
+    if model not in ("gru", "xgb"):
+        raise InputError("model must be gru or xgb")
     thr = float(threshold if threshold is not None else meta[f"{model}_threshold"])
+    if not np.isfinite(thr) or not 0 <= thr <= 1:
+        raise InputError("threshold must be finite and between 0 and 1")
     warns = list(warnings or [])
     if model == "gru":
         import torch
@@ -134,6 +179,8 @@ def score_arrays(
         from src.models.event_time import EventTimeGRU
 
         ck = torch.load(root / "models" / "eventtime_gru.pt", map_location="cpu")
+        if ck["n_numeric"] != N_SEQ_NUMERIC:
+            raise InputError("GRU feature schema differs from inference; retrain the model")
         net = EventTimeGRU(ck["n_numeric"], embed_dim=ck["embed_dim"], hidden_size=ck["hidden"])
         net.load_state_dict(ck["state_dict"])
         net.eval()
@@ -143,13 +190,15 @@ def score_arrays(
                 0
             ].numpy()
     else:
-        import joblib
         import pandas as pd
+        from src.models.event_time_artifacts import load_event_time_xgb
 
-        art = joblib.load(root / "models" / "eventtime_xgboost.joblib")
+        art = load_event_time_xgb(root, meta)
         feats = pd.DataFrame(snapshot_features(arr), columns=FEATURE_NAMES)
         probs = art["model"].predict_proba(feats[art["features"]])[:, 1]
 
+    if not np.isfinite(probs).all() or np.any((probs < 0) | (probs > 1)):
+        raise InputError("model returned invalid probabilities")
     danger = danger_flags(arr)
     realised_at = int(np.argmax(danger)) if danger.any() else None
     steps = []

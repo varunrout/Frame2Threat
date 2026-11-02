@@ -1,12 +1,12 @@
 # Reproducibility guide
 
 Python 3.11 or 3.12 (`.python-version` pins 3.11).  Data: StatsBomb Open Data only (public, licence in README).
-Everything under `data/` and the `*.joblib` / `*.pt` model files is gitignored and regenerated.
+Research data and the `*.joblib` / `*.pt` / `*.ubj` model files are gitignored and regenerated.
 
 ## 1. Install
 
 ```bash
-python -m pip install torch --index-url https://download.pytorch.org/whl/cpu   # CPU torch (any torch >= 2 works)
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -e ".[dev]"
 # or, locked:  poetry install --extras dev
 ```
@@ -17,10 +17,32 @@ python -m pip install -e ".[dev]"
 
 ```bash
 ruff check src tests scripts      # pyflakes gate used by CI
-pytest -q                          # 184 tests locally; tests needing gitignored data/models skip on a bare checkout
+pytest -q                          # tests needing gitignored data/models skip on a bare checkout
 ```
 
 ## 3. Acquire data and rebuild features (needs network)
+
+For the maintained event-time task, use the fixed research manifest:
+
+```bash
+python scripts/prepare_event_time.py --output-dir data/processed
+python scripts/run_event_time.py --data-dir data/processed --threads 2
+python scripts/evaluate_event_time.py --data-dir data/processed
+```
+
+`prepare_event_time.py --small --output-dir data/repro/small` builds nine genuine matches
+for execution checks. It is not a headline reproduction. Preparation uses cached raw
+events when available; otherwise StatsBomb downloads require network access. Choose a
+new output directory if research inputs already exist. Training can be isolated using
+`--output-dir data/repro/new_run`; set `FRAME2THREAT_ROOT` to that run root for CLI scoring.
+Model metadata records input hashes, package versions, seed and schema. Fixed seeds
+do not guarantee identical numbers across different numerical-library versions.
+New XGBoost runs write native `eventtime_xgboost.ubj` for portable loading; the CLI
+prefers it and retains `.joblib` compatibility for old runs. The repair verified
+predictions across XGBoost 3.0.5 and 3.4.1. A clean CPU installation was also tested;
+its complete dependency list is `reports/repro/repair_retrain/fresh_environment.txt`.
+
+The following older commands build the separate pass-level research store:
 
 ```bash
 python scripts/run_pipeline.py --verbose      # StatsBomb Open Data -> data/repro/v1 (pass-level, event-only)

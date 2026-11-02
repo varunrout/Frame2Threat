@@ -30,6 +30,12 @@ REQUIRED_EVENT_COLUMNS = (
     "team_name",
     "location_x",
     "location_y",
+    "timestamp",
+    "under_pressure",
+    "play_pattern_name",
+    "pass_end_x",
+    "pass_end_y",
+    "pass_length",
 )
 
 EVENT_TIME_ARTEFACTS = ("eventtime_meta.json", "eventtime_xgboost.joblib", "eventtime_gru.pt")
@@ -54,7 +60,8 @@ def require_artefacts(root: Path, model: str = "both") -> None:
     """
     needed = ["eventtime_meta.json"]
     if model in ("xgb", "both"):
-        needed.append("eventtime_xgboost.joblib")
+        if not (root / "models/eventtime_xgboost.ubj").is_file():
+            needed.append("eventtime_xgboost.joblib")
     if model in ("gru", "both"):
         needed.append("eventtime_gru.pt")
     missing = [n for n in needed if not (root / "models" / n).exists()]
@@ -86,31 +93,45 @@ def validate_event_list(events: object) -> list[dict]:
                 raise InputError(f"{where}: missing required key '{key}'")
         try:
             tid = int(e["type_id"])
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             raise InputError(f"{where}: 'type_id' must be an integer") from None
+        if isinstance(e["type_id"], bool) or str(e["type_id"]) != str(tid):
+            raise InputError(f"{where}: 'type_id' must be an integer")
         if tid not in known:
             raise InputError(f"{where}: unknown type_id {tid}; valid ids are {sorted(known)}")
-        for key in NORMALISED_KEYS:
+        for key in (*NORMALISED_KEYS, "own_team", "under_pressure"):
             if key in e:
+                if e[key] is None and key in NORMALISED_KEYS:
+                    continue  # missing coordinates retain training-time missingness
                 try:
                     v = float(e[key])
                 except (TypeError, ValueError):
                     raise InputError(f"{where}: '{key}' must be a number") from None
-                if not (0.0 <= v <= 1.0) or math.isnan(v):
-                    raise InputError(f"{where}: '{key}'={e[key]} outside the normalised range [0, 1]")
+                upper = math.inf if key == "pass_length_norm" else 1.0
+                if not math.isfinite(v) or not (0.0 <= v <= upper):
+                    raise InputError(
+                        f"{where}: '{key}'={e[key]} outside the normalised range [0, 1]"
+                    )
+                if key in ("own_team", "under_pressure") and v not in (0.0, 1.0):
+                    raise InputError(f"{where}: '{key}' must be 0 or 1")
         if "elapsed_seconds" in e:
             try:
                 t = float(e["elapsed_seconds"])
             except (TypeError, ValueError):
                 raise InputError(f"{where}: 'elapsed_seconds' must be a number") from None
-            if math.isnan(t) or t < last_t:
-                raise InputError(f"{where}: 'elapsed_seconds' must be non-decreasing")
+            if not math.isfinite(t) or t < 0 or t < last_t:
+                raise InputError(
+                    f"{where}: 'elapsed_seconds' must be non-decreasing, finite and non-negative"
+                )
             last_t = t
     return events
 
 
 def validate_events_table(df) -> None:
     """Validate the flat events table accepted by ``score-batch``."""
+    import numpy as np
+    import pandas as pd
+
     missing = [c for c in REQUIRED_EVENT_COLUMNS if c not in df.columns]
     if missing:
         raise InputError(
@@ -120,3 +141,19 @@ def validate_events_table(df) -> None:
         )
     if len(df) == 0:
         raise InputError("events table is empty")
+    for column in ("match_id", "possession_id", "index", "period", "minute", "second"):
+        values = pd.to_numeric(df[column], errors="coerce")
+        if not np.isfinite(values.to_numpy(dtype=float)).all():
+            raise InputError(f"events table: '{column}' must contain finite numbers")
+    if df.duplicated(["match_id", "index"]).any():
+        raise InputError("events table contains duplicate event indices within a match")
+    for column in ("location_x", "location_y", "pass_end_x", "pass_end_y", "pass_length"):
+        values = pd.to_numeric(df[column], errors="coerce")
+        if (df[column].notna() & values.isna()).any() or np.isinf(
+            values.to_numpy(dtype=float)
+        ).any():
+            raise InputError(
+                f"events table: '{column}' must contain finite numbers or missing values"
+            )
+    if pd.to_timedelta(df["timestamp"].astype(str), errors="coerce").isna().any():
+        raise InputError("events table contains invalid timestamp values")

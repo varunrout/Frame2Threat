@@ -11,6 +11,35 @@ from src.data.parse_lineups import parse_lineups
 from src.data.join_pass_frames import build_pass_instances
 
 
+def test_malformed_boolean_values_are_missing():
+    from src.data.parse_events import _bool_col
+
+    values = _bool_col(pd.Series([True, False, 1, 0, "1", np.inf, -np.inf, {}, None]))
+    assert values.iloc[:5].tolist() == [True, False, True, False, True]
+    assert values.iloc[5:].isna().all()
+
+
+def test_native_json_preserves_possession_owner_and_pass_attributes():
+    from src.data.ingest import flatten_open_events
+
+    raw = [
+        {
+            "id": "event",
+            "type": {"name": "Pass"},
+            "team": {"name": "B"},
+            "possession_team": {"name": "A"},
+            "location": [30, 40],
+            "pass": {"end_location": [60, 30], "recipient": {"name": "Player"}, "length": 32},
+        }
+    ]
+    flat = flatten_open_events(raw, 1)
+    parsed = parse_events(flat)
+    assert parsed.possession_team_name.iloc[0] == "A"
+    assert parsed.team_name.iloc[0] == "B"
+    assert parsed.pass_end_x.iloc[0] == 60
+    assert parsed.pass_recipient_name.iloc[0] == "Player"
+
+
 # ---------------------------------------------------------------------------
 # Helpers to build raw StatsBomb-like data
 # ---------------------------------------------------------------------------

@@ -75,7 +75,7 @@ _FRAMES_PATH = _PROCESSED_DIR / "frames_360.parquet"
 # ---------------------------------------------------------------------------
 
 
-@st.cache_data(show_spinner="Loading pass data…")  # type: ignore[misc]
+@st.cache_data(show_spinner="Loading pass data…")
 def _load_pass_instances() -> pd.DataFrame | None:
     """Load pass_instances.parquet from data/processed/."""
     if _PASS_INSTANCES_PATH.exists():
@@ -86,7 +86,7 @@ def _load_pass_instances() -> pd.DataFrame | None:
     return None
 
 
-@st.cache_data(show_spinner="Loading 360 frame data…")  # type: ignore[misc]
+@st.cache_data(show_spinner="Loading 360 frame data…")
 def _load_frames() -> pd.DataFrame | None:
     """Load frames_360.parquet from data/processed/."""
     if _FRAMES_PATH.exists():
@@ -97,7 +97,7 @@ def _load_frames() -> pd.DataFrame | None:
     return None
 
 
-@st.cache_resource(show_spinner="Loading pass model…")  # type: ignore[misc]
+@st.cache_resource(show_spinner="Loading pass model…")
 def _load_model(name: str = pp.DEFAULT_MODEL) -> Any:
     """Load a saved pass-progression model (default: ``pass_progression_event_only.joblib``).
 
@@ -106,7 +106,7 @@ def _load_model(name: str = pp.DEFAULT_MODEL) -> Any:
     return pp.load_model(name, _MODELS_DIR)
 
 
-@st.cache_data(show_spinner=False)  # type: ignore[misc]
+@st.cache_data(show_spinner=False)
 def _load_geometry_cache() -> pd.DataFrame | None:
     path = _PROCESSED_DIR / "geometry_features_v1.parquet"
     return pd.read_parquet(path) if path.exists() else None
@@ -304,6 +304,7 @@ def main() -> None:
         score_source = "demo_random"
         st.sidebar.warning("DEMO MODE: random placeholder scores.")
     else:
+        assert pass_df_real is not None and frames_df_real is not None
         pass_df = pass_df_real
         frames_df = frames_df_real
         try:
@@ -409,6 +410,9 @@ def main() -> None:
         label_to_uuid = dict(zip(event_labels, event_options))
 
         selected_label = st.selectbox("Select Pass Event (sorted by danger score)", event_labels)
+        if selected_label is None:
+            st.info("No passes available for this match.")
+            return
         selected_uuid = label_to_uuid[selected_label]
 
         event_row = match_df[match_df[uuid_col] == selected_uuid].iloc[0]
@@ -662,12 +666,13 @@ def main() -> None:
             )
             if not table.empty:
                 selected_player = st.selectbox("Pass map for player", table["player"].tolist())
-                try:
-                    fig_player = _render_player_profile(selected_player, pass_df, scores)
-                    st.pyplot(fig_player, use_container_width=True)
-                    plt.close(fig_player)
-                except Exception as exc:
-                    st.error(f"Player profile error: {exc}")
+                if selected_player is not None:
+                    try:
+                        fig_player = _render_player_profile(selected_player, pass_df, scores)
+                        st.pyplot(fig_player, use_container_width=True)
+                        plt.close(fig_player)
+                    except Exception as exc:
+                        st.error(f"Player profile error: {exc}")
 
         # Team profiles
         st.markdown("---")

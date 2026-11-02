@@ -1,0 +1,87 @@
+{
+  "formulation": "event-time hazard: P(shot or box entry in events t+1..n-1 | events 0..t, none yet)",
+  "schema_version": 1,
+  "features": [
+    "cur_x",
+    "cur_y",
+    "max_x_so_far",
+    "events_so_far",
+    "n_passes_so_far",
+    "n_carries_so_far",
+    "n_pressures_so_far",
+    "elapsed_s",
+    "cur_is_own",
+    "cur_type_unknown",
+    "cur_type_pass",
+    "cur_type_carry",
+    "cur_type_ball_receipt",
+    "cur_type_dribble",
+    "cur_type_shot",
+    "cur_type_pressure",
+    "cur_type_duel",
+    "cur_type_clearance",
+    "cur_type_interception",
+    "cur_type_block",
+    "cur_type_foul_committed",
+    "cur_type_foul_won",
+    "cur_type_goalkeeper",
+    "start_x",
+    "start_y",
+    "period",
+    "game_minute",
+    "origin_regular_play",
+    "origin_from_throw_in",
+    "origin_from_free_kick",
+    "origin_from_goal_kick",
+    "origin_from_corner",
+    "origin_from_kick_off",
+    "origin_from_keeper",
+    "origin_from_counter",
+    "origin_other"
+  ],
+  "n_seq_numeric": 22,
+  "seed": 42,
+  "versions": {
+    "numpy": "2.3.2",
+    "pandas": "2.3.2",
+    "torch": "2.9.0",
+    "xgboost": "3.0.5",
+    "scikit-learn": "1.7.1"
+  },
+  "input_sha256": {
+    "events_parsed.parquet": "d80801fe1c17a0582fb4571376951c01afdc449837234c8e1cb6ee41dbed455c",
+    "possession_sequences.parquet": "f7e2daed80c67f6067717aa291cfe23af4d789e2ea3e90786dcc2b3ffc4e007f",
+    "split_manifest.csv": "619eee972d2d1c38dbe42db9ae11ffe1a66307f615437e9ed14e9516ff415687"
+  },
+  "gru_threshold": 0.4221348464488983,
+  "xgb_threshold": 0.3913443386554718,
+  "threshold_rule": "score quantile on VALIDATION snapshots whose predicted-positive rate equals validation prevalence",
+  "median_inter_event_seconds": 0.717000000000553,
+  "tuned": {
+    "LR_xy": {
+      "C": 0.01,
+      "val_logloss": 0.612437188972571
+    },
+    "LR_len": {
+      "C": 0.01,
+      "val_logloss": 0.6334941877179231
+    },
+    "XGB_start": {
+      "max_depth": 3,
+      "min_child_weight": 1,
+      "n_estimators": 6,
+      "val_logloss": 0.6347572873459045
+    },
+    "XGB": {
+      "max_depth": 5,
+      "min_child_weight": 20,
+      "n_estimators": 55,
+      "val_logloss": 0.605976734606349
+    },
+    "GRU": {
+      "best_val_logloss": 0.6127177170137607,
+      "lr": 0.003,
+      "weight_decay": 0.0
+    }
+  }
+}

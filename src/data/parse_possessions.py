@@ -173,12 +173,13 @@ def _aggregate_possession(
     # --- identity ---
     own = own_team_flags(grp)  # possessing team's events (see possession_frame.py)
     team_name = possessing_team(grp)
-    period = int(first["period"])  # type: ignore[arg-type]
+    period = int(first["period"])
     origin = first["play_pattern_name"] if pd.notna(first["play_pattern_name"]) else "Unknown"
 
     # --- spatial ---
     fx, fy = to_possession_frame(
-        [first["location_x"], last["location_x"]], [first["location_y"], last["location_y"]],
+        [first["location_x"], last["location_x"]],
+        [first["location_y"], last["location_y"]],
         [own[0], own[-1]],
     )
     start_x, start_y = float(fx[0]), float(fy[0])
@@ -301,6 +302,7 @@ _SEQ_FIELDS = [
     "pass_length_norm",  # pass_length / 60 (max ~60 m)
     "minute_norm",  # minute / 90
 ]
+
 
 def _build_event_sequence(grp: pd.DataFrame, own: np.ndarray | None = None) -> list[dict]:
     """

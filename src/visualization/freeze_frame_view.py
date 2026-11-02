@@ -29,7 +29,7 @@ _OPPONENT_COLOR = "#e31a1c"  # red
 _KEEPER_COLOR = "#ffff33"  # yellow
 _PASSER_COLOR = "#33a02c"  # green star
 _ARROW_COLOR = "#ffffff"  # actual pass arrow
-_RANKED_CMAP = plt.cm.RdYlGn  # type: ignore[attr-defined]
+_RANKED_CMAP = plt.get_cmap("RdYlGn")
 
 
 def plot_freeze_frame(

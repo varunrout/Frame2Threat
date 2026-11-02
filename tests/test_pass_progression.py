@@ -70,7 +70,11 @@ def test_committed_artefacts_match_the_feature_builder_and_metadata():
     if not (only.exists() and full.exists()):
         pytest.skip("model artefacts not present (models/ is not committed)")
     m_only, m_360 = pp.load_model(pp.EVENT_ONLY), pp.load_model(pp.EVENT_360)
-    assert len(m_only.features) == 27 and m_only.features == m_360.features[:27] and len(m_360.features) == 41
+    assert (
+        len(m_only.features) == 27
+        and m_only.features == m_360.features[:27]
+        and len(m_360.features) == 41
+    )
     meta = json.loads(only.with_suffix(".json").read_text(encoding="utf-8"))
     assert meta["label"] == pp.LABEL and meta["features"] == m_only.features
     assert {"roc_auc", "avg_precision", "brier", "log_loss"} <= set(

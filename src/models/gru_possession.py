@@ -133,6 +133,7 @@ def train_epoch(
 ) -> float:
     model.train()
     total_loss = 0.0
+    n_observed = 0
     for batch in loader:
         if len(batch) == 4:
             X_b, L_b, y_b, T_b = batch
@@ -148,7 +149,10 @@ def train_epoch(
         nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimiser.step()
         total_loss += loss.item() * len(y_b)
-    return total_loss / len(loader.dataset)
+        n_observed += len(y_b)
+    if not n_observed:
+        raise ValueError("training loader contains no observations")
+    return total_loss / n_observed
 
 
 @torch.no_grad()

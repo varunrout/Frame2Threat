@@ -12,6 +12,8 @@ Usage:  python scripts/run_event_time.py [--n-boot 500] [--rebuild]
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib.metadata
 import json
 import pickle
 import sys
@@ -57,6 +59,7 @@ warnings.filterwarnings("ignore")
 PROC = Path("data/processed")
 OUT = Path("reports/event_time")
 SEED = 42
+THREADS = 2
 START_COLS = ["start_x", "start_y", "period", "game_minute", *ORIGIN_COLS]
 MODELS = ["LR_xy", "LR_len", "XGB_start", "XGB", "GRU"]
 DESCR = {
@@ -74,6 +77,8 @@ def load_split_ids() -> dict[str, np.ndarray]:
         for s in ("train", "val", "test")
     }
     manifest = pd.read_csv(PROC / "split_manifest.csv")
+    if manifest.match_id.duplicated().any() or not manifest.split.isin(ids).all():
+        raise ValueError("split manifest must assign each match exactly once to train/val/test")
     for s, v in ids.items():
         assert set(manifest.loc[manifest.split == s, "match_id"]) == set(v), f"split mismatch: {s}"
     return ids
@@ -117,7 +122,7 @@ def fit_xgb(Xtr, ytr, Xva, yva, cols):
                 eval_metric="logloss",
                 early_stopping_rounds=30,
                 random_state=SEED,
-                n_jobs=-1,
+                n_jobs=THREADS,
             )
             m.fit(Xtr[cols], ytr, eval_set=[(Xva[cols], yva)], verbose=False)
             v = m.best_score
@@ -218,15 +223,25 @@ def tipping(arrs, steps, thr, label):
 
 
 def main() -> None:
+    global PROC, OUT, THREADS
     ap = argparse.ArgumentParser()
     ap.add_argument("--n-boot", type=int, default=500)
     ap.add_argument("--rebuild", action="store_true")
+    ap.add_argument("--data-dir", type=Path, default=PROC)
+    ap.add_argument("--output-dir", type=Path, default=Path("."), help="Isolated run root")
+    ap.add_argument("--threads", type=int, default=2)
     args = ap.parse_args()
+    THREADS = args.threads
+    PROC = args.data_dir.resolve()
+    OUT = args.output_dir / "reports/event_time"
+    model_dir = args.output_dir / "models"
+    torch.set_num_threads(args.threads)
     OUT.mkdir(parents=True, exist_ok=True)
-    Path("models").mkdir(exist_ok=True)
+    model_dir.mkdir(parents=True, exist_ok=True)
 
     ids = load_split_ids()
-    arrs = get_arrays(args.rebuild)
+    # Always rebuild from source: unversioned pickle caches can silently retain old features.
+    arrs = get_arrays(True)
     snap = build_snapshot_table(arrs)
     elig = snap[~snap.terminal].reset_index(drop=True)
     term = snap[snap.terminal].reset_index(drop=True)
@@ -361,21 +376,48 @@ def main() -> None:
             "embed_dim": 8,
             "threshold": thr["GRU"],
         },
-        "models/eventtime_gru.pt",
+        model_dir / "eventtime_gru.pt",
     )
     joblib.dump(
         {"model": xgb, "features": FEATURE_NAMES, "threshold": thr["XGB"]},
-        "models/eventtime_xgboost.joblib",
+        model_dir / "eventtime_xgboost.joblib",
     )
-    Path("models/eventtime_meta.json").write_text(
+    # Native model IO preserves probability semantics across supported XGBoost versions.
+    xgb.save_model(model_dir / "eventtime_xgboost.ubj")
+    (model_dir / "eventtime_meta.json").write_text(
         json.dumps(
             {
                 "formulation": "event-time hazard: P(shot or box entry in events t+1..n-1 | events 0..t, none yet)",
+                "schema_version": 2,
+                "ownership": "provider possession_team on first event; fallback first actor (never whole-possession majority)",
+                "features": FEATURE_NAMES,
+                "n_seq_numeric": N_SEQ_NUMERIC,
+                "seed": SEED,
+                "versions": {
+                    p: importlib.metadata.version(p)
+                    for p in ("numpy", "pandas", "torch", "xgboost", "scikit-learn")
+                },
+                "input_sha256": {
+                    p: hashlib.sha256((PROC / p).read_bytes()).hexdigest()
+                    for p in (
+                        "events_parsed.parquet",
+                        "possession_sequences.parquet",
+                        "split_manifest.csv",
+                    )
+                },
                 "gru_threshold": thr["GRU"],
                 "xgb_threshold": thr["XGB"],
                 "threshold_rule": "score quantile on VALIDATION snapshots whose predicted-positive rate equals validation prevalence",
                 "median_inter_event_seconds": float(
-                    np.median(np.concatenate([np.diff(a.abs_s) for a in arrs if a.n > 1]))
+                    np.median(
+                        np.concatenate(
+                            [
+                                np.diff(a.abs_s)
+                                for a in arrs
+                                if a.n > 1 and a.match_id in ids["train"]
+                            ]
+                        )
+                    )
                 ),
                 "tuned": tuned,
             },

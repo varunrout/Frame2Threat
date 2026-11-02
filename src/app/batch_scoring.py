@@ -20,8 +20,10 @@ import numpy as np
 import pandas as pd
 
 from src.data.event_types import label as type_label
+from src.app.validation import InputError, validate_events_table
 from src.features.event_time import (
     FEATURE_NAMES,
+    N_SEQ_NUMERIC,
     build_possession_arrays,
     danger_flags,
     sequence_inputs,
@@ -48,14 +50,16 @@ COLUMNS = [
 
 def load_models(root: Path):
     """Return ``(xgb_artefact, gru_net, meta)`` from ``models/eventtime_*``."""
-    import joblib
     import torch
 
     from src.models.event_time import EventTimeGRU
+    from src.models.event_time_artifacts import load_event_time_xgb
 
     meta = json.loads((root / "models" / "eventtime_meta.json").read_text(encoding="utf-8"))
-    art = joblib.load(root / "models" / "eventtime_xgboost.joblib")
+    art = load_event_time_xgb(root, meta)
     ck = torch.load(root / "models" / "eventtime_gru.pt", map_location="cpu")
+    if list(art["features"]) != list(FEATURE_NAMES) or ck["n_numeric"] != N_SEQ_NUMERIC:
+        raise InputError("model feature schema differs from inference; retrain the models")
     net = EventTimeGRU(ck["n_numeric"], embed_dim=ck["embed_dim"], hidden_size=ck["hidden"])
     net.load_state_dict(ck["state_dict"])
     net.eval()
@@ -73,6 +77,7 @@ def score_events(
     """Score every event of (a sample of) the possessions in ``events_df``."""
     from src.models.event_time import SeqSample, predict_steps
 
+    validate_events_table(events_df)
     art, net, meta = load_models(root)
     if keys is None:
         sizes = events_df.groupby(["match_id", "possession_id"]).size().reset_index(name="n")
@@ -80,21 +85,29 @@ def score_events(
     if limit is not None and limit < len(keys):
         keys = keys.sample(limit, random_state=seed)
     arrs = build_possession_arrays(events_df, keys)
+    if not arrs:
+        return pd.DataFrame(columns=COLUMNS)
 
     feats = np.vstack([snapshot_features(p) for p in arrs])
     p_xgb_all = art["model"].predict_proba(
         pd.DataFrame(feats, columns=FEATURE_NAMES)[art["features"]]
     )[:, 1]
+    if not np.isfinite(p_xgb_all).all() or ((p_xgb_all < 0) | (p_xgb_all > 1)).any():
+        raise InputError("XGBoost returned invalid probabilities")
     samples = []
     for p in arrs:
         elig, lab, _ = snapshot_labels(p)
         tid, num = sequence_inputs(p)
         samples.append(SeqSample(tid, num, elig, int(lab[0])))
     p_gru = predict_steps(net, samples)
+    if any(not np.isfinite(pr).all() or ((pr < 0) | (pr > 1)).any() for pr in p_gru):
+        raise InputError("GRU returned invalid probabilities")
 
     frames = []
     off = 0
     thr_x, thr_g = float(meta["xgb_threshold"]), float(meta["gru_threshold"])
+    if not all(np.isfinite(t) and 0 <= t <= 1 for t in (thr_x, thr_g)):
+        raise InputError("model thresholds must be finite and between 0 and 1")
     for i, p in enumerate(arrs):
         n = p.n
         elig, lab, _ = snapshot_labels(p)

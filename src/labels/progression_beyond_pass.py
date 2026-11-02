@@ -98,7 +98,7 @@ def label_window(
             continue
         if bool(in_box(bx, by)) and not end_in_box:
             return 1
-        if end_known and bx >= ex + min_gain_m and zone_index(bx, by) > end_zone:
+        if end_zone is not None and bx >= ex + min_gain_m and zone_index(bx, by) > end_zone:
             return 1
     return 0
 
@@ -129,7 +129,7 @@ def compute_progression_beyond_pass(
     start = 0
     for b in boundaries:
         last_of_group[start:b] = b
-        start = b
+        start = int(b)
 
     typ = ev["type_name"].str.lower().to_numpy()
     team = ev["team_name"].to_numpy()

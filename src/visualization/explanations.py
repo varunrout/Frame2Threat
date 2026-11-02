@@ -157,7 +157,7 @@ def plot_shap_summary(
     else:
         fig = ax.get_figure()
 
-    colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(ordered_names)))  # type: ignore[attr-defined]
+    colors = plt.get_cmap("viridis")(np.linspace(0.2, 0.8, len(ordered_names)))
     ax.barh(
         range(len(ordered_names)),
         ordered_values[::-1],

@@ -82,7 +82,7 @@ def plot_pass_map(
     if color_col is not None and color_col in df.columns:
         values = df[color_col].values.astype(float)
         vmin, vmax = np.nanmin(values), np.nanmax(values)
-        cmap = plt.cm.RdYlGn  # type: ignore[attr-defined]
+        cmap = plt.get_cmap("RdYlGn")
         norm = plt.Normalize(vmin=vmin, vmax=vmax)
         colors = cmap(norm(values))
 
@@ -174,7 +174,7 @@ def plot_zone_heatmap(
             x0 = c * _ZONE_COL_WIDTH
             y0 = r * _ZONE_ROW_HEIGHT
             norm_val = (grid[r, c] - vmin) / max(vmax - vmin, 1e-9)
-            color = plt.cm.YlOrRd(norm_val)  # type: ignore[attr-defined]
+            color = plt.get_cmap("YlOrRd")(norm_val)
             rect = plt.Rectangle(
                 (x0, y0),
                 _ZONE_COL_WIDTH,
@@ -196,7 +196,7 @@ def plot_zone_heatmap(
             )
 
     sm = plt.cm.ScalarMappable(
-        cmap=plt.cm.YlOrRd,  # type: ignore[attr-defined]
+        cmap=plt.get_cmap("YlOrRd"),
         norm=plt.Normalize(vmin=vmin, vmax=vmax),
     )
     sm.set_array([])

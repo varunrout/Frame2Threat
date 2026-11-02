@@ -59,8 +59,19 @@ def steps_frame(res: dict, arr: PossessionArrays) -> pd.DataFrame:
     df["x"], df["y"] = arr.x, arr.y
     df["delta_p"] = df["p_danger"].diff()
     return df[
-        ["event_idx", "event", "own", "elapsed_s", "x", "y", "p_danger", "delta_p", "alert",
-         "tipping", "realised"]
+        [
+            "event_idx",
+            "event",
+            "own",
+            "elapsed_s",
+            "x",
+            "y",
+            "p_danger",
+            "delta_p",
+            "alert",
+            "tipping",
+            "realised",
+        ]
     ]
 
 
@@ -114,8 +125,17 @@ def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN0
     def _poss() -> pd.DataFrame:
         return pd.read_parquet(
             root / REQUIRED["possession table"],
-            columns=["match_id", "possession_id", "team_name", "period", "origin_type",
-                     "n_events", "poss_dangerous", "poss_has_shot", "poss_entered_box"],
+            columns=[
+                "match_id",
+                "possession_id",
+                "team_name",
+                "period",
+                "origin_type",
+                "n_events",
+                "poss_dangerous",
+                "poss_has_shot",
+                "poss_entered_box",
+            ],
         )
 
     @cache_resource(show_spinner="Loading event arrays…")
@@ -161,8 +181,14 @@ def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN0
     model_key = "gru" if model_name == "gru" else "xgb"
     res = score_arrays(arr, root, model=model_key)
     thr_default = float(res["threshold"])
-    thr = st.sidebar.slider("Alert threshold", 0.05, 0.95, round(thr_default, 2), 0.01,
-                            help="Default is the value chosen on validation data.")
+    thr = st.sidebar.slider(
+        "Alert threshold",
+        0.05,
+        0.95,
+        round(thr_default, 2),
+        0.01,
+        help="Default is the value chosen on validation data.",
+    )
     if abs(thr - round(thr_default, 2)) > 1e-9:
         res = score_arrays(arr, root, model=model_key, threshold=thr)
     df = steps_frame(res, arr)
@@ -191,7 +217,9 @@ def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN0
     if len(tip):
         ax.axvline(tip.event_idx.iloc[0] + 1, color="orange", ls=":", label="first alert")
     if len(real):
-        ax.axvline(real.event_idx.iloc[0] + 1, color="black", ls="-", lw=1, label="outcome realised")
+        ax.axvline(
+            real.event_idx.iloc[0] + 1, color="black", ls="-", lw=1, label="outcome realised"
+        )
     ax.set_ylim(0, 1)
     ax.set_xlabel("Event in possession")
     ax.set_ylabel("P(shot or box entry later)")
@@ -209,7 +237,9 @@ def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN0
     st.dataframe(
         keys[["event_idx", "event", "own", "elapsed_s", "p_danger", "delta_p"]]
         .assign(event_idx=lambda d: d.event_idx + 1)
-        .rename(columns={"event_idx": "event #", "own": "possessing team", "delta_p": "Δ P(danger)"})
+        .rename(
+            columns={"event_idx": "event #", "own": "possessing team", "delta_p": "Δ P(danger)"}
+        )
         .round(3),
         hide_index=True,
         use_container_width=True,
@@ -225,17 +255,30 @@ def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN0
         norm = plt.Normalize(0, 1)
         for a, b in zip(own.itertuples(), own.iloc[1:].itertuples()):
             p = a.p_danger if a.p_danger == a.p_danger else 1.0
-            ax.annotate("", xy=(b.x, b.y), xytext=(a.x, a.y),
-                        arrowprops=dict(arrowstyle="->", color=plt.cm.RdYlGn_r(norm(p)), lw=1.6))
-        ax.scatter(own.x.iloc[0], own.y.iloc[0], s=110, c="white", edgecolors="black", zorder=5,
-                   label="start")
+            ax.annotate(
+                "",
+                xy=(b.x, b.y),
+                xytext=(a.x, a.y),
+                arrowprops=dict(arrowstyle="->", color=plt.get_cmap("RdYlGn_r")(norm(p)), lw=1.6),
+            )
+        ax.scatter(
+            own.x.iloc[0],
+            own.y.iloc[0],
+            s=110,
+            c="white",
+            edgecolors="black",
+            zorder=5,
+            label="start",
+        )
         if len(real):
             r = df.iloc[int(real.event_idx.iloc[0])]
             ax.scatter(r.x, r.y, s=170, c="gold", edgecolors="black", zorder=6, label="outcome")
         ax.legend(loc="upper left", fontsize=8)
         st.pyplot(fig, use_container_width=True)
         plt.close(fig)
-        st.caption("Arrow colour = the model's P(danger) when the arrow starts (green low, red high).")
+        st.caption(
+            "Arrow colour = the model's P(danger) when the arrow starts (green low, red high)."
+        )
     except ImportError:
         st.info("mplsoccer is not installed; pitch plot skipped.")
 
@@ -252,15 +295,20 @@ def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN0
     st.subheader("Retrospective attribution (not a forecast)")
     att_path = root / "data/processed/attribution_events.parquet"
     if not att_path.exists():
-        st.info("Cross-fitted attribution file not found (`data/processed/attribution_events.parquet`).")
+        st.info(
+            "Cross-fitted attribution file not found (`data/processed/attribution_events.parquet`)."
+        )
     else:
+
         @cache_data(show_spinner=False)
         def _att() -> pd.DataFrame:
             return pd.read_parquet(att_path)
 
         a = possession_attribution(_att(), int(row.match_id), int(row.possession_id))
         if a.empty:
-            st.info("No attribution for this possession (it is outside the first 40 events or too short).")
+            st.info(
+                "No attribution for this possession (it is outside the first 40 events or too short)."
+            )
         else:
             fig, ax = plt.subplots(figsize=(10, 2.8))
             colors = np.where(a.possessing_team_event, "steelblue", "lightgray")

@@ -34,22 +34,28 @@ jobs:
       - name: "Lint (syntax errors and pyflakes)"
         run: ruff check src tests scripts
 
-      - name: "Format check (advisory, code base predates black)"
-        continue-on-error: true
-        run: black --check src tests
+      - name: "Format check"
+        run: black --check src tests scripts
 
-      - name: "Type check (advisory)"
-        continue-on-error: true
+      - name: "Type check"
         run: mypy src
 
       - name: "Tests with coverage (real-data tests skip when data/ and models/ are absent)"
-        run: pytest --cov=src --cov-report=term-missing --cov-fail-under=40
+        run: pytest --cov=src --cov-report=term-missing --cov-fail-under=50
 
       - name: "CLI smoke"
         run: |
           frame2threat --help
           python -m src.data.build_store --synthetic --output-dir data/store/smoke
           python scripts/run_pipeline.py --smoke --synthetic --output-dir data/repro/v1_smoke
+
+      - name: "Build and install wheel outside checkout"
+        run: |
+          python -m pip wheel . --no-deps -w dist
+          python -m venv /tmp/frame2threat-wheel --system-site-packages
+          /tmp/frame2threat-wheel/bin/python -m pip install --no-deps --force-reinstall dist/*.whl
+          cd /tmp
+          /tmp/frame2threat-wheel/bin/frame2threat --help
 
   lockfile:
     name: Lock file is current

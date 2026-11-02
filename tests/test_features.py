@@ -10,7 +10,6 @@ from src.features.geometry_features import (
 )
 from src.features.graph_builder import build_graph
 
-
 # ---------------------------------------------------------------------------
 # Event features
 # ---------------------------------------------------------------------------

@@ -104,7 +104,9 @@ def test_score_live_prints_mode_and_exports(tiny_root, tmp_path, monkeypatch, ca
         ("badschema", "missing required key"),
     ],
 )
-def test_score_live_fails_clearly(tiny_root, tmp_path, monkeypatch, capsys, setup, message):  # noqa: F811
+def test_score_live_fails_clearly(
+    tiny_root, tmp_path, monkeypatch, capsys, setup, message  # noqa: F811
+):
     path = tmp_path / "in.json"
     if setup == "badjson":
         path.write_text("{oops", encoding="utf-8")
@@ -170,6 +172,8 @@ def test_sample_possession_uses_only_test_matches(tmp_path, monkeypatch):
             "event_sequence": seq,
         }
     ).to_parquet(proc / "possession_sequences.parquet")
+    events = _events().assign(match_id=2, minute=68)
+    events.to_parquet(proc / "events_parsed.parquet", index=False)
     pd.DataFrame({"match_id": [1, 2], "split": ["train", "test"]}).to_csv(
         proc / "split_manifest.csv", index=False
     )
@@ -177,6 +181,7 @@ def test_sample_possession_uses_only_test_matches(tmp_path, monkeypatch):
     _run(monkeypatch, tmp_path, ["sample-possession", "-o", str(out), "--dangerous", "1"])
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["match_id"] == 2 and payload["retrospective_label_poss_dangerous"] == 1
+    assert payload["minute"] == 68
     validate_event_list(payload["event_sequence"])
 
 

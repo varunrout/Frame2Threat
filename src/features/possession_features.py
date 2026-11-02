@@ -193,7 +193,7 @@ def build_sequence_tensors(
         if isinstance(seq_raw, str):
             seq: list[dict] = json.loads(seq_raw)
         else:
-            seq = seq_raw  # type: ignore[assignment]
+            seq = seq_raw
 
         T = min(len(seq), max_seq_len)
         lengths[i] = T

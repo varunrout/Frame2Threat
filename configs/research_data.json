@@ -1,0 +1,5 @@
+{
+  "repository": "https://github.com/statsbomb/open-data",
+  "revision": "3bfbffe1de5750ebd47d770be0bb924a10cde54f",
+  "reason": "Snapshot preceding the May 2026 event-data refresh; full-cohort verification is recorded in REPAIR_REPORT.md."
+}

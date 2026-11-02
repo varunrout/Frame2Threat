@@ -11,7 +11,6 @@ import argparse
 import json
 import logging
 import sqlite3
-import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -331,4 +330,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

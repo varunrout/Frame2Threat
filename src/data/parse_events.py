@@ -75,10 +75,12 @@ def _bool_col(series: pd.Series) -> pd.Series:
             return False
         if v is pd.NA or v is None or (isinstance(v, float) and np.isnan(v)):
             return pd.NA
+        if not isinstance(v, (str, int, float, np.integer, np.floating)):
+            return pd.NA
         try:
-            int_v = int(v)  # type: ignore[arg-type]
+            int_v = int(v)
             return bool(int_v)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return pd.NA
 
     return series.map(_to_bool).astype("boolean")
@@ -134,6 +136,11 @@ def parse_events(raw_events_df: pd.DataFrame) -> pd.DataFrame:
     # In the flat statsbombpy format these are already plain strings
     out["type_name"] = df.get("type", pd.Series(dtype=object)).astype(object)
     out["team_name"] = df.get("team", pd.Series(dtype=object)).astype(object)
+    out["possession_team_name"] = (
+        df.get("possession_team", pd.Series(pd.NA, index=df.index, dtype=object))
+        .map(lambda value: value.get("name") if isinstance(value, dict) else value)
+        .astype(object)
+    )
     out["player_name"] = df.get("player", pd.Series(dtype=object)).astype(object)
     out["play_pattern_name"] = df.get("play_pattern", pd.Series(dtype=object)).astype(object)
     out["possession_id"] = df.get("possession", pd.Series(dtype="Int64")).astype("Int64")

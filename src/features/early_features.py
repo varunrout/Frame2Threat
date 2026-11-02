@@ -35,7 +35,6 @@ from src.features.possession_features import (
     PITCH_LENGTH,
 )
 
-
 #: parse_possessions stores pass_length / 60 in ``pass_length_norm``.
 PASS_LENGTH_NORM = 60.0
 
@@ -129,6 +128,7 @@ def build_start_features(poss_df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # 2. Cumulative features  (EXP-017)
 # ---------------------------------------------------------------------------
+
 
 def _recompute_aggregates_from_prefix(
     poss_df: pd.DataFrame,

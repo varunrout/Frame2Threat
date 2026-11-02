@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import warnings
 from pathlib import Path
@@ -45,6 +46,8 @@ warnings.filterwarnings("ignore")
 
 def _project_root() -> Path:
     """Walk up from this file to find the project root (contains src/)."""
+    if os.environ.get("FRAME2THREAT_ROOT"):
+        return Path(os.environ["FRAME2THREAT_ROOT"]).resolve()
     p = Path(__file__).resolve().parent
     while p != p.parent:
         if (p / "src").is_dir() and (p / "configs").is_dir():
@@ -100,42 +103,27 @@ def cmd_sample_possession(args: argparse.Namespace) -> None:
     manifest = pd.read_csv(split_path)
     test_ids = set(manifest.loc[manifest["split"] == "test", "match_id"])
     pool = poss[
-        poss["match_id"].isin(test_ids)
-        & poss["n_events"].between(args.min_events, args.max_events)
+        poss["match_id"].isin(test_ids) & poss["n_events"].between(args.min_events, args.max_events)
     ]
     if args.dangerous is not None:
         pool = pool[pool["poss_dangerous"] == int(args.dangerous)]
     if pool.empty:
         raise InputError("no held-out possession satisfies the requested filters")
     row = pool.sample(1, random_state=args.seed).iloc[0]
-    sequence = json.loads(row["event_sequence"])
-    arrays_path = root / "data" / "processed" / "event_time_arrays.pkl"
-    timed = False
-    if arrays_path.exists():  # attach real elapsed seconds so no spacing has to be assumed
-        import pickle
+    from src.app.live_scoring import arrays_to_payload
+    from src.features.event_time import build_possession_arrays
 
-        arr = next(
-            (
-                a
-                for a in pickle.loads(arrays_path.read_bytes())
-                if a.match_id == int(row["match_id"]) and a.possession_id == int(row["possession_id"])
-            ),
-            None,
-        )
-        if arr is not None and arr.n == len(sequence):
-            for e, t in zip(sequence, arr.abs_s - arr.abs_s[0]):
-                e["elapsed_seconds"] = round(float(t), 3)
-            timed = True
-    payload = {
-        "source": "StatsBomb Open Data, held-out test-split possession (not used for training)",
-        "match_id": int(row["match_id"]),
-        "possession_id": int(row["possession_id"]),
-        "team": row["team_name"],
-        "origin": row["origin_type"],
-        "period": int(row["period"]),
-        "retrospective_label_poss_dangerous": int(row["poss_dangerous"]),
-        "event_sequence": sequence,
-    }
+    events_path = require_file(root / "data/processed/events_parsed.parquet", "parsed events")
+    events = pd.read_parquet(
+        events_path,
+        filters=[
+            ("match_id", "==", int(row["match_id"])),
+            ("possession_id", "==", int(row["possession_id"])),
+        ],
+    )
+    arr = build_possession_arrays(events)[0]
+    payload = arrays_to_payload(arr)
+    payload["retrospective_label_poss_dangerous"] = int(row["poss_dangerous"])
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=1), encoding="utf-8")
@@ -143,8 +131,6 @@ def cmd_sample_possession(args: argparse.Namespace) -> None:
         f"Wrote held-out possession (match {payload['match_id']}, possession "
         f"{payload['possession_id']}, {len(payload['event_sequence'])} events) -> {out}"
     )
-    if not timed:
-        print("Note: no elapsed_seconds in the sample; score-live warns and assumes the median spacing.")
 
 
 # ---------------------------------------------------------------------------
@@ -172,15 +158,21 @@ def cmd_score_batch(args: argparse.Namespace) -> None:
     except Exception as exc:  # unreadable / not a parquet file
         raise InputError(f"cannot read {path} as parquet: {exc}") from exc
     validate_events_table(events)
-    print("MODE: event-time (prospective) - step t uses events 0..t only; not a retrospective score.")
+    print(
+        "MODE: event-time (prospective) - step t uses events 0..t only; not a retrospective score."
+    )
     result = score_events(events, root, limit=args.limit, seed=args.seed)
     out_path = args.output or "event_time_scores.csv"
     _write_table(result, out_path)
     n_poss = result.groupby(["match_id", "possession_id"]).ngroups
     print(f"Saved {len(result):,} event rows for {n_poss:,} possessions -> {out_path}")
-    print("Columns: p_xgb / p_gru = P(shot or box entry by the possessing team in a later event | events so far);")
+    print(
+        "Columns: p_xgb / p_gru = P(shot or box entry by the possessing team in a later event | events so far);"
+    )
     print("alert_* uses the validation-chosen thresholds in models/eventtime_meta.json;")
-    print("label_danger_after is defined only where eligible (no shot / box entry yet, not the last event).")
+    print(
+        "label_danger_after is defined only where eligible (no shot / box entry yet, not the last event)."
+    )
 
     lab = result[result["eligible"]]
     if lab["label_danger_after"].nunique() > 1:
@@ -188,7 +180,9 @@ def cmd_score_batch(args: argparse.Namespace) -> None:
 
         y = lab["label_danger_after"].astype(int)
         print(f"Eligible snapshots: {len(lab):,}  prevalence {y.mean():.3f}")
-        print(f"  XGBoost ROC AUC {roc_auc_score(y, lab['p_xgb']):.4f}   GRU ROC AUC {roc_auc_score(y, lab['p_gru']):.4f}")
+        print(
+            f"  XGBoost ROC AUC {roc_auc_score(y, lab['p_xgb']):.4f}   GRU ROC AUC {roc_auc_score(y, lab['p_gru']):.4f}"
+        )
         print(
             "  (the models were trained on the train matches; use only held-out matches for evaluation)"
         )
@@ -234,10 +228,16 @@ def cmd_score_live(args: argparse.Namespace) -> None:
         period=period,
         minute=minute,
     )
-    print("MODE: event-time (prospective) - step t uses events 0..t only; not a retrospective score.")
-    print(f"Possession: {len(events)} events | model: {res['model']} (event-time) | "
-          f"alert threshold: {res['threshold']:.3f}")
-    print("P(danger) = P(shot or box entry by the possessing team in a later event | events so far)")
+    print(
+        "MODE: event-time (prospective) - step t uses events 0..t only; not a retrospective score."
+    )
+    print(
+        f"Possession: {len(events)} events | model: {res['model']} (event-time) | "
+        f"alert threshold: {res['threshold']:.3f}"
+    )
+    print(
+        "P(danger) = P(shot or box entry by the possessing team in a later event | events so far)"
+    )
     for w in res["warnings"]:
         print(f"WARNING: {w}")
     print()
@@ -251,16 +251,20 @@ def cmd_score_live(args: argparse.Namespace) -> None:
             print(f"{s['t'] + 1:4d}  {s['event']:<16} {team:<5} {'-':>10}  {'':<5}{note}")
             continue
         mark = " << TIPPING POINT" if s["tipping"] else (" <<" if s["alert"] else "")
-        print(f"{s['t'] + 1:4d}  {s['event']:<16} {team:<5} {s['p']:10.4f}  "
-              f"{'YES' if s['alert'] else '   '}{mark}")
+        print(
+            f"{s['t'] + 1:4d}  {s['event']:<16} {team:<5} {s['p']:10.4f}  "
+            f"{'YES' if s['alert'] else '   '}{mark}"
+        )
     print()
     tip = next((s for s in res["steps"] if s["tipping"]), None)
     scored = [s for s in res["steps"] if s["p"] is not None]
     if scored:
         print(f"Last scored step ({scored[-1]['t'] + 1}): P(danger) = {scored[-1]['p']:.4f}")
     if tip:
-        print(f"First alert at step {tip['t'] + 1} ({tip['event']}), "
-              f"{len(events) - tip['t'] - 1} event(s) before the end of the input.")
+        print(
+            f"First alert at step {tip['t'] + 1} ({tip['event']}), "
+            f"{len(events) - tip['t'] - 1} event(s) before the end of the input."
+        )
     else:
         print("No alert triggered.")
     if args.output:
@@ -318,7 +322,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_batch.add_argument(
         "-o", "--output", type=str, default=None, help="Output CSV (default: event_time_scores.csv)"
     )
-    p_batch.add_argument("--limit", type=int, default=None, help="Score a random sample of N possessions")
+    p_batch.add_argument(
+        "--limit", type=int, default=None, help="Score a random sample of N possessions"
+    )
     p_batch.add_argument("--seed", type=int, default=42, help="Seed for --limit sampling")
     p_batch.set_defaults(func=cmd_score_batch)
 
@@ -342,7 +348,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Alert threshold (default: value chosen on validation, models/eventtime_meta.json)",
     )
     p_live.add_argument(
-        "-o", "--output", type=str, default=None, help="Also write per-event scores (.csv or .parquet)"
+        "-o",
+        "--output",
+        type=str,
+        default=None,
+        help="Also write per-event scores (.csv or .parquet)",
     )
     p_live.set_defaults(func=cmd_score_live)
 

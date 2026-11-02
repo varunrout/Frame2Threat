@@ -28,7 +28,7 @@ from src.data.possession_frame import (
     PITCH_LENGTH,
     PITCH_WIDTH,
     is_danger_event,
-    possessing_team,
+    possessing_team_at_start,
     to_possession_frame,
 )
 
@@ -137,7 +137,7 @@ def build_possession_arrays(
     df["_up"] = df["under_pressure"].fillna(False).astype(bool).astype(float)
     out: list[PossessionArrays] = []
     for (mid, pid), grp in df.groupby(["match_id", "possession_id"], sort=False):
-        team = possessing_team(grp)
+        team = possessing_team_at_start(grp)
         first = grp.iloc[0]
         origin = first["play_pattern_name"]
         out.append(
