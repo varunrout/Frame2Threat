@@ -97,6 +97,13 @@ def _load_frames() -> pd.DataFrame | None:
     return None
 
 
+@st.cache_data(show_spinner="Scoring 50k passes with the trained model (first load only)")  # type: ignore[misc]
+def _score_all_passes() -> np.ndarray:
+    """Pass-progression probabilities for every pass; cached so page switches stay instant."""
+    pm = _load_model()
+    return pm.predict_proba_frame(pp.build_feature_frame(_load_pass_instances()))
+
+
 @st.cache_resource(show_spinner="Loading pass model…")
 def _load_model(name: str = pp.DEFAULT_MODEL) -> Any:
     """Load a saved pass-progression model (default: ``pass_progression_event_only.joblib``).
@@ -263,7 +270,7 @@ def _render_shap_summary(
 def main() -> None:
     """Entry point for the Streamlit Frame2Threat application."""
     st.set_page_config(
-        page_title="Frame2Threat – Pass Analysis",
+        page_title="Frame2Threat | Football danger analytics",
         page_icon="⚽",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -272,10 +279,10 @@ def main() -> None:
     # ----------------------------------------------------------------
     # Header
     # ----------------------------------------------------------------
-    st.title("⚽ Frame2Threat – Pass Danger Analysis")
-    st.markdown(
-        "Explore predicted pass danger scores, freeze frames, and player profiles "
-        "powered by StatsBomb 360 data."
+    st.title("⚽ Frame2Threat")
+    st.caption(
+        "Football danger analytics on StatsBomb Open Data: in-play possession danger forecasting "
+        "and pass-level progression scores.  Research demo, held-out matches by default."
     )
 
     # ----------------------------------------------------------------
@@ -309,7 +316,7 @@ def main() -> None:
         frames_df = frames_df_real
         try:
             pm = _load_model()
-            scores = pm.predict_proba_frame(pp.build_feature_frame(pass_df))
+            scores = _score_all_passes()
         except (
             Exception
         ) as exc:  # real data is loaded: show the cause, never substitute placeholders
@@ -338,17 +345,22 @@ def main() -> None:
     page = st.sidebar.radio(
         "View",
         options=[
+            "🏃 Possession Inspector",
             "🎯 Event Inspector",
             "📊 Match Overview",
             "👤 Player Profile",
             "📈 Model Diagnostics",
-            "🏃 Possession Inspector",
         ],
         index=0,
     )
 
+    # The pass-page match selector is irrelevant to the possession page (it has its own).
+    if page == "🏃 Possession Inspector":
+        selected_match_label = "All Passes"
+        match_df = pass_df.reset_index(drop=True)
+        match_scores = scores
     # Match selector – build human-readable "Team A vs Team B (ID)" labels
-    if "match_id" in pass_df.columns and "team_name" in pass_df.columns:
+    elif "match_id" in pass_df.columns and "team_name" in pass_df.columns:
         _match_label_map: dict = {}
         for _mid, _grp in pass_df.groupby("match_id"):
             _teams = sorted(_grp["team_name"].dropna().unique())
@@ -374,11 +386,12 @@ def main() -> None:
         match_df = pass_df.reset_index(drop=True)
         match_scores = scores
 
-    st.sidebar.markdown(f"**{len(match_df)} passes** in selected match")
-    st.sidebar.markdown(
-        f"**Mean score:** {np.mean(match_scores):.3f} | "
-        f"**Max score:** {np.max(match_scores):.3f}"
-    )
+    if page != "🏃 Possession Inspector":
+        st.sidebar.markdown(f"**{len(match_df)} passes** in selected match")
+        st.sidebar.markdown(
+            f"**Mean score:** {np.mean(match_scores):.3f} | "
+            f"**Max score:** {np.max(match_scores):.3f}"
+        )
 
     uuid_col = "event_uuid" if "event_uuid" in match_df.columns else "id"
 
@@ -770,9 +783,9 @@ def main() -> None:
     # PAGE 5 - Possession Inspector (event-time model, held-out matches by default)
     # ================================================================
     elif page == "🏃 Possession Inspector":
-        from src.app import possession_page
+        from src.app import enhanced_possession_page
 
-        possession_page.render(
+        enhanced_possession_page.render(
             st, _REPO_ROOT, cache_data=st.cache_data, cache_resource=st.cache_resource
         )
 

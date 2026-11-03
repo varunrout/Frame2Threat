@@ -93,3 +93,17 @@ def test_possession_attribution_selects_one_seed():
     )
     out = pg.possession_attribution(att, 1, 2)
     assert out["seed"].unique().tolist() == [42] and out["event_idx"].tolist() == [0, 1]
+
+
+def test_practical_usefulness_labels_come_from_later_danger_not_realised_steps():
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from practical_usefulness import scored_steps
+
+    steps = [{"t": 0, "p": 0.2}, {"t": 1, "p": 0.4}, {"t": 2, "p": None, "realised": True}]
+    dangerous = scored_steps({"steps": steps, "realised_at": 2})
+    assert [y for _, y in dangerous] == [1, 1]  # the old code labelled these 0
+    safe = scored_steps({"steps": [{"t": 0, "p": 0.1}, {"t": 1, "p": 0.1}], "realised_at": None})
+    assert [y for _, y in safe] == [0]  # last event of a safe possession is not eligible

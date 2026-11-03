@@ -85,3 +85,6 @@ Thumbs.db
 .env
 .env.*
 secrets.yaml
+
+# Local tooling
+.claude/

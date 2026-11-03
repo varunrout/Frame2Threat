@@ -9,24 +9,24 @@ P(danger) = P(shot or box entry by the possessing team in a later event | events
 
 Step  Event Type       Team   P(danger)  Alert
 ----------------------------------------------
-   1  Pass             own       0.2309     
-   2  Ball Receipt     own       0.2301     
-   3  Pass             own       0.2752     
-   4  Ball Receipt     own       0.2896     
-   5  Carry            own       0.3367     
-   6  Pass             own       0.3658     
-   7  Ball Receipt     own       0.3982     
-   8  Carry            own       0.4282  YES << TIPPING POINT
-   9  Pass             own       0.4372  YES <<
-  10  Ball Receipt     own       0.4820  YES <<
-  11  Carry            own       0.5101  YES <<
-  12  Pass             own       0.4929  YES <<
-  13  Ball Receipt     own       0.5213  YES <<
-  14  Carry            own       0.4144     
-  15  Pressure         opp       0.3593     
-  16  Pass             own       0.4852  YES <<
-  17  Ball Receipt     own       0.5484  YES <<
-  18  Carry            own       0.5861  YES <<
+   1  Pass             own       0.2335     
+   2  Ball Receipt     own       0.2356     
+   3  Pass             own       0.2829     
+   4  Ball Receipt     own       0.2990     
+   5  Carry            own       0.3454     
+   6  Pass             own       0.3747     
+   7  Ball Receipt     own       0.4084     
+   8  Carry            own       0.4373  YES << TIPPING POINT
+   9  Pass             own       0.4463  YES <<
+  10  Ball Receipt     own       0.4922  YES <<
+  11  Carry            own       0.5193  YES <<
+  12  Pass             own       0.5021  YES <<
+  13  Ball Receipt     own       0.5313  YES <<
+  14  Carry            own       0.4235  YES <<
+  15  Pressure         opp       0.3683     
+  16  Pass             own       0.4945  YES <<
+  17  Ball Receipt     own       0.5587  YES <<
+  18  Carry            own       0.5953  YES <<
   19  Dribble          own            -         << OUTCOME REALISED (shot/box entry)
   20  Duel             opp            -       
   21  Carry            opp            -       
@@ -37,6 +37,6 @@ Step  Event Type       Team   P(danger)  Alert
   26  Pass             opp            -       
   27  Ball Receipt     opp            -       
 
-Last scored step (18): P(danger) = 0.5861
+Last scored step (18): P(danger) = 0.5953
 First alert at step 8 (Carry), 19 event(s) before the end of the input.
 

@@ -1,0 +1,698 @@
+{
+  "source": "StatsBomb Open Data, held-out test-split possession (not used for training)",
+  "match_id": 3857266,
+  "possession_id": 121,
+  "team": "France",
+  "origin": "From Throw In",
+  "period": 2,
+  "minute": 68.0,
+  "total_events": 27,
+  "xgb_threshold": 0.3903678810626692,
+  "gru_threshold": 0.4221348512993151,
+  "realised_at": 18,
+  "steps": [
+    {
+      "event_index": 1,
+      "event_type": "Pass",
+      "team": "possessing",
+      "coordinates": {
+        "x": 70.0,
+        "y": 0.1,
+        "end_x": 61.900000000000006,
+        "end_y": 6.799999999999999
+      },
+      "elapsed_seconds": 0.0,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.45950838923454285,
+        "alert": true,
+        "tipping": true,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.2334827333688736,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 2,
+      "event_type": "Ball Receipt",
+      "team": "possessing",
+      "coordinates": {
+        "x": 61.900000000000006,
+        "y": 6.799999999999999,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 1.7270000000007713,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.44420838356018066,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.23562084138393402,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 3,
+      "event_type": "Pass",
+      "team": "possessing",
+      "coordinates": {
+        "x": 62.60000000000001,
+        "y": 20.1,
+        "end_x": 52.4,
+        "end_y": 34.0
+      },
+      "elapsed_seconds": 4.345000000000255,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.49259671568870544,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.2829452455043793,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 4,
+      "event_type": "Ball Receipt",
+      "team": "possessing",
+      "coordinates": {
+        "x": 52.4,
+        "y": 34.0,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 5.28400000000056,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.4733015298843384,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.29902157187461853,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 5,
+      "event_type": "Carry",
+      "team": "possessing",
+      "coordinates": {
+        "x": 52.4,
+        "y": 34.0,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 5.28400000000056,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.49764707684516907,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.34541141986846924,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 6,
+      "event_type": "Pass",
+      "team": "possessing",
+      "coordinates": {
+        "x": 63.20000000000001,
+        "y": 52.2,
+        "end_x": 62.400000000000006,
+        "end_y": 69.6
+      },
+      "elapsed_seconds": 10.54700000000048,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5489223599433899,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.3747309744358063,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 7,
+      "event_type": "Ball Receipt",
+      "team": "possessing",
+      "coordinates": {
+        "x": 62.400000000000006,
+        "y": 69.6,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 11.587000000000444,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5128467082977295,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.40838974714279175,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 8,
+      "event_type": "Carry",
+      "team": "possessing",
+      "coordinates": {
+        "x": 62.400000000000006,
+        "y": 69.6,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 11.587000000000444,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5276141166687012,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.4372537434101105,
+        "alert": true,
+        "tipping": true,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 9,
+      "event_type": "Pass",
+      "team": "possessing",
+      "coordinates": {
+        "x": 66.5,
+        "y": 74.4,
+        "end_x": 76.0,
+        "end_y": 77.5
+      },
+      "elapsed_seconds": 13.04700000000048,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5301340818405151,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.4462868869304657,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 10,
+      "event_type": "Ball Receipt",
+      "team": "possessing",
+      "coordinates": {
+        "x": 76.0,
+        "y": 77.5,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 13.865000000000691,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5599024295806885,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.4921872913837433,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 11,
+      "event_type": "Carry",
+      "team": "possessing",
+      "coordinates": {
+        "x": 76.0,
+        "y": 77.5,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 13.865000000000691,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5794603228569031,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.5192744731903076,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 12,
+      "event_type": "Pass",
+      "team": "possessing",
+      "coordinates": {
+        "x": 75.8,
+        "y": 76.9,
+        "end_x": 76.1,
+        "end_y": 70.3
+      },
+      "elapsed_seconds": 14.293000000000575,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5682763457298279,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.5021448731422424,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 13,
+      "event_type": "Ball Receipt",
+      "team": "possessing",
+      "coordinates": {
+        "x": 76.1,
+        "y": 70.3,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 14.77100000000064,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5876759886741638,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.5313429236412048,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 14,
+      "event_type": "Carry",
+      "team": "possessing",
+      "coordinates": {
+        "x": 76.1,
+        "y": 70.3,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 14.77100000000064,
+      "under_pressure": true,
+      "xgboost": {
+        "p_danger": 0.6021263003349304,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.42346423864364624,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 15,
+      "event_type": "Pressure",
+      "team": "opponent",
+      "coordinates": {
+        "x": 40.1,
+        "y": 11.5,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 15.686000000000604,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.5197771787643433,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.3683486878871918,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 16,
+      "event_type": "Pass",
+      "team": "possessing",
+      "coordinates": {
+        "x": 76.0,
+        "y": 71.8,
+        "end_x": 90.7,
+        "end_y": 77.7
+      },
+      "elapsed_seconds": 16.067000000000917,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.6118816137313843,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.4944750964641571,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 17,
+      "event_type": "Ball Receipt",
+      "team": "possessing",
+      "coordinates": {
+        "x": 90.7,
+        "y": 77.7,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 17.262000000000626,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.6318928599357605,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.5586898922920227,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 18,
+      "event_type": "Carry",
+      "team": "possessing",
+      "coordinates": {
+        "x": 90.7,
+        "y": 77.7,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 17.262000000000626,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": 0.6540074348449707,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": 0.595348060131073,
+        "alert": true,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 19,
+      "event_type": "Dribble",
+      "team": "possessing",
+      "coordinates": {
+        "x": 105.0,
+        "y": 54.3,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 22.210000000000946,
+      "under_pressure": true,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": true
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": true
+      }
+    },
+    {
+      "event_index": 20,
+      "event_type": "Duel",
+      "team": "opponent",
+      "coordinates": {
+        "x": 15.1,
+        "y": 25.8,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 22.210000000000946,
+      "under_pressure": true,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 21,
+      "event_type": "Carry",
+      "team": "opponent",
+      "coordinates": {
+        "x": 15.1,
+        "y": 25.8,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 22.210000000000946,
+      "under_pressure": true,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 22,
+      "event_type": "Pressure",
+      "team": "possessing",
+      "coordinates": {
+        "x": 106.7,
+        "y": 63.4,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 24.592000000000553,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 23,
+      "event_type": "Pass",
+      "team": "opponent",
+      "coordinates": {
+        "x": 12.2,
+        "y": 10.9,
+        "end_x": 41.2,
+        "end_y": 10.0
+      },
+      "elapsed_seconds": 25.334000000000742,
+      "under_pressure": true,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 24,
+      "event_type": "Ball Receipt",
+      "team": "opponent",
+      "coordinates": {
+        "x": 41.2,
+        "y": 10.0,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 26.96900000000096,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 25,
+      "event_type": "Duel",
+      "team": "possessing",
+      "coordinates": {
+        "x": 78.9,
+        "y": 70.1,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 26.96900000000096,
+      "under_pressure": true,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 26,
+      "event_type": "Pass",
+      "team": "opponent",
+      "coordinates": {
+        "x": 41.2,
+        "y": 10.0,
+        "end_x": 39.0,
+        "end_y": 0.1
+      },
+      "elapsed_seconds": 26.96900000000096,
+      "under_pressure": true,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    },
+    {
+      "event_index": 27,
+      "event_type": "Ball Receipt",
+      "team": "opponent",
+      "coordinates": {
+        "x": 48.0,
+        "y": 2.6,
+        "end_x": null,
+        "end_y": null
+      },
+      "elapsed_seconds": 29.60900000000038,
+      "under_pressure": false,
+      "xgboost": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      },
+      "gru": {
+        "p_danger": null,
+        "alert": false,
+        "tipping": false,
+        "realised": false
+      }
+    }
+  ],
+  "summary": {
+    "xgb_first_alert": 1,
+    "gru_first_alert": 8,
+    "xgb_alerts": 18,
+    "gru_alerts": 10,
+    "lead_time_events_xgb": 18,
+    "lead_time_events_gru": 11
+  }
+}
