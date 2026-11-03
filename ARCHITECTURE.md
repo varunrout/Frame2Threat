@@ -1,6 +1,6 @@
 > Historical architectural review. Current implemented route: `scripts/prepare_event_time.py`
 > -> shared causal features -> `scripts/run_event_time.py` -> CLI replay. CI installs torch;
-> `src` is included in wheel packaging. See README.md and REPAIR_REPORT.md for verified status.
+> `src` is included in wheel packaging. See README.md and reports/audit/REPAIR_REPORT.md for verified status.
 
 # Frame2Threat - Architectural & Additional Functional Fixes
 

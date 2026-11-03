@@ -9,7 +9,7 @@ Fresh XGBoost / GRU all-snapshot AUC: **0.6653 / 0.6636**; one-per-possession:
 The fresh XGBoost selected 55 trees; the 52-tree specification below describes the
 preserved earlier model. Its cross-version reloaded probabilities have different
 calibration despite near-identical ranking. Use fresh-run metrics and dependencies
-together: `reports/repro/repair_retrain/event_time_results.md` and `REPAIR_REPORT.md`.
+together: `reports/repro/repair_retrain/event_time_results.md` and `reports/audit/REPAIR_REPORT.md`.
 Fresh binaries remain local under `data/repro/repair_event_time/models`; regenerate
 with `scripts/run_event_time.py`, or set `FRAME2THREAT_ROOT` to that run directory.
 The remaining sections record the previous experiment and its limitations.

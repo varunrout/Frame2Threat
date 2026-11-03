@@ -24,7 +24,7 @@ decoder defects, retrained the GNN and rebuilt attribution; this audit checked t
    only checked `E9,F63,F7`.  Now `E9,F` over `src tests scripts`.
 5. CI installed no torch (torch tests silently skipped), omitted pyarrow/streamlit; `pyproject.toml` lacked pyarrow and forced
    torch-geometric (unused by the retrained GNN).  `poetry.lock` regenerated.
-6. Stale superseded claims left unmarked in `experiment_log.md` (combined RQ answers), `FUNCTIONAL.md`, `FIXES.md`: banners added.
+6. Stale superseded claims left unmarked in `experiment_log.md` (combined RQ answers), `FUNCTIONAL.md`, `FIXES.md`: banners added (both files were later removed from `main`; see git history).
 
 ## Status against the acceptance criteria
 

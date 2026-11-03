@@ -1,5 +1,5 @@
 # Frame2Threat v2/v3 — Possession-level XGBoost configuration
-# Centralises hyperparameters previously hard-coded in notebooks.
+# Centralises hyperparameters previously hard-coded in the (removed) exploratory notebooks.
 #
 # Loaded by:
 #   - notebooks/07_possession_baseline.ipynb  (v2 main XGBoost)

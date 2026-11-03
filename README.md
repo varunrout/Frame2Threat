@@ -120,7 +120,7 @@ No latency, feed revision, clock synchronisation, odds linkage, market calibrati
 - `scripts/prepare_event_time.py`, `scripts/run_event_time.py`: maintained data-to-model route.
 - `tests/`: synthetic regression/integration tests plus optional local-data checks.
 - `reports/event_time`, `reports/pass_label`, `reports/repro`: research results and model cards.
-- `notebooks/07_possession_baseline.ipynb`, `notebooks/09_possession_eda.ipynb`: retrospective analysis.
+- Retrospective analysis lives in `reports/attribution/` and `reports/experiment_log.md` (the exploratory notebooks were removed from `main`; they remain in git history up to commit 15e8ec4).
 
 The October 2026 self-audit found event decoding, future possession-length leakage, opponent-coordinate and self-determining-label defects. A later round found same-moment leakage. Fraction-prefix results (including AUC 0.82–0.85) are withdrawn; the original event-time 0.668/0.670 results are superseded. See [audit history](reports/audit/), [timing audit](reports/feature_timing_audit.md), [label methodology](reports/label_methodology.md), and [current repair report](REPAIR_REPORT.md). Earlier documentation is retained as historical material, not current guidance.
 

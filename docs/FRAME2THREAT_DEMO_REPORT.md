@@ -28,7 +28,7 @@
 | File | Purpose |
 |------|---------|
 | `docs/FRAME2THREAT_CASE_STUDY.md` | Recruiter-friendly research case study |
-| `REPAIR_REPORT.md` | Existing — November 2026 repair documentation |
+| `reports/audit/REPAIR_REPORT.md` | Existing — November 2026 repair documentation |
 | `README.md` | Existing — updated with event-time focus |
 
 ### Generated Artefacts

@@ -7,7 +7,7 @@ The November 2026 repair adds `repair_retrain/` (full fresh training, 500-resamp
 bootstrap, model metadata, reliability tables, genuine replay CSVs and the verified
 clean environment) and `repair_evaluation.json` (independent re-scoring of the prior
 models, including a constant baseline and ECE). These are distinct from the earlier
-25-possession pack below. See `../../REPAIR_REPORT.md` for the current validation status.
+25-possession pack below. See `../audit/REPAIR_REPORT.md` for the current validation status.
 
 ## Files
 

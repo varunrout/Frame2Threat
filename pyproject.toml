@@ -58,10 +58,6 @@ dev = [
 legacy-gnn = [
   "torch-geometric>=2.4",
 ]
-notebooks = [
-  "jupyterlab>=4.0",
-  "ipywidgets>=8.1",
-]
 
 [project.scripts]
 frame2threat = "src.app.cli:main"

@@ -1,3 +1,5 @@
+> **Note (2026-11):** the exploratory notebooks cited as provenance below (`notebooks/01`-`10`) were removed from `main`; they remain in git history (last present at commit 15e8ec4).  Their outputs are the figures and tables under `reports/`.
+
 # Experiment Log — Frame2Threat
 
 This log is a reconstructed analysis narrative for modelling experiments, hyperparameter choices, and results.  Entries dated before the repository's real implementation history are sequence markers for the analytical story, not commit dates or proof of when code was written.  Each entry follows the format: **sequence date | experiment | settings | result | decision**.
