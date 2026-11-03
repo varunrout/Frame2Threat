@@ -88,3 +88,12 @@ secrets.yaml
 
 # Local tooling
 .claude/
+
+# Current models are committed (small); superseded / pre-fix binaries stay local.
+!models/eventtime_gru.pt
+!models/eventtime_xgboost.joblib
+!models/pass_progression_event_only.joblib
+!models/pass_progression_event_360.joblib
+!models/pass_gnn_progression.pt
+!models/v2_corrected_gru_poss_dangerous.pt
+!models/v2_corrected_xgboost_poss_dangerous.joblib
