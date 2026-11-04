@@ -25,6 +25,8 @@ Everything the project has measured, written up. If you read only three things, 
 | [03_methodology.md](03_methodology.md) | Technical approach. Sections on fraction-based forecasting are marked superseded. | Mixed |
 | [label_methodology.md](label_methodology.md) | Exact definition of every label, including why the old pass label was self-determining. | Current reference |
 | [feature_timing_audit.md](feature_timing_audit.md) | Which features are safe for early prediction; the v3 numbers are withdrawn in its addendum. | Current reference |
+| [CLAIMS.md](CLAIMS.md) | Every quantitative claim, its evidence and whether it may be quoted; lists open inconsistencies. | **Current** |
+| [dataset_card.md](dataset_card.md) | Source, cohort, split, known biases. | **Current** |
 | [data_dictionary.md](data_dictionary.md) | Columns of every table, and the model files of each version. | Reference; lists some superseded models |
 | [design_decisions.md](design_decisions.md) | Short note on why the project is built as it is. | Reference |
 | [experiment_log.md](experiment_log.md) | Every experiment (`EXP-0xx`) with its status; notebook provenance notes. | Historical log; check the status of each entry |

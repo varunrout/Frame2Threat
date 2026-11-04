@@ -25,7 +25,8 @@ their alert thresholds; the black line is the shot or box entry. Regenerate with
 ## Results you can quote
 
 Event-time models, held-out test matches, 500-resample match-bootstrap 95% CI
-([full retrain report](reports/repro/repair_retrain/event_time_results.md)):
+([full retrain report](reports/repro/repair_retrain/event_time_results.md)). Every claim and its status is listed in
+[reports/CLAIMS.md](reports/CLAIMS.md):
 
 | Model | All-snapshot ROC AUC | One snapshot per possession |
 |---|---|---|
@@ -36,7 +37,7 @@ Event-time models, held-out test matches, 500-resample match-bootstrap 95% CI
 | **Event-time GRU** | **0.664** [0.642, 0.687] | 0.739 |
 
 The lift over the ball x/y baseline is small (about 0.02 AUC). Thresholds and hyperparameters were chosen on
-validation only. The saved models were independently re-scored and match these numbers
+validation only. The committed models come from an earlier training run and re-score at 0.6649 (XGBoost) and 0.6636 (GRU)
 ([artefact check](reports/repro/artefact_check.md), `make verify`).
 
 What an alert looks like at the validation-chosen threshold, on 2,249 test possessions (869 dangerous)
