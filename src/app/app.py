@@ -97,7 +97,7 @@ def _load_frames() -> pd.DataFrame | None:
     return None
 
 
-@st.cache_data(show_spinner="Scoring 50k passes with the trained model (first load only)")  # type: ignore[misc]
+@st.cache_data(show_spinner="Scoring 50k passes with the trained model (first load only)")
 def _score_all_passes() -> np.ndarray:
     """Pass-progression probabilities for every pass; cached so page switches stay instant."""
     pm = _load_model()
@@ -368,8 +368,8 @@ def main() -> None:
             _match_label_map[_mid] = _label
         _label_to_mid = {v: k for k, v in _match_label_map.items()}
         _available_match_labels = sorted(_match_label_map.values())
-        selected_match_label = st.sidebar.selectbox(
-            "Select Match", _available_match_labels, index=0
+        selected_match_label = str(
+            st.sidebar.selectbox("Select Match", _available_match_labels, index=0)
         )
         _selected_mid = _label_to_mid[selected_match_label]
         match_mask = pass_df["match_id"] == _selected_mid
@@ -377,7 +377,7 @@ def main() -> None:
         match_scores = scores[match_mask]
     elif "match_name" in pass_df.columns:
         available_matches = sorted(pass_df["match_name"].dropna().unique())
-        selected_match_label = st.sidebar.selectbox("Select Match", available_matches, index=0)
+        selected_match_label = str(st.sidebar.selectbox("Select Match", available_matches, index=0))
         match_mask = pass_df["match_name"] == selected_match_label
         match_df = pass_df[match_mask].reset_index(drop=True)
         match_scores = scores[match_mask]
