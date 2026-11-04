@@ -1,7 +1,8 @@
 # Reproducibility guide
 
 Python 3.11 or 3.12 (`.python-version` pins 3.11).  Data: StatsBomb Open Data only (public, licence in README).
-Research data and the `*.joblib` / `*.pt` / `*.ubj` model files are gitignored and regenerated.
+Research data (`data/`) is gitignored and regenerated. Seven current model files are committed (see
+[models/README.md](models/README.md)); other `*.joblib` / `*.pt` / `*.ubj` files are gitignored and regenerated.
 
 ## 1. Install
 
@@ -16,8 +17,8 @@ python -m pip install -e ".[dev]"
 ## 2. Test and lint
 
 ```bash
-ruff check src tests scripts      # pyflakes gate used by CI
-pytest -q                          # tests needing gitignored data/models skip on a bare checkout
+make check                         # ruff, black, mypy, pytest: the gates CI runs (hosted CI is unavailable)
+pytest -q                          # tests needing gitignored data skip on a bare checkout
 ```
 
 ## 3. Acquire data and rebuild features (needs network)
