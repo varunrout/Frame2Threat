@@ -11,8 +11,8 @@ Run date: 2026-11-04
 |---|---|---|
 | Lint | `ruff check src tests scripts` | pass |
 | Format | `black --check src tests scripts` | pass (107 files) |
-| Types | `mypy src` | pass (64 files) after fixing 3 errors in `src/app/app.py` found by the first run |
-| Tests | `pytest --cov=src --cov-fail-under=50` | 219 passed, coverage 63.5% (re-run after the documentation pass, commit `ad903b1`) |
+| Types | `mypy src` | pass (57 files) after fixing 3 errors in `src/app/app.py` found by the first run |
+| Tests | `pytest --cov=src --cov-fail-under=50` | 219 passed, coverage 71.4% (re-run after removing orphan modules, 2026-11-04) |
 | Clean checkout | `git archive HEAD`, then `pytest` in the extracted folder (tracked files only, no data) | 215 passed, 4 skipped (real-data tests) |
 | CLI smoke | `frame2threat --help`, synthetic store, synthetic pipeline smoke | pass |
 | Wheel | `pip wheel . --no-deps`, install in a fresh venv outside the checkout, `frame2threat --help` | pass |

@@ -19,6 +19,10 @@ Dates are commit dates. There are no tagged releases yet.
   (`tests/test_reproducibility.py`).
 - Added `scripts/error_analysis.py` and its report `reports/event_time/error_analysis.md`: AUC by competition, possession
   origin, period and minute band (committed models re-scored, no retraining).
+- Removed orphan code (no importers, 0% coverage): `src/models/{gnn,hybrid,ranking,train_early_models,gru_train_script}.py`,
+  `src/features/sequence_context.py`, `src/evaluation/ablations.py`; the README row for pass-option ranking went with
+  `ranking.py`. Deleted three stale JSON files in `models/`. Moved `ARCHITECTURE.md` to
+  `reports/audit/ARCHITECTURE_REVIEW.md`. All remain in git history.
 - Added `tests/test_repo_integrity.py` (committed split, markdown links, model hashes, documented AUCs).
 
 ## 2026-11-03

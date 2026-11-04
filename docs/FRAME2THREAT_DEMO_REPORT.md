@@ -1,5 +1,8 @@
 # Frame2Threat Demo Report — November 2026
 
+> Snapshot report written at the commit below. Later changes are listed in [CHANGELOG.md](../CHANGELOG.md); numbers here
+> match the reports as of that commit.
+
 **Repository:** https://github.com/varunrout/Frame2Threat  
 **Commit:** `602a344` (Fix CI gates: formatting, type checking, coverage; add wheel install test)  
 **Branch:** `main` (up to date with origin/main)
@@ -13,7 +16,7 @@
 |------|---------|
 | `src/app/enhanced_possession_page.py` | **NEW** — Enhanced Possession Inspector with match/possession selection, pitch visualisation, event-by-event playback, XGBoost/GRU comparison, alert timeline, technical explanation, demo mode |
 | `src/app/app.py` | Updated to use `enhanced_possession_page` instead of `possession_page` |
-| `src/app/possession_page.py` | Preserved (original implementation) |
+| `src/app/possession_page.py` | Preserved at the time; removed on 2026-11-04 as dead code. Its pure helpers now live in `src/app/possession_data.py` |
 
 ### Scripts Added
 | File | Purpose |
@@ -178,7 +181,7 @@ tests\test_labels.py .........
 tests\test_models.py .......
 tests\test_pass_gnn.py .....
 tests\test_pass_progression.py .....
-tests\test_possession_page.py .....
+tests\test_possession_page.py ..... (renamed `tests/test_possession_data.py` on 2026-11-04)
 tests\test_reproduce_pipeline.py .
 tests\test_shot_columns.py ..
 tests\test_splits.py .....

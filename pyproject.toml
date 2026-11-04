@@ -53,7 +53,7 @@ dev = [
   "types-requests>=2.31",
   "pre-commit>=3.4",
 ]
-# Only the original (superseded) message-passing GNN in src/models/gnn.py and src/features/graph_builder.py
+# Only the builder for the original (superseded) message-passing GNN, src/features/graph_builder.py,
 # needs torch-geometric; the retrained PassFrameGNN is plain torch.
 legacy-gnn = [
   "torch-geometric>=2.4",

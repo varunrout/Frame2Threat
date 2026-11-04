@@ -12,7 +12,7 @@ python -m pip install -e ".[dev]"
 # or, locked:  poetry install --extras dev
 ```
 
-`torch-geometric` is **not** needed (only the superseded `src/models/gnn.py`: `pip install -e ".[legacy-gnn]"`).
+`torch-geometric` is **not** needed (only `src/features/graph_builder.py`, the builder for the superseded message-passing GNN, uses it: `pip install -e ".[legacy-gnn]"`).
 
 ## 2. Test and lint
 
@@ -51,7 +51,7 @@ python -m src.data.build_store --verbose      # parquet + SQLite store
 ```
 
 The processed tables used by the reports (`data/processed/`: events, pass instances, labels, possessions, splits) were built
-by the `src/data` modules (see `ARCHITECTURE.md`); the split is match-level, seed 42, stored in `split_manifest.csv`.
+by the `src/data` modules (see [the historical architecture review](reports/audit/ARCHITECTURE_REVIEW.md)); the split is match-level, seed 42, stored in `split_manifest.csv`.
 **Not re-executed end to end in the 2026-10-30 audit** (it needs the full download); the audit re-scored saved models on the
 existing processed data instead.
 

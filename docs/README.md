@@ -9,5 +9,5 @@ Narrative write-ups for readers who want the story rather than the tables. The n
 | [FRAME2THREAT_DEMO_REPORT.md](FRAME2THREAT_DEMO_REPORT.md) | What the dashboard and demo show, and how they were produced. |
 
 Other documentation: [../README.md](../README.md) (start here), [../REPRODUCIBILITY.md](../REPRODUCIBILITY.md),
-[../ARCHITECTURE.md](../ARCHITECTURE.md) (historical architectural review), [../scripts/README.md](../scripts/README.md),
+[../reports/audit/ARCHITECTURE_REVIEW.md](../reports/audit/ARCHITECTURE_REVIEW.md) (historical architectural review), [../scripts/README.md](../scripts/README.md),
 [../models/README.md](../models/README.md), [../reports/README.md](../reports/README.md).

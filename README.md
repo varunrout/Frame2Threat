@@ -119,7 +119,6 @@ different route; see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). Retraining overwr
 | Line-break detection | Geometric heuristic, not independently validated tactical ground truth. |
 | Possession XGBoost / GRU / ensemble | Retrospective diagnostics; completion features overlap with outcomes. |
 | GNN | Exploratory graph-only diagnostic, not a like-for-like feature comparison. |
-| Pass-option ranking | Exploratory; unplayed counterfactual outcomes are unavailable. |
 | Player attribution | Exploratory retrospective explanation, not causal player value or a scouting ranking. |
 | Threat gain | Unvalidated zone-value proxy; excluded from headline claims. |
 

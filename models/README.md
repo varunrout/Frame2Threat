@@ -24,16 +24,15 @@ Each `pass_*.json` next to a model is its sidecar: label definition, recipe and 
 The retrospective models score a possession using information from after the moment of interest. Their high AUC is
 **not** early-warning evidence; do not compare it with the event-time rows.
 
-## Stale files in this folder (do not use)
+## Removed stale files
 
-| File | Why it is stale |
-|---|---|
-| `results_summary.json`, `v1_results_summary.json` | Record the old self-determining label `dangerous_progression_k` (AUC about 0.88). Superseded; see [../reports/audit/](../reports/audit/README.md). |
-| `superseded/eventtime_meta.json` | Metadata of the pre-fix event-time model. |
+`results_summary.json` and `v1_results_summary.json` (old self-determining label `dangerous_progression_k`, AUC about
+0.88) and `superseded/eventtime_meta.json` were deleted on 2026-11-04. They remain in git history; the withdrawn
+numbers are listed in [../reports/CLAIMS.md](../reports/CLAIMS.md).
 
 ## Local-only files (gitignored, not in the repository)
 
 `gru_poss_dangerous.pt`, `xgboost_poss_dangerous.joblib` (trained before the label fix) and the binaries in
 `superseded/` stay on the author's machine as evidence. The dashboard and CLI never load them, but the legacy code in
-`src/evaluation/possession_attribution.py` and `src/models/gru_train_script.py` still refers to
-`models/gru_poss_dangerous.pt`, so those legacy paths do not work on a fresh clone.
+`src/evaluation/possession_attribution.py` still refers to `models/gru_poss_dangerous.pt`, so that path does not
+work on a fresh clone.

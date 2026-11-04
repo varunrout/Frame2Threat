@@ -32,7 +32,7 @@ Status: **Current** (reproduced, may be quoted), **Diagnostic** (true but not ev
 |---|---|---|
 | Early forecasting at 50% of events: GRU 0.820, XGBoost 0.847 | The prefix length encodes the possession's total length | [feature_timing_audit.md](feature_timing_audit.md) |
 | First event-time results 0.668 / 0.670 | Same-moment leak | [audit/same_moment_before.md](audit/same_moment_before.md) |
-| Pass model AUC about 0.88 on `dangerous_progression_k` | The label was self-determining; stale values remain in `models/results_summary.json` | [label_methodology.md](label_methodology.md) |
+| Pass model AUC about 0.88 on `dangerous_progression_k` | The label was self-determining; the stale `models/results_summary.json` was deleted (still in git history) | [label_methodology.md](label_methodology.md) |
 | GNN near-parity with XGBoost (0.841 vs 0.845) | Old label | [03_methodology.md](03_methodology.md) |
 | In-sample v2 attribution leaderboard (453 players) | Not cross-fitted | [attribution/ranking_change_audit.md](attribution/ranking_change_audit.md) |
 | Practical-usefulness values precision 0, recall 0, false alerts 89.9%, XGBoost lead time 16 | Labelling bug in `scripts/practical_usefulness.py`, fixed | [audit/final_audit_2026-10.md](audit/final_audit_2026-10.md) |
