@@ -2,7 +2,8 @@
 
 Reloads each saved model, scores the held-out test matches and compares the point estimate with the
 value recorded in ``reports/`` (tolerance 5e-4 ROC AUC).  Writes ``reports/repro/artefact_check.md``
-and exits non-zero on any mismatch.  Needs the gitignored ``data/processed`` and ``models`` files.
+and ``artefact_check.json`` (the same rows plus git SHA, package versions and the SHA-256 of every
+model file scored) and exits non-zero on any mismatch.  Needs the gitignored ``data/processed`` and ``models`` files.
 
 Usage:  python scripts/verify_artefacts.py [--tol 5e-4]
 """
@@ -25,6 +26,7 @@ sys.path.insert(0, str(ROOT))
 warnings.filterwarnings("ignore")
 
 from src.app.batch_scoring import load_models  # noqa: E402
+from src.evaluation.provenance import run_metadata  # noqa: E402
 from src.features.event_time import (  # noqa: E402
     FEATURE_NAMES,
     build_snapshot_table,
@@ -114,6 +116,26 @@ def main() -> int:
         lines.append(f"| {name} | {got:.4f} | {doc:.4f} | {'PASS' if good else 'FAIL'} |")
     out = ROOT / "reports" / "repro" / "artefact_check.md"
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    scored = [
+        ROOT / "models" / name
+        for name in (
+            "eventtime_xgboost.joblib",
+            "eventtime_gru.pt",
+            "eventtime_meta.json",
+            "pass_progression_event_only.joblib",
+            "pass_progression_event_360.joblib",
+        )
+    ]
+    record = {
+        "tolerance_roc_auc": args.tol,
+        "all_within_tolerance": bool(ok),
+        "rows": [
+            {"artefact": n, "recomputed": g, "documented": d, "within_tolerance": bool(good)}
+            for n, g, d, good in rows
+        ],
+        "provenance": run_metadata(ROOT, scored),
+    }
+    out.with_suffix(".json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     print("\n".join(lines))
     return 0 if ok else 1
 

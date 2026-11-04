@@ -1,0 +1,51 @@
+{
+  "tolerance_roc_auc": 0.0005,
+  "all_within_tolerance": true,
+  "rows": [
+    {
+      "artefact": "pass model event_only, all test passes",
+      "recomputed": 0.7336883812451914,
+      "documented": 0.7336883812451914,
+      "within_tolerance": true
+    },
+    {
+      "artefact": "pass model event_360, all test passes",
+      "recomputed": 0.7380275241530949,
+      "documented": 0.7380275241530949,
+      "within_tolerance": true
+    },
+    {
+      "artefact": "event-time XGB, all test snapshots",
+      "recomputed": 0.6649221359668267,
+      "documented": 0.6649221359668267,
+      "within_tolerance": true
+    },
+    {
+      "artefact": "event-time GRU, all test snapshots",
+      "recomputed": 0.6636020435883814,
+      "documented": 0.6636020435883814,
+      "within_tolerance": true
+    }
+  ],
+  "provenance": {
+    "timestamp_utc": "2026-11-04T11:10:54+00:00",
+    "git_sha": "1962d1e5ef2e685f714e302b445bbe7c32dfffa2",
+    "git_dirty": true,
+    "python": "3.12.7",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "pandas": "3.0.3",
+      "scikit-learn": "1.5.1",
+      "xgboost": "3.2.0",
+      "torch": "2.9.0"
+    },
+    "files_sha256": {
+      "models/eventtime_xgboost.joblib": "6094119e194fc71102ca31091f9c3dba603f68038abe0140402a951b62d46ada",
+      "models/eventtime_gru.pt": "76d61575022ed15f7aa39bc8e1b9d317a2559fa1d152f99c7ede37a76f88d7df",
+      "models/eventtime_meta.json": "1fbd5ee8bd9a65038dceb0c9ab103eba5f0d3ae4f1263aa83f441d44963354c2",
+      "models/pass_progression_event_only.joblib": "7271c0175948b200b99c4b09846363d613fddddc4da25f886399f0df5930b332",
+      "models/pass_progression_event_360.joblib": "96387ba0f6a7b2d2ec4d020d3efab5e88938b77b40eb33a75292e502aa24e37a"
+    }
+  }
+}

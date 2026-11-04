@@ -14,6 +14,9 @@ Dates are commit dates. There are no tagged releases yet.
   in the dashboard without retraining.
 - Fixed three mypy errors in `src/app/app.py`. Hosted CI is unavailable (billing); the CI steps were run locally
   and recorded in `reports/repro/local_ci.md`.
+- `scripts/verify_artefacts.py` now also writes `reports/repro/artefact_check.json` with git SHA, package versions and
+  model hashes (`src/evaluation/provenance.py`); added seeded-determinism tests for the GRU and XGBoost training paths
+  (`tests/test_reproducibility.py`).
 - Added `tests/test_repo_integrity.py` (committed split, markdown links, model hashes, documented AUCs).
 
 ## 2026-11-03

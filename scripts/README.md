@@ -23,7 +23,7 @@ Event-time danger prediction, the primary task. Run in this order for a full reb
 
 | Script | What it does | Writes |
 |---|---|---|
-| `verify_artefacts.py` | Reloads the saved models, re-scores the test split and compares with the committed reports (`make verify`). | `reports/repro/artefact_check.md` |
+| `verify_artefacts.py` | Reloads the saved models, re-scores the test split and compares with the committed reports (`make verify`). | `reports/repro/artefact_check.md` and `.json` (the JSON adds git SHA, package versions and model SHA-256s) |
 | `check_pass_model_repro.py` | Retrains each pass-model recipe on the unchanged split and records the numbers; saves no model. | `reports/pass_label/pass_model_repro_gate.md` |
 | `make_demo_evidence.py` | Scores one held-out possession with both event-time models (`make demo`). | `reports/figures/demo/`, `reports/repro/cli_demo.txt`, `demo_possession.json` |
 | `make_evidence_pack.py` | 25 test-split possessions scored by all models, retrospective ones clearly labelled. | `reports/repro/scored_possessions_sample.csv` |
