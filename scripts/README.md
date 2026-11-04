@@ -12,7 +12,7 @@ Event-time danger prediction, the primary task. Run in this order for a full reb
 
 | Script | What it does | Writes |
 |---|---|---|
-| `prepare_event_time.py` | Builds inputs from the fixed match manifest (cached StatsBomb events, else public download). Refuses to overwrite existing tables. | `data/processed/` (or `--output-dir`) |
+| `prepare_event_time.py` | Builds inputs from the fixed match manifest (cached StatsBomb events, else public download). Refuses to overwrite existing tables. | `data/processed/` (or `--output-dir`): events, possessions, split manifest, `event_time_arrays.pkl` (what the dashboard and CLI read) |
 | `run_event_time.py` | EXP-021/022: trains baselines, event-time XGBoost and GRU, bootstrap CIs, calibration. | `models/eventtime_*`, `reports/event_time/` |
 | `evaluate_event_time.py` | Re-evaluates saved event-time models on rebuilt held-out arrays, with calibration and a constant baseline. | `reports/repro/repair_evaluation.json` (`--output`) |
 | `train_pass_models.py` | EXP-033: final pass-progression models (event-only and event+360). | `models/pass_progression_*`, `reports/pass_label/pass_model_final.*` |

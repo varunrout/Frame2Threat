@@ -1,13 +1,16 @@
 """Rebuild maintained event-time inputs from the fixed research match manifest.
 
 Uses cached StatsBomb raw events when available, otherwise downloads public data.
-Writes to a new directory and refuses to overwrite existing processed tables.
+Writes to a new directory and refuses to overwrite existing processed tables. Also writes the
+event-time arrays cache (``event_time_arrays.pkl``) that the dashboard and CLI read, so a freshly
+prepared directory can be inspected without retraining.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import pickle
 import sys
 from pathlib import Path
 
@@ -18,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.data.ingest import get_events  # noqa: E402
 from src.data.parse_events import parse_events  # noqa: E402
+from src.features.event_time import build_possession_arrays  # noqa: E402
 from src.data.parse_possessions import (
     build_possession_sequences,
     save_possession_sequences,
@@ -63,6 +67,13 @@ def main():
     # The trainer only reads match identities from these files.
     for split, group in manifest.groupby("split"):
         group[["match_id"]].to_parquet(out / f"{split}.parquet", index=False)
+    # Same inputs and builder as scripts/run_event_time.py:get_arrays, read back from disk so the
+    # arrays are identical to what training would cache.
+    keys = pd.read_parquet(
+        out / "possession_sequences.parquet", columns=["match_id", "possession_id"]
+    )
+    arrays = build_possession_arrays(pd.read_parquet(out / "events_parsed.parquet"), keys)
+    (out / "event_time_arrays.pkl").write_bytes(pickle.dumps(arrays))
     print(f"Wrote {len(events)} events and {len(poss)} possessions to {out}")
 
 
