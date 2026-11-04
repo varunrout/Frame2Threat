@@ -1,31 +1,40 @@
-.PHONY: pipeline pipeline-smoke store store-smoke reproduce reproduce-smoke test lint verify demo
+.DEFAULT_GOAL := help
+.PHONY: help install dashboard quickstart test lint format typecheck check verify demo \
+        pipeline-smoke store-smoke
 
-pipeline:
-	python scripts/run_pipeline.py --verbose
+help:  ## Show this list
+	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
 
-pipeline-smoke:
-	python scripts/run_pipeline.py --smoke --synthetic --output-dir data/repro/v1_smoke
+install:  ## Install the package with dev extras (install CPU torch first, see README)
+	python -m pip install -e ".[dev]"
 
-store:
-	python -m src.data.build_store --verbose
+dashboard:  ## Launch the Streamlit dashboard (opens on the Possession Inspector)
+	python -m streamlit run src/app/app.py
 
-store-smoke:
-	python -m src.data.build_store --synthetic --output-dir data/store/smoke
+quickstart: verify demo  ## Re-score saved models against reports, then regenerate the demo evidence
 
-reproduce:
-	python scripts/run_pipeline.py --verbose
+test:  ## Run the test suite
+	python -m pytest -q
 
-reproduce-smoke:
-	python scripts/run_pipeline.py --smoke --synthetic --output-dir data/repro/v1_smoke
+lint:  ## Lint (syntax errors and pyflakes)
+	python -m ruff check src tests scripts
 
-test:
-	pytest -q
+format:  ## Check formatting
+	python -m black --check src tests scripts
 
-lint:
-	ruff check src tests scripts
+typecheck:  ## Static type check
+	python -m mypy src
 
-verify:
+check: lint format typecheck test  ## Everything CI would run, locally (hosted CI is unavailable)
+
+verify:  ## Re-score saved models on the test split and compare with committed reports
 	python scripts/verify_artefacts.py
 
-demo:
+demo:  ## Regenerate the demo possession figure, CLI transcript and JSON
 	python scripts/make_demo_evidence.py
+
+pipeline-smoke:  ## Synthetic end-to-end engineering smoke test (not football evidence)
+	python scripts/run_pipeline.py --smoke --synthetic --output-dir data/repro/v1_smoke
+
+store-smoke:  ## Synthetic data-store smoke test (not football evidence)
+	python -m src.data.build_store --synthetic --output-dir data/store/smoke

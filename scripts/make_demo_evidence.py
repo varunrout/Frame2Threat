@@ -23,7 +23,7 @@ import pandas as pd  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.app import possession_page as pg  # noqa: E402
+from src.app import possession_data as pg  # noqa: E402
 from src.app.live_scoring import score_arrays  # noqa: E402
 
 

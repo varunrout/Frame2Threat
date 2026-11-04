@@ -30,7 +30,7 @@ import sys
 
 sys.path.insert(0, str(ROOT))
 
-from src.app import possession_page as pg
+from src.app import possession_data as pg
 from src.app.live_scoring import score_arrays
 
 

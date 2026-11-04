@@ -190,8 +190,8 @@ def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN0
     st.info(
         "**Event-time (prospective) prediction.** The curve below is the probability, after each "
         "event, that the possessing team produces a shot or penalty-box entry in a *later* event, "
-        "computed from events up to that point only.  The attribution further down is "
-        "**retrospective** (it uses the whole possession) and is not a forecast."
+        "computed from events up to that point only.  Retrospective, whole-possession scores "
+        "(not shown on this page) are diagnostics, not forecasts."
     )
 
     # ============================================================

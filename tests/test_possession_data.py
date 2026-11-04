@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from src.app import possession_page as pg
+from src.app import possession_data as pg
 from src.features.event_time import PossessionArrays
 
 

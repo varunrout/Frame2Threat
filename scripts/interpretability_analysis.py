@@ -28,7 +28,7 @@ import sys
 
 sys.path.insert(0, str(ROOT))
 
-from src.app import possession_page as pg
+from src.app import possession_data as pg
 from src.features.event_time import FEATURE_NAMES
 from src.models.event_time_artifacts import load_event_time_xgb
 
