@@ -23,6 +23,7 @@ Status: **Current** (reproduced, may be quoted), **Diagnostic** (true but not ev
 |---|---|---|---|
 | Retrospective whole-possession models | XGBoost 0.957, GRU 0.957, ensemble 0.977 | [audit/exp023_v2_corrected_labels.md](audit/exp023_v2_corrected_labels.md) | Use completed possession summaries |
 | Graph-only pass GNN | ROC AUC 0.595 | [pass_label/gnn_comparison.md](pass_label/gnn_comparison.md) | Positions only, no pass destination; not like-for-like with XGBoost |
+| AUC by competition | XGBoost 0.663 (La Liga) vs 0.659 (World Cup); GRU 0.660 vs 0.661 | [event_time/error_analysis.md](event_time/error_analysis.md) | Descriptive, 6 and 9 test matches; same cohort, so not external validation |
 | Player attribution | 623 players with at least 100 possessing-team events | [attribution/player_leaderboard.csv](attribution/player_leaderboard.csv) | Retrospective model explanation, not causal value |
 
 ## Withdrawn (do not reuse)

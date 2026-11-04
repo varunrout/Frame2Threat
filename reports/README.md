@@ -11,7 +11,7 @@ Everything the project has measured, written up. If you read only three things, 
 | Folder | Contents | Status |
 |---|---|---|
 | `repro/` | Evidence that can be inspected from a fresh clone: model cards, the November retrain, the demo possession, artefact and local-CI checks. See [repro/README.md](repro/README.md). | **Current** |
-| `event_time/` | Event-time results (XGBoost, GRU, baselines, reliability, buckets). | Current. The `superseded_pre_same_moment_fix/` subfolder is **withdrawn**. |
+| `event_time/` | Event-time results (XGBoost, GRU, baselines, reliability, buckets) and [error_analysis.md](event_time/error_analysis.md) (AUC by segment). | Current. The `superseded_pre_same_moment_fix/` subfolder is **withdrawn**. |
 | `pass_label/` | Pass-level results on `progression_beyond_pass_k`, the 360 ablation, the GNN comparison. | Current. The `superseded_pre_possession_length_fix/` subfolder is **withdrawn**. |
 | `attribution/` | Cross-fitted retrospective attribution, leaderboards and the ranking-change audit. | Current, exploratory (not causal). |
 | `audit/` | Defects found, before/after evidence, the repair report. | Evidence; see [audit/README.md](audit/README.md). |

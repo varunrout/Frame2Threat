@@ -17,6 +17,8 @@ Dates are commit dates. There are no tagged releases yet.
 - `scripts/verify_artefacts.py` now also writes `reports/repro/artefact_check.json` with git SHA, package versions and
   model hashes (`src/evaluation/provenance.py`); added seeded-determinism tests for the GRU and XGBoost training paths
   (`tests/test_reproducibility.py`).
+- Added `scripts/error_analysis.py` and its report `reports/event_time/error_analysis.md`: AUC by competition, possession
+  origin, period and minute band (committed models re-scored, no retraining).
 - Added `tests/test_repo_integrity.py` (committed split, markdown links, model hashes, documented AUCs).
 
 ## 2026-11-03

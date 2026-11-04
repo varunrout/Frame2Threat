@@ -34,6 +34,7 @@ Event-time danger prediction, the primary task. Run in this order for a full reb
 |---|---|---|
 | `practical_usefulness.py` | Precision, recall, false-alert rate, lead time and calibration at the validation-chosen thresholds. | `reports/figures/practical/`, `reports/repro/` |
 | `interpretability_analysis.py` | SHAP importance for XGBoost and trajectory analysis for the GRU. | `reports/figures/interpretability/`, `reports/repro/interpretability_*.json` |
+| `error_analysis.py` | Event-time AUC per segment (competition, possession origin, period, minute band) with match-bootstrap intervals; flags small segments. Re-scores committed models, no retraining. | `reports/event_time/error_analysis.{csv,md}`, `reports/figures/error_analysis/` |
 | `tactical_walkthrough.py` | Event-by-event walkthrough of the France demo possession (match 3857266, possession 121). | `reports/figures/tactical_walkthrough.png`, `reports/repro/tactical_walkthrough.json` |
 
 ## 4. Audit and repair history (evidence for the October/November 2026 repairs)
