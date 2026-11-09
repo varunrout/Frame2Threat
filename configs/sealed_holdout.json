@@ -1,0 +1,34 @@
+{
+  "name": "sealed_holdout_euro2024",
+  "protocol": "reports/repro/sealed_holdout_protocol.md",
+  "competition_id": 55,
+  "season_id": 282,
+  "competition": "UEFA Euro 2024 (men)",
+  "open_data_revision": "3bfbffe1de5750ebd47d770be0bb924a10cde54f",
+  "models": {
+    "models/eventtime_xgboost.joblib": "6094119e194fc71102ca31091f9c3dba603f68038abe0140402a951b62d46ada",
+    "models/eventtime_gru.pt": "76d61575022ed15f7aa39bc8e1b9d317a2559fa1d152f99c7ede37a76f88d7df",
+    "models/eventtime_meta.json": "1fbd5ee8bd9a65038dceb0c9ab103eba5f0d3ae4f1263aa83f441d44963354c2"
+  },
+  "thresholds": {
+    "xgb": 0.3903678810626692,
+    "gru": 0.4221348512993151
+  },
+  "baseline": {
+    "name": "LR_xy",
+    "features": ["cur_x", "cur_y"],
+    "C": 0.01,
+    "fit_on": "train split of configs/research_split_manifest.csv (69 matches), data/processed"
+  },
+  "training_inputs_sha256": {
+    "data/processed/events_parsed.parquet": "7d1ffc05c110ae8c36df301fe23200ce8b2fb3c698de33a351af034b7fbde6dd",
+    "data/processed/possession_sequences.parquet": "0c0f330959272557d64192262e7ba07141ce3301e1fb07aa23956f31b8041987",
+    "data/processed/split_manifest.csv": "e3ca27b713bef699dcb337ef13bc29f26578c0210cf46d42864923f578fc85cd"
+  },
+  "n_boot": 500,
+  "seed": 42,
+  "ece_bins": 10,
+  "reference_auc": 0.665,
+  "holdout_data_dir": "data/holdout/euro2024",
+  "output": "reports/repro/sealed_holdout.json"
+}

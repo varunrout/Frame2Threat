@@ -1,0 +1,78 @@
+{
+  "open_data_revision": "3bfbffe1de5750ebd47d770be0bb924a10cde54f",
+  "rule": "most men's-competition-season matches with 360 data outside the 99-match cohort; ties: lowest competition id, then latest season",
+  "selected": {
+    "competition_id": 55,
+    "season_id": 282,
+    "competition": "UEFA Euro",
+    "season": "2024",
+    "gender": "male",
+    "matches": 51,
+    "matches_in_cohort": 0,
+    "matches_360_outside_cohort": 51
+  },
+  "ranking": [
+    {
+      "competition_id": 55,
+      "season_id": 282,
+      "competition": "UEFA Euro",
+      "season": "2024",
+      "gender": "male",
+      "matches": 51,
+      "matches_in_cohort": 0,
+      "matches_360_outside_cohort": 51
+    },
+    {
+      "competition_id": 55,
+      "season_id": 43,
+      "competition": "UEFA Euro",
+      "season": "2020",
+      "gender": "male",
+      "matches": 51,
+      "matches_in_cohort": 0,
+      "matches_360_outside_cohort": 51
+    },
+    {
+      "competition_id": 9,
+      "season_id": 281,
+      "competition": "1. Bundesliga",
+      "season": "2023/2024",
+      "gender": "male",
+      "matches": 34,
+      "matches_in_cohort": 0,
+      "matches_360_outside_cohort": 34
+    }
+  ],
+  "excluded_womens": [
+    {
+      "competition_id": 53,
+      "season_id": 315,
+      "competition": "UEFA Women's Euro",
+      "season": "2025",
+      "gender": "female",
+      "matches": 31,
+      "matches_in_cohort": 0,
+      "matches_360_outside_cohort": 31
+    },
+    {
+      "competition_id": 53,
+      "season_id": 106,
+      "competition": "UEFA Women's Euro",
+      "season": "2022",
+      "gender": "female",
+      "matches": 31,
+      "matches_in_cohort": 0,
+      "matches_360_outside_cohort": 31
+    },
+    {
+      "competition_id": 72,
+      "season_id": 107,
+      "competition": "Women's World Cup",
+      "season": "2023",
+      "gender": "female",
+      "matches": 64,
+      "matches_in_cohort": 0,
+      "matches_360_outside_cohort": 64
+    }
+  ]
+}
