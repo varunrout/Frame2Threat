@@ -97,3 +97,4 @@ secrets.yaml
 !models/pass_gnn_progression.pt
 !models/v2_corrected_gru_poss_dangerous.pt
 !models/v2_corrected_xgboost_poss_dangerous.joblib
+data/holdout/
