@@ -1,0 +1,53 @@
+{
+  "name": "second_holdout_euro2020_and_position_gbm",
+  "protocol": "reports/repro/second_holdout_protocol.md",
+  "frozen_definitions": "reports/repro/sealed_holdout_protocol.md",
+  "competition_id": 55,
+  "season_id": 43,
+  "competition": "UEFA Euro 2020 (men)",
+  "open_data_revision": "3bfbffe1de5750ebd47d770be0bb924a10cde54f",
+  "models": {
+    "models/eventtime_xgboost.joblib": "6094119e194fc71102ca31091f9c3dba603f68038abe0140402a951b62d46ada",
+    "models/eventtime_gru.pt": "76d61575022ed15f7aa39bc8e1b9d317a2559fa1d152f99c7ede37a76f88d7df",
+    "models/eventtime_meta.json": "1fbd5ee8bd9a65038dceb0c9ab103eba5f0d3ae4f1263aa83f441d44963354c2"
+  },
+  "thresholds_validation_prevalence": {
+    "xgb": 0.3903678810626692,
+    "gru": 0.4221348512993151
+  },
+  "precision_operating_point": {
+    "target_precision": 0.65,
+    "min_validation_alert_share": 0.01,
+    "rule": "lowest threshold on validation snapshots at which validation precision >= target and at least 1% of validation snapshots alert"
+  },
+  "baseline_lr_xy": {
+    "features": ["cur_x", "cur_y"],
+    "C": 0.01
+  },
+  "baseline_gbm_position": {
+    "features": ["cur_x", "cur_y", "dist_goal", "angle_goal", "zone", "attack_dir"],
+    "grid": {"max_depth": [3, 5], "min_child_weight": [1, 20]},
+    "n_estimators": 800,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "early_stopping_rounds": 30,
+    "selection": "validation log loss",
+    "threads": 2
+  },
+  "training_inputs_sha256": {
+    "data/processed/events_parsed.parquet": "7d1ffc05c110ae8c36df301fe23200ce8b2fb3c698de33a351af034b7fbde6dd",
+    "data/processed/possession_sequences.parquet": "0c0f330959272557d64192262e7ba07141ce3301e1fb07aa23956f31b8041987",
+    "configs/research_split_manifest.csv": "619eee972d2d1c38dbe42db9ae11ffe1a66307f615437e9ed14e9516ff415687"
+  },
+  "euro2024_inputs_sha256": {
+    "data/holdout/euro2024/events_parsed.parquet": "8220272adbb7ad3e5579d56a962d39bcd4080ae49aedc7577373439d00a1a24c",
+    "data/holdout/euro2024/possession_sequences.parquet": "8aee60cd0d73339c8de2c70f714da39d761c1a37b5cc87b5142be7200d8f6e06"
+  },
+  "n_boot": 500,
+  "seed": 42,
+  "ece_bins": 10,
+  "reference_auc": 0.665,
+  "holdout_data_dir": "data/holdout/euro2020",
+  "output": "reports/repro/second_holdout.json"
+}
