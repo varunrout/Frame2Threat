@@ -107,3 +107,25 @@ def test_practical_usefulness_labels_come_from_later_danger_not_realised_steps()
     assert [y for _, y in dangerous] == [1, 1]  # the old code labelled these 0
     safe = scored_steps({"steps": [{"t": 0, "p": 0.1}, {"t": 1, "p": 0.1}], "realised_at": None})
     assert [y for _, y in safe] == [0]  # last event of a safe possession is not eligible
+
+
+def test_limitation_lines_read_numbers_from_artefacts(tmp_path):
+    import json
+    import shutil
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    (tmp_path / "reports/repro").mkdir(parents=True)
+    for name in ("frozen_metrics_test.json", "sealed_holdout.json"):
+        shutil.copy(root / "reports/repro" / name, tmp_path / "reports/repro" / name)
+    rec = json.loads((tmp_path / "reports/repro/frozen_metrics_test.json").read_text())
+    rec["results"]["alerts"]["XGB"]["false_alert_rate"] = 0.123
+    (tmp_path / "reports/repro/frozen_metrics_test.json").write_text(json.dumps(rec))
+    text = "\n".join(pg.limitation_lines(tmp_path))
+    assert "12.3% (XGBoost)" in text  # follows the artefact, not typed-in text
+    assert "UEFA Euro 2024" in text
+
+
+def test_limitation_lines_without_artefacts(tmp_path):
+    text = "\n".join(pg.limitation_lines(tmp_path))
+    assert "not available" in text and "No external validation" in text

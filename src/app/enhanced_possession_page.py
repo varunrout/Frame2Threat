@@ -139,22 +139,12 @@ def render_feature_explanation(st):
         )
 
 
-def render_limitations(st):
-    """Render known limitations."""
+def render_limitations(st, root: Path) -> None:  # noqa: ANN001
+    """Render known limitations; every number is read from committed result files, not typed in."""
+    from src.app.possession_data import limitation_lines
+
     with st.expander("Known Limitations", expanded=False):
-        st.markdown(
-            """
-        - **Discrimination is modest:** Event-time ROC AUC ~0.66 (all snapshots), ~0.74 (one per possession)
-        - **Ball position dominates:** Logistic regression on (x, y) alone achieves AUC 0.64 / 0.70
-        - **Models are statistically indistinguishable:** XGBoost vs GRU difference not significant
-        - **False alerts:** 39-48% of safe possessions trigger an alert at validation threshold
-        - **Calibration imperfect:** Models under-predict on held-out test (ECE ~0.04)
-        - **Small test cohort:** 15 matches (World Cup 2022 + Barcelona La Liga 2020/21)
-        - **No external validation:** Results may not transfer to other competitions/seasons
-        - **Partial 360 coverage:** Freeze frames for only 52% of passes; not continuous tracking
-        - **No causal claims:** Attribution is retrospective correlation, not causal contribution
-        """
-        )
+        st.markdown("\n".join(f"- {line}" for line in limitation_lines(root)))
 
 
 def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN001
@@ -780,7 +770,7 @@ def render(st, root: Path, *, cache_data, cache_resource) -> None:  # noqa: ANN0
     render_feature_explanation(st)
 
     # --- LIMITATIONS ---
-    render_limitations(st)
+    render_limitations(st, root)
 
     # --- DEMO MODE NOTICE ---
     if demo_mode:
