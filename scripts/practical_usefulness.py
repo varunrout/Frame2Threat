@@ -6,6 +6,11 @@ Evaluates operational usefulness of event-time models beyond ROC-AUC.
 Metrics: Precision/Recall at validation thresholds, false alerts, lead time,
 calibration, Brier score, performance by possession phase.
 
+Its ``false_alert_rate`` and ``ece`` fields are NOT the project's frozen definitions: it keeps only
+possessions of four or more events, counts an alert on the last event of a safe possession, and averages
+calibration bins without weighting. Quote false-alert rates and ECE from ``scripts/sealed_holdout.py``
+(``reports/repro/frozen_metrics_test.json``, ``src/evaluation/frozen_metrics.py``) instead.
+
 Outputs:
 - reports/repro/practical_usefulness.json
 - reports/figures/practical_usefulness.png

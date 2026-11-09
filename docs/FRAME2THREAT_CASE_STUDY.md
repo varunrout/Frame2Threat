@@ -157,7 +157,7 @@ Only causal features from events 0..*t*:
 
 ### Calibration and Probabilistic Scores
 
-| Model | Brier | Log Loss | ECE (10 bins) |
+| Model | Brier | Log Loss | ECE (10 equal-width bins, snapshot-weighted, absolute probability) |
 |-------|-------|----------|---------------|
 | XGBoost | 0.223 | 0.637 | 0.039 |
 | GRU | 0.224 | 0.642 | 0.039 |
@@ -168,14 +168,14 @@ Only causal features from events 0..*t*:
 
 | Metric | XGBoost (thr=0.390) | GRU (thr=0.422) |
 |--------|---------------------|-----------------|
-| Precision (per scored event) | 0.554 | 0.555 |
-| Recall (per scored event) | 0.520 | 0.519 |
-| False Alert Rate (safe possessions with any alert) | 55.9% | 46.6% |
+| Precision (per scored event) | 0.552 | 0.554 |
+| Recall (per scored event) | 0.520 | 0.518 |
+| False-alert rate (safe possessions with at least one alert) | 48.0% | 39.7% |
 | Median Lead Time (dangerous possessions that alerted) | 9 events | 10 events |
 
-*Test split, 2,249 possessions (869 reach danger).  Precision and recall count scored events (event is positive if the possession later reaches danger); the false-alert rate and lead time are per possession.  Source: `scripts/practical_usefulness.py`, `reports/repro/practical_usefulness.json`.  An earlier version of this table showed precision and recall of 0 and a 16-event XGBoost lead time; that was a labelling bug (labels were taken from steps that carry no score) and is corrected.*
+*Test split, 2,284 possessions with at least one eligible snapshot (727 reach danger), committed models, frozen definitions of [the sealed-holdout protocol](../reports/repro/sealed_holdout_protocol.md).  Precision and recall count eligible snapshots; the false-alert rate and lead time are per possession.  Source: `scripts/sealed_holdout.py --target test`, `reports/repro/frozen_metrics_test.json`.  This replaces the earlier 55.9% / 46.6% from `practical_usefulness.py`, which counted alerts on the last event of safe possessions and kept only possessions of four or more events.  On the Euro 2024 sealed holdout the rates are 45.2% / 39.3% ([sealed_holdout.md](../reports/repro/sealed_holdout.md)).*
 
-**Reading:** at the validation-chosen thresholds (prevalence quantiles, not tuned for precision) roughly half of the alerted events are in possessions that really reach danger, about half of dangerous events are caught, and 47-56% of safe possessions still trigger an alert.  An alert is a prompt to look, not a prediction to act on.
+**Reading:** at the validation-chosen thresholds (prevalence quantiles, not tuned for precision) roughly half of the alerted events are in possessions that really reach danger, about half of dangerous events are caught, and 40% (GRU) to 48% (XGBoost) of safe possessions still trigger an alert.  An alert is a prompt to look, not a prediction to act on.
 
 ---
 
@@ -193,8 +193,8 @@ Only causal features from events 0..*t*:
 ## 8. What Did Not Work
 
 1. **Modest discrimination** — ROC AUC ~0.66 is only slightly above ball-position baseline (0.64)
-2. **Modest precision at validation thresholds** — about 0.55 precision and 47-56% false-alert rate on safe possessions make alerts noisy
-3. **Calibration gap** — Models under-predict on held-out test (ECE ~0.04)
+2. **Modest precision at validation thresholds** — about 0.55 precision and a 40-48% false-alert rate on safe possessions make alerts noisy
+3. **Calibration gap** — ECE 0.039 on the test split and 0.062-0.063 on the Euro 2024 holdout (snapshot-weighted, absolute probability)
 4. **No causal claims** — Attribution is retrospective correlation, not causal contribution
 5. **Small test cohort** — 15 matches (WC 2022 + Barcelona 20/21) limits generalisation
 6. **Partial 360 coverage** — Freeze frames for only 52% of passes; not continuous tracking

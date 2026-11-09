@@ -5,7 +5,7 @@
 Full retraining completed on the same 99-match manifest, with dependency versions,
 input hashes and feature schema recorded in `reports/repro/repair_retrain/eventtime_meta.json`.
 Fresh XGBoost / GRU all-snapshot AUC: **0.6653 / 0.6636**; one-per-possession:
-**0.7361 / 0.7390**. Equal-width ten-bin ECE: **0.0394 / 0.0390**.
+**0.7361 / 0.7390**. Equal-width ten-bin ECE, snapshot-weighted, in absolute probability: **0.0394 / 0.0390**.
 The fresh XGBoost selected 55 trees; the 52-tree specification below describes the
 preserved earlier model. Its cross-version reloaded probabilities have different
 calibration despite near-identical ranking. Use fresh-run metrics and dependencies
