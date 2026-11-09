@@ -20,6 +20,12 @@ fix forces a rerun, both runs are reported.
   Euro 2024 (51) and Euro 2020 (51) lead, then 1. Bundesliga 2023/24 (34). Copa America 2024 and AFCON 2023
   have no 360 matches at this revision. No Euro 2024 match is in the research cohort.
 
+- **Amendment 2, recorded openly (2026-11-09, before any holdout input was built or scored):** the first
+  config pinned the SHA-256 of `data/processed/split_manifest.csv`. That local file turned out to hold only 6
+  matches (a stale smoke-size file written on 2026-11-07), while this protocol names the committed 99-match
+  manifest. The config now pins `configs/research_split_manifest.csv` instead, and the script reads the split
+  from it. Nothing else changed.
+
 ## 2. What is scored
 
 - **Models, exactly as committed** in `models/` (no retraining, no refitting, no recalibration):

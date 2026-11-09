@@ -23,7 +23,7 @@
   "training_inputs_sha256": {
     "data/processed/events_parsed.parquet": "7d1ffc05c110ae8c36df301fe23200ce8b2fb3c698de33a351af034b7fbde6dd",
     "data/processed/possession_sequences.parquet": "0c0f330959272557d64192262e7ba07141ce3301e1fb07aa23956f31b8041987",
-    "data/processed/split_manifest.csv": "e3ca27b713bef699dcb337ef13bc29f26578c0210cf46d42864923f578fc85cd"
+    "configs/research_split_manifest.csv": "619eee972d2d1c38dbe42db9ae11ffe1a66307f615437e9ed14e9516ff415687"
   },
   "n_boot": 500,
   "seed": 42,
