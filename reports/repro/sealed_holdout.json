@@ -1,0 +1,331 @@
+{
+  "target": "holdout",
+  "data": {
+    "data_dir": "data/holdout/euro2024",
+    "competition": "UEFA Euro 2024 (men)",
+    "competition_id": 55,
+    "season_id": 282,
+    "events_parsed_sha256": "8220272adbb7ad3e5579d56a962d39bcd4080ae49aedc7577373439d00a1a24c",
+    "possession_sequences_sha256": "8aee60cd0d73339c8de2c70f714da39d761c1a37b5cc87b5142be7200d8f6e06"
+  },
+  "baseline_train_snapshots": 206257,
+  "definitions": {
+    "false_alert_rate": "share of safe possessions (no later shot or box entry) with at least one eligible snapshot at or above the validation-chosen threshold",
+    "ece": "10 equal-width bins on [0, 1], weighted by snapshot count, over all eligible snapshots; absolute probability units"
+  },
+  "thresholds": {
+    "xgb": 0.3903678810626692,
+    "gru": 0.4221348512993151
+  },
+  "reference_auc": 0.665,
+  "results": {
+    "matches": 51,
+    "eligible_snapshots": 145649,
+    "possessions_with_snapshots": 7066,
+    "snapshot_prevalence": 0.42592808738817295,
+    "all_snapshots": {
+      "XGB": {
+        "roc_auc": 0.6620603779668106,
+        "avg_precision": 0.5875674729896251,
+        "brier": 0.2299741615918185,
+        "log_loss": 0.6519005689414052
+      },
+      "GRU": {
+        "roc_auc": 0.6621236492186628,
+        "avg_precision": 0.582747721457195,
+        "brier": 0.22993452971785744,
+        "log_loss": 0.6563488983833635
+      },
+      "LR_xy": {
+        "roc_auc": 0.6411215609135839,
+        "avg_precision": 0.5488901759323488,
+        "brier": 0.23486177669117025,
+        "log_loss": 0.662454522323662
+      }
+    },
+    "one_per_possession": {
+      "XGB": {
+        "roc_auc": 0.7295839693564935,
+        "avg_precision": 0.5977143561552796,
+        "brier": 0.19437630567797295,
+        "log_loss": 0.5739942881670039
+      },
+      "GRU": {
+        "roc_auc": 0.7340353122441758,
+        "avg_precision": 0.5898896265001832,
+        "brier": 0.19039221885531407,
+        "log_loss": 0.5637561098843515
+      },
+      "LR_xy": {
+        "roc_auc": 0.6913744088112592,
+        "avg_precision": 0.5214590680756404,
+        "brier": 0.20292534366230194,
+        "log_loss": 0.5926599715641063
+      }
+    },
+    "bootstrap_all": {
+      "XGB": {
+        "roc_auc": {
+          "estimate": 0.6620603779668106,
+          "ci_low": 0.6502109454141192,
+          "ci_high": 0.6740870132245959
+        },
+        "avg_precision": {
+          "estimate": 0.5875674729896251,
+          "ci_low": 0.5638129116559716,
+          "ci_high": 0.6136904967233431
+        },
+        "brier": {
+          "estimate": 0.2299741615918185,
+          "ci_low": 0.2253456999594745,
+          "ci_high": 0.2343896627330863
+        }
+      },
+      "GRU": {
+        "roc_auc": {
+          "estimate": 0.6621236492186628,
+          "ci_low": 0.6500773094818453,
+          "ci_high": 0.6739429062013106
+        },
+        "avg_precision": {
+          "estimate": 0.582747721457195,
+          "ci_low": 0.5554151891888368,
+          "ci_high": 0.6110137873240583
+        },
+        "brier": {
+          "estimate": 0.22993452971785744,
+          "ci_low": 0.22592552547474676,
+          "ci_high": 0.23392763409652215
+        }
+      },
+      "LR_xy": {
+        "roc_auc": {
+          "estimate": 0.6411215609135839,
+          "ci_low": 0.631054734797946,
+          "ci_high": 0.6519069302166203
+        },
+        "avg_precision": {
+          "estimate": 0.5488901759323488,
+          "ci_low": 0.5254705607841587,
+          "ci_high": 0.5740337820249112
+        },
+        "brier": {
+          "estimate": 0.23486177669117025,
+          "ci_low": 0.23008523837565578,
+          "ci_high": 0.23925403966028125
+        }
+      },
+      "XGB - LR_xy": {
+        "roc_auc": {
+          "estimate": 0.020938817053226755,
+          "ci_low": 0.014778308133060783,
+          "ci_high": 0.026779535158216468
+        },
+        "avg_precision": {
+          "estimate": 0.038677297057276294,
+          "ci_low": 0.030206702976056165,
+          "ci_high": 0.047265259754489766
+        },
+        "brier": {
+          "estimate": -0.004887615099351761,
+          "ci_low": -0.00616456248540464,
+          "ci_high": -0.0036553730511396515
+        }
+      },
+      "GRU - LR_xy": {
+        "roc_auc": {
+          "estimate": 0.021002088305078992,
+          "ci_low": 0.013441912585237165,
+          "ci_high": 0.027612374924746406
+        },
+        "avg_precision": {
+          "estimate": 0.03385754552484621,
+          "ci_low": 0.021138834071396072,
+          "ci_high": 0.04535276327386567
+        },
+        "brier": {
+          "estimate": -0.0049272469733128155,
+          "ci_low": -0.007429566219502496,
+          "ci_high": -0.0023608484295583065
+        }
+      },
+      "GRU - XGB": {
+        "roc_auc": {
+          "estimate": 6.327125185223714e-05,
+          "ci_low": -0.006973207135842393,
+          "ci_high": 0.007060936858330078
+        },
+        "avg_precision": {
+          "estimate": -0.004819751532430083,
+          "ci_low": -0.01500395455360222,
+          "ci_high": 0.005021704502761781
+        },
+        "brier": {
+          "estimate": -3.963187396105461e-05,
+          "ci_low": -0.0020711998052003666,
+          "ci_high": 0.0021123061650590524
+        }
+      }
+    },
+    "bootstrap_one_per_possession": {
+      "XGB": {
+        "roc_auc": {
+          "estimate": 0.7295839693564935,
+          "ci_low": 0.7185061667594841,
+          "ci_high": 0.7421721172069978
+        },
+        "avg_precision": {
+          "estimate": 0.5977143561552796,
+          "ci_low": 0.5739391586308978,
+          "ci_high": 0.6220762848977608
+        },
+        "brier": {
+          "estimate": 0.19437630567797295,
+          "ci_low": 0.19075696659709082,
+          "ci_high": 0.19770909824852542
+        }
+      },
+      "GRU": {
+        "roc_auc": {
+          "estimate": 0.7340353122441758,
+          "ci_low": 0.72135049083624,
+          "ci_high": 0.7450891329370153
+        },
+        "avg_precision": {
+          "estimate": 0.5898896265001832,
+          "ci_low": 0.5652342570419643,
+          "ci_high": 0.6162498478607775
+        },
+        "brier": {
+          "estimate": 0.19039221885531407,
+          "ci_low": 0.1860115110303895,
+          "ci_high": 0.19489336235427668
+        }
+      },
+      "LR_xy": {
+        "roc_auc": {
+          "estimate": 0.6913744088112592,
+          "ci_low": 0.678701198631617,
+          "ci_high": 0.7037062886340367
+        },
+        "avg_precision": {
+          "estimate": 0.5214590680756404,
+          "ci_low": 0.49808795218135615,
+          "ci_high": 0.5499779035015612
+        },
+        "brier": {
+          "estimate": 0.20292534366230194,
+          "ci_low": 0.1995151509047755,
+          "ci_high": 0.20632992591710714
+        }
+      },
+      "XGB - LR_xy": {
+        "roc_auc": {
+          "estimate": 0.03820956054523428,
+          "ci_low": 0.03273863246846624,
+          "ci_high": 0.04438474105814401
+        },
+        "avg_precision": {
+          "estimate": 0.07625528807963922,
+          "ci_low": 0.06544344098655744,
+          "ci_high": 0.08568874142046858
+        },
+        "brier": {
+          "estimate": -0.008549037984328989,
+          "ci_low": -0.009791882141798464,
+          "ci_high": -0.0075668212352664336
+        }
+      },
+      "GRU - LR_xy": {
+        "roc_auc": {
+          "estimate": 0.04266090343291662,
+          "ci_low": 0.034244486634416996,
+          "ci_high": 0.05166829023986648
+        },
+        "avg_precision": {
+          "estimate": 0.06843055842454282,
+          "ci_low": 0.054369007576714014,
+          "ci_high": 0.08107086691278304
+        },
+        "brier": {
+          "estimate": -0.012533124806987872,
+          "ci_low": -0.014664058653098786,
+          "ci_high": -0.010311753891426788
+        }
+      },
+      "GRU - XGB": {
+        "roc_auc": {
+          "estimate": 0.004451342887682341,
+          "ci_low": -0.0027279898681423884,
+          "ci_high": 0.012672920557330162
+        },
+        "avg_precision": {
+          "estimate": -0.007824729655096396,
+          "ci_low": -0.02089768994947661,
+          "ci_high": 0.004530463553008117
+        },
+        "brier": {
+          "estimate": -0.003984086822658883,
+          "ci_low": -0.005918757988869666,
+          "ci_high": -0.001870954897392553
+        }
+      }
+    },
+    "ece": {
+      "XGB": 0.06284075807232804,
+      "GRU": 0.06199259407365627,
+      "LR_xy": 0.06590414404256177
+    },
+    "alerts": {
+      "XGB": {
+        "threshold": 0.3903678810626692,
+        "snapshots": 145649,
+        "precision": 0.5754919400685874,
+        "recall": 0.5058514410987168,
+        "possessions": 7066,
+        "safe_possessions": 4670,
+        "dangerous_possessions": 2396,
+        "false_alert_rate": 0.4518201284796574,
+        "dangerous_alert_rate": 0.8969115191986644,
+        "median_lead_events": 10.0
+      },
+      "GRU": {
+        "threshold": 0.4221348512993151,
+        "snapshots": 145649,
+        "precision": 0.5756298704837333,
+        "recall": 0.5108163002127797,
+        "possessions": 7066,
+        "safe_possessions": 4670,
+        "dangerous_possessions": 2396,
+        "false_alert_rate": 0.3927194860813705,
+        "dangerous_alert_rate": 0.8873121869782972,
+        "median_lead_events": 10.0
+      }
+    }
+  },
+  "provenance": {
+    "command": "python scripts/sealed_holdout.py --target holdout",
+    "config": "configs/sealed_holdout.json",
+    "config_sha256": "d94836c7a64e70f4a4ea95d213c064095fd365879425c9a91aefd226b8dc4650",
+    "open_data_revision": "3bfbffe1de5750ebd47d770be0bb924a10cde54f",
+    "seed": 42,
+    "n_boot": 500,
+    "timestamp_utc": "2026-11-09T14:47:15+00:00",
+    "git_sha": "1be05329505dfaadf4e26137a03267c0e97430f3",
+    "git_dirty": true,
+    "python": "3.12.7",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "packages": {
+      "numpy": "2.3.2",
+      "pandas": "2.3.2",
+      "scikit-learn": "1.7.1",
+      "xgboost": "3.2.0",
+      "torch": "2.9.0"
+    },
+    "files_sha256": {
+      "models/eventtime_xgboost.joblib": "6094119e194fc71102ca31091f9c3dba603f68038abe0140402a951b62d46ada",
+      "models/eventtime_gru.pt": "76d61575022ed15f7aa39bc8e1b9d317a2559fa1d152f99c7ede37a76f88d7df",
+      "models/eventtime_meta.json": "1fbd5ee8bd9a65038dceb0c9ab103eba5f0d3ae4f1263aa83f441d44963354c2"
+    }
+  }
+}
