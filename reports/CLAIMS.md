@@ -16,13 +16,16 @@ these.
 |---|---|---|---|
 | Event-time XGBoost, all test snapshots | ROC AUC 0.665 [0.647, 0.681] | [repair_retrain/event_time_results.md](repro/repair_retrain/event_time_results.md) | Fresh retrain, 500-resample match bootstrap |
 | Event-time GRU, all test snapshots | ROC AUC 0.664 [0.642, 0.687] | same | |
-| Ball x/y logistic baseline | ROC AUC 0.642 [0.622, 0.661] | same | The lift of the models over it is about 0.02 |
+| Ball x/y logistic baseline | ROC AUC 0.642 [0.622, 0.661] | same | The lift of the models over it is about 0.02; over a nonlinear position baseline it is smaller (row below) |
 | One snapshot per possession | XGBoost 0.736, GRU 0.739 | same | Different sampling from the all-snapshot figure |
 | Committed event-time models re-score | XGBoost 0.6649, GRU 0.6636 | [repro/artefact_check.md](repro/artefact_check.md) | Earlier training run than the fresh retrain; `make verify` |
 | Pass progression, event-only / event+360 | ROC AUC 0.7337 / 0.7380 | [repro/artefact_check.md](repro/artefact_check.md) | 360 lift is small; coverage is partial |
 | Sealed external holdout, UEFA Euro 2024 (51 matches, scored once) | ROC AUC XGBoost 0.662 [0.650, 0.674], GRU 0.662 [0.650, 0.674]; ball x/y baseline 0.641 [0.631, 0.652]; lift 0.021 [0.015, 0.027] / 0.021 [0.013, 0.028] | [repro/sealed_holdout.md](repro/sealed_holdout.md), [JSON](repro/sealed_holdout.json) | Committed models and thresholds unchanged; protocol committed first. By the pre-specified rule AUC 0.66 generalised to this competition. One men's tournament only |
-| Alert behaviour at validation thresholds (frozen definitions) | Test: precision 0.552 / 0.554, recall 0.520 / 0.518, false-alert rate 48.0% / 39.7% (XGBoost / GRU), 2,284 possessions. Euro 2024: precision 0.575 / 0.576, recall 0.506 / 0.511, false-alert rate 45.2% / 39.3% | [repro/frozen_metrics_test.json](repro/frozen_metrics_test.json), [repro/sealed_holdout.json](repro/sealed_holdout.json) | Precision and recall per eligible snapshot; false-alert rate per safe possession |
-| Calibration (ECE, snapshot-weighted, absolute probability) | Test 0.039 / 0.039; Euro 2024 0.063 / 0.062 (XGBoost / GRU) | same | Worse on the holdout: use the score as a ranking |
+| Second sealed external holdout, UEFA Euro 2020 (51 matches, scored once) | ROC AUC XGBoost 0.667 [0.654, 0.681], GRU 0.659 [0.647, 0.671]; ball x/y baseline 0.639 [0.629, 0.650]; position-only boosted baseline 0.648 [0.638, 0.658] | [repro/second_holdout.md](repro/second_holdout.md), [JSON](repro/second_holdout.json) | Protocol committed first. AUC 0.66 generalised for both models. GRU ranks slightly below XGBoost here: -0.009 [-0.016, -0.000] |
+| Lift over the position-only boosted baseline (all snapshots) | XGBoost / GRU: Euro 2020 0.020 [0.014, 0.026] / 0.011 [0.002, 0.022]; Euro 2024 0.012 [0.005, 0.018] / 0.012 [0.004, 0.019]; in-cohort test 0.011 [-0.003, 0.023] / 0.010 [-0.013, 0.028] | [repro/second_holdout.json](repro/second_holdout.json) | Baseline added after the Euro 2024 scoring, frozen before any scoring. Lift holds on both tournaments, **not shown** in-cohort; smaller than the lift over ball x/y everywhere |
+| Alert behaviour at validation-prevalence thresholds (frozen definitions) | Test: precision 0.552 / 0.554, recall 0.520 / 0.518, false-alert rate 48.0% / 39.7% (XGBoost / GRU), 2,284 possessions. Euro 2024: precision 0.575 / 0.576, recall 0.506 / 0.511, false-alert rate 45.2% / 39.3%. Euro 2020: precision 0.529 / 0.527, recall 0.520 / 0.501, false-alert rate 45.4% / 37.2% | [repro/frozen_metrics_test.json](repro/frozen_metrics_test.json), [repro/sealed_holdout.json](repro/sealed_holdout.json), [repro/second_holdout.json](repro/second_holdout.json) | Precision and recall per eligible snapshot; false-alert rate per safe possession |
+| Precision-oriented operating point (target 0.65, chosen on validation) | XGBoost threshold 0.574: Euro 2020 precision 0.728, recall 0.050, false-alert rate 6.6%; test 0.699, 0.069, 8.5%. GRU: not reachable on validation | [repro/second_holdout.json](repro/second_holdout.json) | Recall is about 5 to 7% of dangerous snapshots: a high-confidence filter, not a detector |
+| Calibration (ECE, snapshot-weighted, absolute probability) | Test 0.039 / 0.039; Euro 2024 0.063 / 0.062; Euro 2020 0.031 / 0.030 (XGBoost / GRU); on Euro 2020 the baselines reach 0.019 (ball x/y) and 0.022 (boosted) | same | Not a calibrated probability: use the score as a ranking aid |
 | Fixed research split | 99 matches: 69 train, 15 validation, 15 test | [configs/research_split_manifest.csv](../configs/research_split_manifest.csv) | Guarded by `tests/test_repo_integrity.py` |
 
 ## Diagnostic and exploratory (never headline evidence)
@@ -76,6 +79,6 @@ public release.
    cover all 99 matches. `verify_artefacts.py` and `practical_usefulness.py` read that manifest, so they should not be
    rerun until `data/processed` is rebuilt; the sealed-holdout scripts read `configs/research_split_manifest.csv`.
    Data is gitignored, so a fresh clone is not affected.
-8. **In-cohort re-score drifted slightly.** With today's arrays builder and inputs the committed models give
+8. **In-cohort re-score drifted slightly (still open).** With today's arrays builder and inputs the committed models give
    0.6639 / 0.6623 on 43,497 test snapshots, against the documented 0.6649 / 0.6636 on 43,541. The cause has not been
    established. The Euro 2024 comparison uses today's builder on both sides.

@@ -18,9 +18,9 @@ their alert thresholds; the black line is the shot or box entry. Regenerate with
 | **Maturity** | Research prototype for tactical review. Not a live service, not a betting model. |
 | **Primary task** | Event-time (prospective) danger prediction: at event `t`, use events `0..t` only. |
 | **Data** | StatsBomb Open Data: 99 matches (64 World Cup 2022, 35 Barcelona La Liga 2020/21); 15 held-out test matches. |
-| **Headline result** | ROC AUC about **0.66** on held-out snapshots, and **0.662** on a sealed external holdout (UEFA Euro 2024, 51 unseen matches, scored once). Modest, and most of the signal is ball position. |
+| **Headline result** | ROC AUC about **0.66**, and it held on two sealed external holdouts scored once (Euro 2024: 0.662 for both models; Euro 2020: XGBoost 0.667, GRU 0.659). Modest, and most of the signal is ball position: against a **nonlinear position-only baseline the lift shrinks to about 0.01 to 0.02 AUC**, and on the 15 in-cohort test matches it is **not distinguishable from zero**. |
 | **Hosted CI** | Defined in `.github/workflows/ci.yml` but **not running** (billing). The same gates were run locally: [local CI record](reports/repro/local_ci.md). |
-| **Biggest open risk** | Small, selective cohort, random match holdout, test set inspected repeatedly. One external competition so far (men's international tournament, close to the World Cup in training); no other league, season or temporal validation yet. |
+| **Biggest open risk** | Small, selective cohort (64 World Cup 2022 plus 35 Barcelona La Liga 2020/21 matches), random match holdout, test set inspected repeatedly. The two external holdouts are men's international tournaments, close in kind to the World Cup in training; no club league outside the cohort, other season, temporal or women's validation yet. |
 
 ## Results you can quote
 
@@ -40,39 +40,58 @@ The lift over the ball x/y baseline is small (about 0.02 AUC). Thresholds and hy
 validation only. The committed models come from an earlier training run and re-score at 0.6649 (XGBoost) and 0.6636 (GRU)
 ([artefact check](reports/repro/artefact_check.md), `make verify`).
 
-### Sealed external holdout: UEFA Euro 2024
+### Sealed external holdouts and a stronger baseline
 
-The committed models, thresholds and features, unchanged, scored **once** on all 51 Euro 2024 matches under a
-protocol committed before any holdout input was built
-([protocol](reports/repro/sealed_holdout_protocol.md), [result](reports/repro/sealed_holdout.md),
-[JSON](reports/repro/sealed_holdout.json)):
+The committed models, thresholds and features, unchanged, were scored **once** on two unseen competitions, each
+under a protocol committed before scoring: UEFA Euro 2024 ([protocol](reports/repro/sealed_holdout_protocol.md),
+[result](reports/repro/sealed_holdout.md)) and UEFA Euro 2020 ([protocol](reports/repro/second_holdout_protocol.md),
+[result](reports/repro/second_holdout.md), [JSON](reports/repro/second_holdout.json)). The second protocol also
+adds a **position-only boosted baseline** (XGBoost on ball x/y, distance and angle to goal and pitch zone; no event
+history; same tuning budget, fitted on the original training matches). It was added after the Euro 2024 scoring
+and frozen before it was scored anywhere.
 
-| Model | All-snapshot ROC AUC, Euro 2024 | Lift over ball x/y (refit on original training matches) |
-|---|---|---|
-| Ball x/y logistic baseline | 0.641 [0.631, 0.652] | |
-| Event-time XGBoost | 0.662 [0.650, 0.674] | 0.021 [0.015, 0.027] |
-| Event-time GRU | 0.662 [0.650, 0.674] | 0.021 [0.013, 0.028] |
+All-snapshot ROC AUC, 500-resample match bootstrap:
 
-The 0.665 reference lies inside both intervals, so by the pre-specified rule the AUC **generalised** to this
-competition, and the small lift over ball position held. Calibration was worse (ECE 0.063 / 0.062 against
-0.039 / 0.039 in-cohort). This is one men's international tournament; other leagues, seasons and women's
-football are untested.
+| | Euro 2020 | Euro 2024 | In-cohort test (15 matches) |
+|---|---|---|---|
+| Event-time XGBoost | 0.667 [0.654, 0.681] | 0.662 [0.650, 0.674] | 0.664 [0.646, 0.680] |
+| Event-time GRU | 0.659 [0.647, 0.671] | 0.662 [0.650, 0.674] | 0.662 [0.641, 0.686] |
+| Ball x/y logistic baseline | 0.639 [0.629, 0.650] | 0.641 [0.631, 0.652] | 0.641 [0.618, 0.660] |
+| Position-only boosted baseline | 0.648 [0.638, 0.658] | 0.650 [0.640, 0.661] | 0.653 [0.629, 0.673] |
+| XGBoost minus boosted baseline | 0.020 [0.014, 0.026] | 0.012 [0.005, 0.018] | 0.011 [-0.003, 0.023] |
+| GRU minus boosted baseline | 0.011 [0.002, 0.022] | 0.012 [0.004, 0.019] | 0.010 [-0.013, 0.028] |
 
-### Alerts
+- **AUC 0.66 generalised** to both tournaments by the pre-specified rule (0.665 inside every interval).
+- **The lift shrinks against the stronger baseline**: it holds on both tournaments, but on the in-cohort test
+  matches it is not distinguishable from zero. Part of the earlier "0.02 over ball position" was the linear
+  baseline's inability to model the goal's geometry.
+- On Euro 2020 the GRU ranks slightly below XGBoost (difference -0.009 [-0.016, -0.000]).
+- **Calibration is not reliable**: ECE (snapshot-weighted, absolute probability) is 0.039 in-cohort, 0.063 / 0.062 on
+  Euro 2024 and 0.031 / 0.030 on Euro 2020, where both baselines are better calibrated (0.019 and 0.022).
 
-At the validation-chosen threshold, on 2,284 test possessions (727 dangerous) and on Euro 2024, with the
-frozen definitions of the protocol ([test](reports/repro/frozen_metrics_test.json),
-[Euro 2024](reports/repro/sealed_holdout.json)):
+The in-cohort column re-scores the committed models with today's code (0.6639 / 0.6623); the documented 0.6649 /
+0.6636 came from an earlier build of the inputs, and the cause of that small difference is still open
+([CLAIMS.md](reports/CLAIMS.md)).
 
-| | XGBoost, test | GRU, test | XGBoost, Euro 2024 | GRU, Euro 2024 |
-|---|---|---|---|---|
-| Precision / recall (snapshots) | 0.552 / 0.520 | 0.554 / 0.518 | 0.575 / 0.506 | 0.576 / 0.511 |
-| False-alert rate: safe possessions with at least one alert | 48.0% | 39.7% | 45.2% | 39.3% |
-| Median lead time before the event | 9 events | 10 events | 10 events | 10 events |
-| ECE: 10 equal-width bins, snapshot-weighted, absolute probability | 0.039 | 0.039 | 0.063 | 0.062 |
+### Alerts and operating points
 
-An alert fires on 39% to 48% of safe possessions. Treat the score as a ranking aid for replay
-review, not as a calibrated probability.
+With the frozen definitions ([test](reports/repro/frozen_metrics_test.json),
+[Euro 2024](reports/repro/sealed_holdout.json), [Euro 2020](reports/repro/second_holdout.json)), at the
+validation-prevalence threshold:
+
+| | XGBoost, test | GRU, test | XGBoost, Euro 2024 | GRU, Euro 2024 | XGBoost, Euro 2020 | GRU, Euro 2020 |
+|---|---|---|---|---|---|---|
+| Precision / recall (snapshots) | 0.552 / 0.520 | 0.554 / 0.518 | 0.575 / 0.506 | 0.576 / 0.511 | 0.529 / 0.520 | 0.527 / 0.501 |
+| False-alert rate: safe possessions with at least one alert | 48.0% | 39.7% | 45.2% | 39.3% | 45.4% | 37.2% |
+| Median lead time before the event | 9 events | 10 events | 10 events | 10 events | 10 events | 11 events |
+
+A **precision-oriented operating point** (target precision 0.65, threshold chosen on validation only) exists for
+XGBoost only (threshold 0.574): on Euro 2020 it gives precision 0.728, recall 0.050 and a 6.6% false-alert rate
+(test: 0.699, 0.069, 8.5%), and it alerts on 38.8% of dangerous possessions with a median lead of 4 events. **No
+GRU threshold reaches 0.65 precision on validation.**
+
+At the default threshold an alert fires on 37% to 48% of safe possessions. The score is a **ranking aid for
+replay review, not a calibrated probability**.
 
 Secondary results: event-only pass progression re-scores at ROC AUC 0.7337 and 0.7380 with 360 freeze frames
 (small lift, 52% coverage). Retrospective whole-possession models reach AUC 0.96 to 0.98 but use completed
@@ -134,7 +153,7 @@ different route; see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). Retraining overwr
 
 | Branch | Status and scope |
 |---|---|
-| Event-time XGBoost / GRU | Primary task: causal features, match holdout, baselines and uncertainty. |
+| Event-time XGBoost / GRU | Primary task: causal features, match holdout, two sealed external holdouts, baselines and uncertainty. Lift over a nonlinear position-only baseline is small (about 0.01 to 0.02 AUC) and not shown in-cohort; probabilities are not calibrated. |
 | Event-only pass progression | Secondary, post-pass prediction on `progression_beyond_pass_k`. |
 | 360 spatial augmentation | Secondary ablation: small lift, incomplete and competition-dependent coverage. |
 | Line-break detection | Geometric heuristic, not independently validated tactical ground truth. |
@@ -148,9 +167,10 @@ different route; see [REPRODUCIBILITY.md](REPRODUCIBILITY.md). Retraining overwr
 No latency, feed-revision, clock-synchronisation, odds-linkage, market-calibration or monitoring study has been
 done. Before any commercial use:
 
-1. ~~A sealed holdout of unseen competitions, scored once.~~ Done for one competition: UEFA Euro 2024, AUC 0.662
-   [0.650, 0.674] for both models ([result](reports/repro/sealed_holdout.md)). Still needed: club leagues outside
-   the cohort (for example 1. Bundesliga 2023/24) and other seasons.
+1. ~~A sealed holdout of unseen competitions, scored once.~~ Done for two men's tournaments, Euro 2024 and
+   Euro 2020 ([results](reports/repro/second_holdout.md)); AUC 0.66 held on both, but the lift over a nonlinear
+   position-only baseline is only about 0.01 to 0.02. Still needed: club leagues outside the cohort (for example
+   1. Bundesliga 2023/24), other seasons, and a model that beats the position baseline clearly.
 2. Time-ordered and leave-one-competition-out validation.
 3. A strict "controlled entry" label ablation next to the attempted-entry label.
 4. An analyst pilot measuring whether alerts save review time.
